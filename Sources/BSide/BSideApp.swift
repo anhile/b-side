@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum Page: String, CaseIterable, Identifiable {
-    case vibe, playlists
+    case vibe, playlists, nowPlaying
 
     var id: String { rawValue }
 
@@ -9,6 +9,7 @@ enum Page: String, CaseIterable, Identifiable {
         switch self {
         case .vibe: return "Vibe"
         case .playlists: return "Playlists"
+        case .nowPlaying: return "Now Playing"
         }
     }
 }
@@ -77,6 +78,15 @@ struct BSideApp: App {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        if let folder = Settings.defaults.string(forKey: Keys.snapshot) {
+            Task { @MainActor in
+                await Snapshots.render(into: URL(fileURLWithPath: folder))
+                NSApp.terminate(nil)
+            }
+        }
+    }
+
     /// Playback must continue with every window closed.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 

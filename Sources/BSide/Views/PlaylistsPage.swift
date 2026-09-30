@@ -20,17 +20,13 @@ struct PlaylistsPage: View {
     private var header: some View {
         HStack {
             Text("Playlists")
-                .font(.title3.weight(.semibold))
+                .font(Theme.Text.title)
+                .foregroundStyle(Theme.Colors.text)
             Spacer()
-            Button {
+            TransportButton(symbol: "arrow.clockwise", label: "Refresh playlists") {
                 player.loadPlaylists()
-            } label: {
-                Image(systemName: "arrow.clockwise")
             }
-            .buttonStyle(.borderless)
             .disabled(!player.account.isSignedIn || player.phase != .ready)
-            .help("Refresh")
-            .accessibilityLabel("Refresh playlists")
         }
         .padding(.horizontal, Theme.Space.m)
         .padding(.vertical, Theme.Space.xs)
@@ -79,19 +75,20 @@ struct PlaylistRow: View {
             Artwork(url: playlist.artworkURL, size: Theme.Size.artworkSmall, placeholder: "music.note.list")
             VStack(alignment: .leading, spacing: 0) {
                 Text(playlist.title)
-                    .font(.body)
+                    .font(Theme.Text.body)
+                    .foregroundStyle(Theme.Colors.text)
                     .lineLimit(1)
                 if !playlist.subtitle.isEmpty {
                     Text(playlist.subtitle)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .font(Theme.Text.caption)
+                        .foregroundStyle(Theme.Colors.textMuted)
                         .lineLimit(1)
                 }
             }
             Spacer(minLength: Theme.Space.xs)
             if isCurrent {
                 Image(systemName: isPlaying ? "speaker.wave.2.fill" : "speaker.fill")
-                    .foregroundStyle(.tint)
+                    .foregroundStyle(Theme.Colors.accentText)
                     .accessibilityLabel(isPlaying ? "Playing" : "Paused")
             }
         }
@@ -105,6 +102,7 @@ struct PlaylistRow: View {
 struct Artwork: View {
     let url: URL?
     let size: CGFloat
+    var radius = Theme.Radius.s
     var placeholder = "music.note"
 
     var body: some View {
@@ -112,14 +110,14 @@ struct Artwork: View {
             image.resizable().aspectRatio(contentMode: .fill)
         } placeholder: {
             Rectangle()
-                .fill(.quaternary)
+                .fill(Theme.Colors.surface)
                 .overlay {
                     Image(systemName: placeholder)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.Colors.textMuted)
                 }
         }
         .frame(width: size, height: size)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.s))
+        .clipShape(RoundedRectangle(cornerRadius: radius))
         .accessibilityHidden(true)
     }
 }

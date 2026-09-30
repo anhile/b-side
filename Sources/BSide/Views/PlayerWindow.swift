@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// The main window: page dots, two pages side by side, and what is playing.
+/// The main window: page dots, three pages side by side, and the strip with
+/// what is playing under the first two.
 struct PlayerWindow: View {
     @EnvironmentObject private var player: PlayerController
     @EnvironmentObject private var navigation: Navigation
@@ -14,13 +15,13 @@ struct PlayerWindow: View {
             PageDots(page: $navigation.page)
                 .frame(height: Theme.Size.titleBar)
             pages
-            Divider()
             footer
         }
+        .background(Theme.Colors.bg)
         .ignoresSafeArea(edges: .top)
         .frame(width: Theme.Size.window.width, height: Theme.Size.window.height - topInset)
         .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.top } action: { topInset = $0 }
-        .background(WindowDragging())
+        .background(WindowSetup())
         .task { player.start() }
     }
 
@@ -34,6 +35,7 @@ struct PlayerWindow: View {
                         switch page {
                         case .vibe: VibePage()
                         case .playlists: PlaylistsPage()
+                        case .nowPlaying: NowPlayingPage()
                         }
                     }
                     .frame(width: Theme.Size.window.width)
@@ -44,35 +46,37 @@ struct PlayerWindow: View {
         }
         .scrollTargetBehavior(.paging)
         .scrollPosition(id: $navigation.page)
-        .scrollIndicators(.hidden)
+        .scrollIndicators(.never)
         .animation(.spring(duration: Theme.Motion.page, bounce: 0), value: navigation.page)
     }
 
+    /// The strip shows on Vibe and Playlists while something plays; Now
+    /// Playing is that content already. The gear is on every page.
     private var footer: some View {
-        VStack(spacing: Theme.Space.xs) {
+        HStack(alignment: .center, spacing: Theme.Space.xs) {
             if let problem = player.problem {
                 Label(problem, systemImage: "exclamationmark.triangle")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .font(Theme.Text.caption)
+                    .foregroundStyle(Theme.Colors.textMuted)
                     .lineLimit(2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
                     .help(problem)
+            } else if player.hasTrack, navigation.page != .nowPlaying {
+                NowPlayingStrip { navigation.page = .nowPlaying }
             }
-            HStack(alignment: .bottom, spacing: Theme.Space.xs) {
-                if player.hasTrack {
-                    NowPlayingView()
-                } else {
-                    Spacer()
-                }
-                SettingsLink {
-                    Image(systemName: "gearshape")
-                }
-                .buttonStyle(.borderless)
-                .help("Settings")
-                .accessibilityLabel("Settings")
+            Spacer(minLength: 0)
+            SettingsLink {
+                Image(systemName: "gearshape")
+                    .foregroundStyle(Theme.Colors.textMuted)
+                    .frame(width: Theme.Size.pageDotTarget, height: Theme.Size.pageDotTarget)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .help("Settings")
+            .accessibilityLabel("Settings")
         }
-        .padding(Theme.Space.m)
+        .frame(height: Theme.Size.stripHeight)
+        .padding(.horizontal, Theme.Space.m)
+        .padding(.bottom, Theme.Space.xs)
     }
 }
 
@@ -88,7 +92,7 @@ struct PageDots: View {
                     page = item
                 } label: {
                     Circle()
-                        .fill(isCurrent(item) ? AnyShapeStyle(.tint) : AnyShapeStyle(.tertiary))
+                        .fill(isCurrent(item) ? Theme.Colors.accent : Theme.Colors.controlBorder)
                         .frame(width: Theme.Size.pageDot, height: Theme.Size.pageDot)
                         .frame(width: Theme.Size.pageDotTarget, height: Theme.Size.pageDotTarget)
                         .contentShape(Rectangle())
@@ -106,12 +110,14 @@ struct PageDots: View {
     }
 }
 
-/// Lets the window be dragged by any empty area, since it has no title bar.
-private struct WindowDragging: NSViewRepresentable {
+/// Window details SwiftUI does not expose: dragging by the background, since
+/// there is no title bar, and the window's own colour behind the content.
+private struct WindowSetup: NSViewRepresentable {
     final class View: NSView {
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             window?.isMovableByWindowBackground = true
+            window?.backgroundColor = NSColor(named: "bg") // tokens-ok
         }
     }
 
@@ -130,21 +136,55 @@ struct EmptyState: View {
     var body: some View {
         VStack(spacing: Theme.Space.xs) {
             Image(systemName: symbol)
-                .font(.largeTitle)
-                .foregroundStyle(.secondary)
+                .font(.system(size: Theme.Size.emptyGlyph))
+                .foregroundStyle(Theme.Colors.textMuted)
             Text(title)
-                .font(.title3.weight(.semibold))
+                .font(Theme.Text.title)
+                .foregroundStyle(Theme.Colors.text)
             Text(message)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .font(Theme.Text.caption)
+                .foregroundStyle(Theme.Colors.textMuted)
                 .multilineTextAlignment(.center)
             if let actionTitle, let action {
                 Button(actionTitle, action: action)
+                    .buttonStyle(OutlineButtonStyle())
                     .padding(.top, Theme.Space.xs)
             }
         }
         .padding(Theme.Space.l)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// The app's text button: a capsule outline in `control-border`, label in
+/// `text`. One primary (filled) button per screen is `FilledButtonStyle`.
+struct OutlineButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(Theme.Text.label)
+            .foregroundStyle(Theme.Colors.text)
+            .padding(.horizontal, Theme.Space.m)
+            .padding(.vertical, Theme.Space.xs)
+            .background(Capsule().strokeBorder(Theme.Colors.controlBorder))
+            .contentShape(Capsule())
+            .opacity(configuration.isPressed ? Theme.Opacity.pressed : isEnabled ? 1 : Theme.Opacity.disabled)
+    }
+}
+
+struct FilledButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(Theme.Text.label)
+            .foregroundStyle(Theme.Colors.bg)
+            .padding(.horizontal, Theme.Space.m)
+            .padding(.vertical, Theme.Space.xs)
+            .background(Theme.Colors.text, in: Capsule())
+            .contentShape(Capsule())
+            .opacity(configuration.isPressed ? Theme.Opacity.pressed : isEnabled ? 1 : Theme.Opacity.disabled)
     }
 }
 

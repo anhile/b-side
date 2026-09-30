@@ -7,12 +7,22 @@ added here first, then to the theme, then used.
 Status: approved on 2026-09-30, with three decisions by the owner: two pages
 with dots, a 320 by 440 window, a cream background.
 
-Implemented so far: the window, both pages, navigation, Now Playing, Settings
-and the menu commands, with system colours and system controls. Not yet: the
-palette, glass, the `Record` graphic, `Skeleton`, large artwork, the Reduce
-Motion cross-fade, and `scripts/check-design.sh`.
+Decided on 2026-09-30: three pages, Vibe, Playlists and Now Playing. Vibe
+becomes a customisable set of mood tiles in two columns, each tile a playlist,
+Liked Music shuffled, or a track's radio; the player has its own Now Playing
+page, the third dot; Vibe and Playlists carry a one-line strip with the
+current track while music plays; starting music does not switch the page.
+No iPod wheel.
 
-Mockups: Figma file "B-Side — Design",
+Mockups are made in SwiftUI, not Figma: `-snapshot` renders every page in its
+states, light and dark, into `design/audit/`. Figma keeps the moodboard and
+Foundations only. Screen specs live in [design/SCREENS.md](design/SCREENS.md).
+
+Done: the palette, the theme file, `scripts/check-design.sh`, the Now Playing
+page with the `Record` graphic, the strip. Not yet: the Vibe tiles, the
+Playlists pass, glass, `Skeleton`, the Reduce Motion cross-fade.
+
+Moodboard and Foundations: Figma file "B-Side — Design",
 https://www.figma.com/design/jfKJfjHaDpDJle4Dj64MzM
 
 ## Positioning
@@ -73,6 +83,9 @@ Two themes, named after them. The theme follows the system appearance.
 | `accent` | `#FD6512` | `#FD6512` | Small shapes: indicator, current dot, progress |
 | `accent-text` | `#B23A08` | `#FD6512` | Accent-coloured text and small icons |
 | `accent-on` | `#151514` | `#151514` | Text on an accent shape, such as a record label |
+| `record` | `#151514` | `#2E2E2D` | The vinyl disc of the `Record` graphic |
+| `record-groove` | `#F8EBD3` at 18% | `#F8EBD3` at 18% | Grooves on the disc |
+| `shadow` | black at 25% | black at 25% | The one shadow, under large artwork |
 | `danger` | system red | system red | Errors |
 | `success` | system green | system green | Confirmations |
 
@@ -182,9 +195,9 @@ not an icon.
 - Size 320 by 440 points. Not resizable in the first version.
 - Hidden title bar. The traffic lights stay. The window drags by its
   background.
-- Two pages, Vibe and Playlists, side by side. No sidebar, no
+- Three pages, Vibe, Playlists and Now Playing, side by side. No sidebar, no
   `NavigationSplitView`, no toolbar: the window is too small for them, and
-  two destinations do not need a sidebar.
+  three destinations do not need a sidebar.
 - Closing the window does not stop the music. The Dock icon reopens it.
 - The window remembers its position.
 
@@ -194,7 +207,7 @@ not an icon.
 |---|---|
 | Two-finger swipe left or right | Next or previous page |
 | Click a page dot | That page |
-| Command-1, Command-2 | Vibe, Playlists |
+| Command-1, Command-2, Command-3 | Vibe, Playlists, Now Playing |
 | View menu | The same two commands |
 
 Page dots are not a standard macOS control, so they are built as real buttons:
@@ -231,12 +244,14 @@ Short descriptions for scope. Each gets a full spec before it is built.
 
 | Screen | Job | Primary action |
 |---|---|---|
-| Vibe | Start music with one click | Play: Liked Music, shuffled |
+| Vibe | Start music for a mood with one click | Play the chosen mood tile. Liked Music, shuffled, is one of the tiles |
 | Playlists | Pick one of my playlists | Play the chosen playlist |
+| Now Playing | See and control what plays | Play or pause |
 | Settings | Account, playback options, diagnostics | None |
 
-While music plays, both pages show the same compact Now Playing area: artwork,
-title, artist, progress, and the transport controls.
+Vibe is a grid of tiles in two columns, and the set of tiles is the user's
+to change. Now Playing carries the large artwork, title, artist, progress,
+volume and the transport controls.
 
 ## Components
 
@@ -251,7 +266,8 @@ The closed set. A screen is composed from these and nothing else.
 | `PageDots` | | Top of the main window |
 | `PlaylistRow` | default, playing | Playlists page |
 | `Artwork` | small 36, large 160 | Rows, Now Playing |
-| `NowPlaying` | compact | Bottom of both pages |
+| `MoodTile` | default, playing | Vibe grid |
+| `NowPlaying` | page | The Now Playing page |
 | `ProgressBar` | | Now Playing area |
 | `EmptyState` | signed out, no playlists, error | Any page |
 | `Skeleton` | row | Playlists while loading |
@@ -284,10 +300,14 @@ The closed set. A screen is composed from these and nothing else.
 
 ## Enforcement
 
-Planned, to be built with the first screen:
-
-- Colours live in the asset catalog as colour sets with light and dark
-  values. Fonts, spacing and radii live in `Sources/BSide/Design/Theme.swift`.
-- Screens import tokens and components only.
-- `scripts/check-design.sh` fails on raw colour, font size or spacing values
-  in screen code. It runs before every design review.
+- Colours live in the asset catalog (`Assets.xcassets/Colors`) as colour sets
+  with light and dark values. Everything else, and the colour names, lives in
+  `Sources/BSide/Design/Theme.swift`.
+- Screens import tokens and components only. Settings keeps the system look
+  and is exempt.
+- `scripts/check-design.sh` fails on raw colours, text styles, spacing and
+  sizes in `Sources/BSide/Views`. It runs before every design review. A line
+  that must break a rule carries `// tokens-ok` and a reason.
+- Review: `open B-Side.app --args -snapshot <folder> -ApplePersistenceIgnoreState YES`
+  writes every page and state as PNG, light and dark; the critique is written
+  from those files before any fix.

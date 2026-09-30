@@ -6,9 +6,9 @@ struct HeroButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: Theme.Size.heroGlyph))
-            .foregroundStyle(Color(nsColor: .windowBackgroundColor))
+            .foregroundStyle(Theme.Colors.bg)
             .frame(width: Theme.Size.heroButton, height: Theme.Size.heroButton)
-            .background(.primary, in: Circle())
+            .background(Theme.Colors.text, in: Circle())
             .contentShape(Circle())
             .opacity(configuration.isPressed ? Theme.Opacity.pressed : 1)
     }
@@ -53,10 +53,11 @@ struct VibePage: View {
 
             VStack(spacing: Theme.Space.xxs) {
                 Text("Vibe")
-                    .font(.largeTitle.bold())
+                    .font(Theme.Text.display)
+                    .foregroundStyle(Theme.Colors.text)
                 Text("Liked Music, shuffled")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .font(Theme.Text.caption)
+                    .foregroundStyle(Theme.Colors.textMuted)
             }
             Spacer()
         }

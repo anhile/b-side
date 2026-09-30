@@ -89,6 +89,26 @@ final class PlayerController: NSObject, ObservableObject {
 
     // MARK: - Setup
 
+    /// For design snapshots (see Snapshots.swift): a controller that shows a
+    /// given situation and never starts the web view.
+    static func fixture(state: PlayerState = PlayerState(), account: Account = .signedIn(name: "", handle: "@bside"),
+                        phase: PlayerPhase = .ready, source: PlaySource? = nil,
+                        playlists: [Playlist] = [], playlistsState: Loadable = .loaded,
+                        problem: String? = nil, volume: Double = 70) -> PlayerController {
+        let controller = PlayerController()
+        controller.started = true
+        controller.state = state
+        controller.stateDate = Date()
+        controller.account = account
+        controller.phase = phase
+        controller.source = source
+        controller.playlists = playlists
+        controller.playlistsState = playlistsState
+        controller.problem = problem
+        controller.volume = volume
+        return controller
+    }
+
     func start() {
         guard !started else { return }
         started = true

@@ -42,18 +42,18 @@ failed (`boot:`, `load:`, `playlists:`, `queue refill:`).
 
 ## The app
 
-A 320 by 440 window with two pages. Styling is plain system look for now; the
-design in [DESIGN.md](DESIGN.md) is applied in a later pass.
+A 320 by 440 window with three pages, designed as in [DESIGN.md](DESIGN.md).
 
 | Where | What it does |
 |---|---|
-| **Vibe** page | One button: plays Liked Music in random order |
+| **Vibe** page | One button: plays Liked Music in random order (mood tiles are next) |
 | **Playlists** page | Your playlists, private ones included. Click one to play it |
-| Bottom of both pages | What is playing: artwork, title, artist, position, volume, Previous, Play or Pause, Next |
+| **Now Playing** page | Artwork with the record behind it, title, artist, position, volume, Previous, Play or Pause, Next |
+| Strip under Vibe and Playlists | The current track and a pause button; click it to open Now Playing |
 | Gear, bottom right | Opens Settings: Account, Playback, Diagnostics |
 
 Move between the pages with a two-finger swipe, the dots at the top, or
-Command-1 and Command-2.
+Command-1, Command-2 and Command-3.
 
 | Shortcut | Action |
 |---|---|
@@ -95,10 +95,13 @@ Launch arguments, for scripted runs:
 |---|---|
 | `-vibe YES` | Starts Vibe at launch: Liked Music, shuffled |
 | `-play <id or URL>` | Starts playing a video ID, playlist ID, or URL at launch. `LM` is Liked Music |
+| `-volume 30` | Volume at launch, 0 to 100 |
 | `-muted YES` | Mutes the player; decoding still runs, so memory is comparable |
 | `-startIndex 48` | Starts a playlist at this track, counting from 0 |
 | `-forceAudioOnly NO` | Plays videos at normal quality, for comparison |
 | `-url <url>` | Debug: loads this URL instead of the player page (`about:blank` measures the floor) |
+| `-snapshot <folder>` | Renders every page in its states, light and dark, as PNG into the folder and quits. For design review |
+| `-ApplePersistenceIgnoreState YES` | macOS: skips the "restore windows?" prompt after a killed test run |
 
 ## Measuring memory
 
