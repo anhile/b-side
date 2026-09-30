@@ -93,6 +93,7 @@ private struct PlaybackSettings: View {
     var body: some View {
         Form {
             OpenAtLogin()
+            TrackNotifications()
             Section {
                 Toggle("Audio only", isOn: $audioOnly)
                     .onChange(of: audioOnly) { player.applyPageSettings() }
@@ -162,6 +163,48 @@ private struct OpenAtLogin: View {
         }
         .onAppear { status = LoginItem.status }
     }
+}
+
+/// Turning it on asks macOS for permission the first time. When macOS says
+/// no, the toggle goes back off and points to System Settings.
+private struct TrackNotifications: View {
+    @AppStorage(Keys.notifyTrack) private var notify = false
+    @State private var denied = false
+
+    var body: some View {
+        Section {
+            Toggle("Notify when a track starts", isOn: $notify)
+                .onChange(of: notify) {
+                    guard notify else { return }
+                    Task {
+                        let allowed = await TrackNotifier.shared.requestPermission()
+                        denied = !allowed
+                        if !allowed { notify = false }
+                    }
+                }
+            if denied {
+                LabeledContent("Notifications are off for B-Side") {
+                    Button("Open Notifications") {
+                        NSWorkspace.shared.open(Self.systemSettings)
+                    }
+                }
+            }
+        } footer: {
+            Text("The track's name and artwork, while B-Side is in the background. Clicking it opens Now Playing.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .task {
+            // Permission can be taken back in System Settings at any time.
+            if notify, !(await TrackNotifier.shared.isAllowed()) {
+                notify = false
+                denied = true
+            }
+        }
+    }
+
+    private static let systemSettings =
+        URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension")!
 }
 
 private struct DiagnosticsSettings: View {

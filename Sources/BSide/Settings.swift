@@ -9,6 +9,7 @@ enum Keys {
     static let moods = "moods"                   // the Vibe tiles, JSON
     static let wasSignedIn = "wasSignedIn"       // greet with "Welcome back" while the player loads
     static let guest = "guest"                   // chose to use B-Side without signing in
+    static let notifyTrack = "notifyTrack"       // a notification when the next track starts
     // Launch arguments only, e.g. `open B-Side.app --args -play <id> -muted YES`
     static let play = "play"
     static let vibe = "vibe"                     // start Vibe (Liked Music, shuffled) at launch
@@ -32,6 +33,7 @@ enum Settings {
             Keys.reloadAfterMinutes: 5,
             Keys.forceAudioOnly: true,
             Keys.volume: 100.0,
+            Keys.notifyTrack: false,
         ])
     }
 

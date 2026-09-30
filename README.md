@@ -84,6 +84,11 @@ again, brings the window back. Until then the player page is not loaded
 which takes a few seconds behind a welcome screen. Why and how this was measured:
 [docs/research/default-player.md](docs/research/default-player.md).
 
+**Notify when a track starts** (Settings, Playback; off by default) shows the
+track's name and artwork when the next one starts, while B-Side is in the
+background. macOS asks for permission the first time. Clicking the
+notification opens Now Playing.
+
 ## Build
 
 Requires Xcode and [XcodeGen](https://github.com/yonaskolb/XcodeGen)

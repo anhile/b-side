@@ -33,6 +33,10 @@ enum Tuning {
     /// The `variant` column in measurement CSVs and the event log. The spike
     /// compared variants A to D; D is the one that was kept (see RESULTS.md).
     static let measurementLabel = "D"
+
+    /// How long a track notification waits for its artwork before it goes
+    /// without one.
+    static let notificationArtworkWait: TimeInterval = 3
 }
 
 /// A video, a playlist, or a video within a playlist.

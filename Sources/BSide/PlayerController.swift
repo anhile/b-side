@@ -673,6 +673,7 @@ final class PlayerController: NSObject, ObservableObject {
         // The title arrives a moment after the video ID, so wait for it.
         if !new.title.isEmpty, new.videoID != old.videoID || new.title != old.title {
             EventLog.write("track\t\(new.videoID)\t\(new.artist) - \(new.title)")
+            TrackNotifier.shared.trackStarted(new)
             if Settings.bool(Keys.lyrics), lyrics == nil { loadLyrics() }
         }
         if new.isAd, !old.isAd {

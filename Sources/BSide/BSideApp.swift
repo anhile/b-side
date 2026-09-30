@@ -102,6 +102,7 @@ struct BSideApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        TrackNotifier.shared.install()
         if let folder = Settings.defaults.string(forKey: Keys.snapshot) {
             Task { @MainActor in
                 await Snapshots.render(into: URL(fileURLWithPath: folder))

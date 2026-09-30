@@ -57,6 +57,10 @@ struct PlayerWindow: View {
             StatusMenu.shared.install(player: player) {
                 if !MainWindow.show() { openWindow(id: "main") }
             }
+            TrackNotifier.shared.onOpen = {
+                if !MainWindow.show() { openWindow(id: "main") }
+                navigation.page = .nowPlaying
+            }
         }
         .task(id: player.state.artworkURL) {
             tint = player.hasTrack ? await ArtworkTint.color(for: player.state.artworkURL) : nil
