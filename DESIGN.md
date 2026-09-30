@@ -18,9 +18,9 @@ Mockups are made in SwiftUI, not Figma: `-snapshot` renders every page in its
 states, light and dark, into `design/audit/`. Figma keeps the moodboard and
 Foundations only. Screen specs live in [design/SCREENS.md](design/SCREENS.md).
 
-Done: the palette, the theme file, `scripts/check-design.sh`, all three
-pages, the strip, the menu bar item. Not yet: glass, the Reduce Motion
-cross-fade.
+Done: everything below, including glass (`Design/Glass.swift`) and the Reduce
+Motion cross-fade. With Reduce Motion on, pages change by the dots and the
+keyboard only; the swipe is off, since a swipe is a slide.
 
 Moodboard and Foundations: Figma file "B-Side — Design",
 https://www.figma.com/design/jfKJfjHaDpDJle4Dj64MzM

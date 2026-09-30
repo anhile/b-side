@@ -53,7 +53,8 @@ A 320 by 440 window with three pages, designed as in [DESIGN.md](DESIGN.md).
 | Gear, bottom right | Opens Settings: Account, Playback, Diagnostics |
 
 Move between the pages with a two-finger swipe, the dots at the top, or
-Command-1, Command-2 and Command-3.
+Command-1, Command-2 and Command-3. With Reduce Motion on, pages cross-fade
+and the swipe is off.
 
 | Shortcut | Action |
 |---|---|

@@ -9,6 +9,7 @@ struct PlayerWindow: View {
     /// The hidden title bar still counts as a safe area at the top. The
     /// content goes under it, and the window must not grow by its height.
     @State private var topInset = Theme.Size.titleBar
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 0) {
@@ -27,21 +28,31 @@ struct PlayerWindow: View {
         .task { player.start() }
     }
 
+    @ViewBuilder
+    private var pages: some View {
+        if reduceMotion {
+            // Nothing slides: the current page fades in over the previous
+            // one. Dots and Command-1, 2, 3 change pages; the swipe does not.
+            ZStack {
+                page(navigation.page ?? .vibe)
+                    .id(navigation.page ?? .vibe)
+                    .transition(.opacity)
+            }
+            .animation(.easeInOut(duration: Theme.Motion.page), value: navigation.page)
+        } else {
+            pager
+        }
+    }
+
     /// A paging scroll view gives the two-finger swipe, and the page follows
     /// the finger, with no custom gesture code.
-    private var pages: some View {
+    private var pager: some View {
         ScrollView(.horizontal) {
             HStack(spacing: 0) {
-                ForEach(Page.allCases) { page in
-                    Group {
-                        switch page {
-                        case .vibe: VibePage()
-                        case .playlists: PlaylistsPage()
-                        case .nowPlaying: NowPlayingPage()
-                        }
-                    }
-                    .frame(width: Theme.Size.window.width)
-                    .id(page)
+                ForEach(Page.allCases) { item in
+                    page(item)
+                        .frame(width: Theme.Size.window.width)
+                        .id(item)
                 }
             }
             .scrollTargetLayout()
@@ -50,6 +61,15 @@ struct PlayerWindow: View {
         .scrollPosition(id: $navigation.page)
         .scrollIndicators(.never)
         .animation(.spring(duration: Theme.Motion.page, bounce: 0), value: navigation.page)
+    }
+
+    @ViewBuilder
+    private func page(_ page: Page) -> some View {
+        switch page {
+        case .vibe: VibePage()
+        case .playlists: PlaylistsPage()
+        case .nowPlaying: NowPlayingPage()
+        }
     }
 
     /// The strip shows on Vibe and Playlists while something plays; Now
@@ -68,6 +88,7 @@ struct PlayerWindow: View {
             Spacer(minLength: 0)
             SettingsLink {
                 IconButton.Label(symbol: "gearshape")
+                    .glass(in: Circle())
             }
             .buttonStyle(PressableStyle())
             .help("Settings")
@@ -102,6 +123,8 @@ struct PageDots: View {
                 .accessibilityAddTraits(isCurrent(item) ? .isSelected : [])
             }
         }
+        .padding(.horizontal, Theme.Space.xxs)
+        .glass(in: Capsule())
     }
 
     private func isCurrent(_ item: Page) -> Bool {

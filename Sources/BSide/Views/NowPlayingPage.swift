@@ -107,17 +107,20 @@ struct NowPlayingPage: View {
         }
     }
 
+    /// Previous, Play and Next share one glass capsule; the speaker has its
+    /// own circle on the left. The capsule is centred in the page.
     private var transport: some View {
-        HStack(spacing: Theme.Space.l) {
-            Spacer(minLength: Theme.Size.transportTarget) // keeps the buttons centred with the speaker on the left
+        HStack(spacing: Theme.Space.m) {
             TransportButton(symbol: "backward.fill", label: "Previous") { player.previous() }
             TransportButton(symbol: player.state.isPlaying ? "pause.fill" : "play.fill",
                             label: player.state.isPlaying ? "Pause" : "Play",
                             glyph: Theme.Size.playGlyph) { player.togglePlayPause() }
             TransportButton(symbol: "forward.fill", label: "Next") { player.next() }
                 .disabled(!player.state.hasNext)
-            Spacer(minLength: Theme.Size.transportTarget)
         }
+        .padding(.horizontal, Theme.Space.xs)
+        .padding(.vertical, Theme.Space.xxs)
+        .glass(in: Capsule())
         .frame(maxWidth: .infinity)
         .overlay(alignment: .leading) { volumeButton }
     }
@@ -129,6 +132,8 @@ struct NowPlayingPage: View {
             // it, and toggling would open it again.
             showsVolume = true
         }
+        .padding(Theme.Space.xxs)
+        .glass(in: Circle())
         .help("Volume: \(Int(player.volume))%")
         .accessibilityValue("\(Int(player.volume)) percent")
         .popover(isPresented: $showsVolume, arrowEdge: .top) {

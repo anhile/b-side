@@ -95,6 +95,9 @@ enum Snapshots {
 
     static func render(into folder: URL) async {
         await renderSettings(into: folder)
+        await renderPage(.nowPlaying, player: .fixture(state: track, source: .mood(Mood.liked.id)),
+                         name: "nowplaying-reduce-transparency", appearance: .aqua, into: folder,
+                         reduceTransparency: true)
         EventLog.write("snapshot: rendering \(cases.count) cases into \(folder.path)")
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         NSSetUncaughtExceptionHandler { exception in
@@ -137,6 +140,37 @@ enum Snapshots {
                 window.close()
             }
         }
+    }
+
+    /// One page in one appearance, with the accessibility settings given.
+    private static func renderPage(_ page: Page, player: PlayerController, name: String,
+                                   appearance: NSAppearance.Name, into folder: URL,
+                                   reduceTransparency: Bool = false) async {
+        let navigation = Navigation()
+        let window = NSWindow(
+            contentRect: NSRect(origin: .zero, size: Theme.Size.window),
+            styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
+            backing: .buffered, defer: false)
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.appearance = NSAppearance(named: appearance)
+        window.isReleasedWhenClosed = false
+        let hosting = NSHostingView(rootView: PlayerWindow()
+            .environmentObject(player)
+            .environmentObject(navigation)
+            .environment(\.previewReduceTransparency, reduceTransparency))
+        hosting.sizingOptions = []
+        hosting.frame = NSRect(origin: .zero, size: Theme.Size.window)
+        window.contentView = hosting
+        window.setFrameOrigin(NSPoint(x: -4000, y: -4000))
+        window.orderFrontRegardless()
+        try? await Task.sleep(for: .seconds(0.3))
+        navigation.page = page
+        try? await Task.sleep(for: .seconds(1.5))
+        if let image = capture(window) {
+            try? image.write(to: folder.appendingPathComponent("\(name).png"))
+        }
+        window.close()
     }
 
     private static func capture(_ window: NSWindow) -> Data? {
