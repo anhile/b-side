@@ -12,6 +12,15 @@ enum Page: String, CaseIterable, Identifiable {
         case .nowPlaying: return "Now Playing"
         }
     }
+
+    /// Waves, a list with play, a record.
+    var symbol: String {
+        switch self {
+        case .vibe: return "waveform"
+        case .playlists: return "text.line.first.and.arrowtriangle.forward"
+        case .nowPlaying: return "opticaldisc"
+        }
+    }
 }
 
 /// Which page of the main window is showing. Shared with the menu bar.

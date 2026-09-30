@@ -13,12 +13,14 @@ struct PlayerWindow: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            PageDots(page: $navigation.page)
+            // The title bar's height stays empty: traffic lights on the left,
+            // and the window is dragged here.
+            DragHandle()
                 .frame(height: Theme.Size.titleBar)
-                .frame(maxWidth: .infinity)
-                .background(DragHandle())
             pages
             footer
+            PageTabs(page: $navigation.page)
+                .padding(.bottom, Theme.Space.xs)
         }
         .background(Theme.Colors.bg)
         .ignoresSafeArea(edges: .top)
@@ -91,31 +93,19 @@ struct PlayerWindow: View {
         }
         .frame(height: Theme.Size.stripHeight)
         .padding(.horizontal, Theme.Space.m)
-        .padding(.bottom, Theme.Space.xs)
     }
 }
 
-/// CUSTOM: macOS has no page control. Each dot is a real button with its own
-/// click area, label and keyboard focus.
-struct PageDots: View {
+/// CUSTOM: macOS has no page control. One icon per page in a glass capsule;
+/// the current one carries the accent, the pointer brightens the others, and
+/// a name appears after a moment under the pointer.
+struct PageTabs: View {
     @Binding var page: Page?
 
     var body: some View {
         HStack(spacing: 0) {
             ForEach(Page.allCases) { item in
-                Button {
-                    page = item
-                } label: {
-                    Circle()
-                        .fill(isCurrent(item) ? Theme.Colors.accent : Theme.Colors.controlBorder)
-                        .frame(width: Theme.Size.pageDot, height: Theme.Size.pageDot)
-                        .frame(width: Theme.Size.pageDotTarget, height: Theme.Size.pageDotTarget)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help(item.title)
-                .accessibilityLabel(item.title)
-                .accessibilityAddTraits(isCurrent(item) ? .isSelected : [])
+                PageTab(item: item, isCurrent: isCurrent(item)) { page = item }
             }
         }
         .padding(.horizontal, Theme.Space.xxs)
@@ -124,6 +114,78 @@ struct PageDots: View {
 
     private func isCurrent(_ item: Page) -> Bool {
         (page ?? .vibe) == item
+    }
+}
+
+private struct PageTab: View {
+    let item: Page
+    let isCurrent: Bool
+    let select: () -> Void
+
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: select) {
+            Image(systemName: item.symbol)
+                .font(Theme.Text.caption)
+                .foregroundStyle(isCurrent ? Theme.Colors.accentText : hovering ? Theme.Colors.text : Theme.Colors.textMuted)
+                .frame(width: Theme.Size.pageTabTarget, height: Theme.Size.pageDotTarget)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(PressableStyle())
+        .onHover { hovering = $0 }
+        .animation(.easeOut(duration: Theme.Motion.feedback), value: hovering)
+        .tooltip(item.title, shown: hovering)
+        .accessibilityLabel(item.title)
+        .accessibilityAddTraits(isCurrent ? .isSelected : [])
+    }
+}
+
+/// CUSTOM: a name under a control, after the pointer has rested on it for a
+/// moment. The system tooltip cannot be told when to appear.
+private struct Tooltip: ViewModifier {
+    let text: String
+    let shown: Bool
+
+    @State private var visible = false
+    @State private var wait: Task<Void, Never>?
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(alignment: .bottom) {
+                if visible {
+                    Text(text)
+                        .font(Theme.Text.caption)
+                        .foregroundStyle(Theme.Colors.text)
+                        .padding(.horizontal, Theme.Space.xs)
+                        .padding(.vertical, Theme.Space.xxs)
+                        .background(Theme.Colors.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.s))
+                        .overlay(RoundedRectangle(cornerRadius: Theme.Radius.s).strokeBorder(Theme.Colors.border))
+                        .fixedSize()
+                        .offset(y: -(Theme.Size.pageDotTarget + Theme.Space.xxs))
+                        .transition(.opacity)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+            }
+            .animation(.easeOut(duration: Theme.Motion.feedback), value: visible)
+            .onChange(of: shown) { _, isShown in
+                wait?.cancel()
+                if isShown {
+                    wait = Task {
+                        try? await Task.sleep(for: .seconds(Theme.Motion.tooltipDelay))
+                        if !Task.isCancelled { visible = true }
+                    }
+                } else {
+                    visible = false
+                }
+            }
+    }
+}
+
+extension View {
+    func tooltip(_ text: String, shown: Bool) -> some View {
+        modifier(Tooltip(text: text, shown: shown))
     }
 }
 

@@ -268,6 +268,20 @@ struct Record: View {
                         .padding(size * CGFloat(ring) * Theme.Size.recordGrooveStep)
                 }
             }
+            // A soft light across the surface, as on real vinyl. The disc is
+            // otherwise symmetrical, and its turning would be invisible.
+            if size >= Theme.Size.artworkLarge / 2 {
+                Circle()
+                    .fill(AngularGradient(stops: [
+                        .init(color: .clear, location: 0), // tokens-ok: transparency, not a colour
+                        .init(color: Theme.Colors.recordGroove.opacity(Theme.Opacity.sheen), location: 0.12),
+                        .init(color: .clear, location: 0.26),
+                        .init(color: .clear, location: 0.5),
+                        .init(color: Theme.Colors.recordGroove.opacity(Theme.Opacity.sheen / 2), location: 0.62),
+                        .init(color: .clear, location: 0.74),
+                        .init(color: .clear, location: 1),
+                    ], center: .center))
+            }
             Circle()
                 .fill(Theme.Colors.accent)
                 .frame(width: size * Theme.Size.recordLabelRatio, height: size * Theme.Size.recordLabelRatio)

@@ -51,8 +51,8 @@ struct VibePage: View {
             .padding(.horizontal, Theme.Space.m)
             .padding(.top, Theme.Space.xxs)
             .padding(.bottom, Theme.Space.xs)
+            .background(OverlayScrollers())
         }
-        .scrollIndicators(.automatic)
         .sheet(item: $editing) { mood in
             MoodEditor(mood: mood, playlists: player.playlists) { saved in
                 player.save(saved)

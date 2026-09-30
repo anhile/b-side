@@ -52,8 +52,8 @@ enum Theme {
     enum Size {
         static let window = CGSize(width: 320, height: 440)
         static let titleBar: CGFloat = 28
-        static let pageDot: CGFloat = 6
         static let pageDotTarget: CGFloat = 24
+        static let pageTabTarget: CGFloat = 28
         /// Two columns inside the window padding, with one gutter.
         static let tileWidth: CGFloat = (window.width - 2 * Space.m - Space.s) / 2
         static let tileHeight: CGFloat = 96
@@ -97,20 +97,23 @@ enum Theme {
         static let pressed: Double = 0.7
         static let disabled: Double = 0.35
         static let groove: Double = 0.18
+        /// The light on the record's surface, which makes its turning visible.
+        static let sheen: Double = 0.22
         static let skeletonDim: Double = 0.5
     }
 
     enum Motion {
         static let feedback: Double = 0.15
+        static let tooltipDelay: Double = 1.5
         static let page: Double = 0.3
         /// Half a cycle of a skeleton's breathing.
         static let breathe: Double = 0.9
         /// One turn of the record.
         static let recordTurn: Double = 4
         /// The strip's title, when it does not fit: points per second, the
-        /// pause before each pass, and where the fade at the right edge starts.
+        /// pause before each pass, and the share of the width that fades at an edge.
         static let marqueeSpeed: Double = 24
         static let marqueePause: Double = 2
-        static let marqueeFade: Double = 0.92
+        static let marqueeFade: Double = 0.12
     }
 }

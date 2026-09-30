@@ -8,7 +8,11 @@ struct MenuBarMenu: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        Text(nowPlayingLine)
+        // A system menu cannot scroll text, so the lines are cut to a width.
+        Text(Self.clip(titleLine))
+        if !artistLine.isEmpty {
+            Text(Self.clip(artistLine))
+        }
         Divider()
         Button(player.state.isPlaying ? "Pause" : "Play") { player.togglePlayPause() }
         Button("Next") { player.next() }
@@ -42,11 +46,20 @@ struct MenuBarMenu: View {
             .keyboardShortcut("q", modifiers: .command)
     }
 
-    private var nowPlayingLine: String {
+    private var titleLine: String {
         guard player.hasTrack else { return "Nothing playing" }
         if player.state.isAd { return "Advertisement" }
-        let title = player.state.title.isEmpty ? "Loading…" : player.state.title
-        return player.state.artist.isEmpty ? title : "\(title) — \(player.state.artist)"
+        return player.state.title.isEmpty ? "Loading…" : player.state.title
+    }
+
+    private var artistLine: String {
+        player.hasTrack && !player.state.isAd ? player.state.artist : ""
+    }
+
+    private static let menuLineLength = 40
+
+    private static func clip(_ text: String) -> String {
+        text.count > menuLineLength ? text.prefix(menuLineLength - 1).trimmingCharacters(in: .whitespaces) + "…" : text
     }
 }
 

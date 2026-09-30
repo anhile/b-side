@@ -30,6 +30,21 @@ extension View {
     }
 }
 
+/// Thin scrollers that show only while scrolling, whatever the system's
+/// "Show scroll bars" setting: the window is too narrow for the wide kind.
+/// Put it in the background of a ScrollView's content.
+struct OverlayScrollers: NSViewRepresentable {
+    final class View: NSView {
+        override func viewDidMoveToSuperview() {
+            super.viewDidMoveToSuperview()
+            enclosingScrollView?.scrollerStyle = .overlay
+        }
+    }
+
+    func makeNSView(context: Context) -> View { View() }
+    func updateNSView(_ nsView: View, context: Context) {}
+}
+
 /// Snapshots cannot set the system's Reduce Transparency; this stands in.
 private struct PreviewReduceTransparencyKey: EnvironmentKey {
     static let defaultValue = false

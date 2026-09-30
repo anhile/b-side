@@ -75,8 +75,8 @@ struct PlaylistsPage: View {
             // padding brings its content to the 16 window padding.
             .padding(.horizontal, Theme.Space.xs)
             .padding(.bottom, Theme.Space.xs)
+            .background(OverlayScrollers())
         }
-        .scrollIndicators(.automatic)
     }
 }
 
