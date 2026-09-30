@@ -1,0 +1,40 @@
+2026-09-30T15:21:38	paused	round start
+2026-09-30T11:21:39.252Z	paused	home	launch pid 19450
+2026-09-30T11:21:39.274Z	paused	home	state playing
+2026-09-30T11:21:39.798Z	paused	home	state paused
+2026-09-30T11:21:41.317Z	paused	intruder	launch pid 19460
+2026-09-30T11:21:41.335Z	paused	intruder	state playing
+2026-09-30T11:21:43.435Z	paused	intruder	state paused
+2026-09-30T11:21:49.063Z	paused	intruder	command toggle
+2026-09-30T15:21:53	paused	round end, home: none, other: toggle, Music: no
+2026-09-30T15:21:54	quit-paused	round start
+2026-09-30T11:21:54.473Z	quit-paused	home	launch pid 19508
+2026-09-30T11:21:54.488Z	quit-paused	home	state playing
+2026-09-30T11:21:55.015Z	quit-paused	home	state paused
+2026-09-30T11:21:56.547Z	quit-paused	intruder	launch pid 19517
+2026-09-30T11:21:56.567Z	quit-paused	intruder	state playing
+2026-09-30T11:21:58.668Z	quit-paused	intruder	state paused
+2026-09-30T11:22:06.672Z	quit-paused	home	command toggle
+2026-09-30T15:22:10	quit-paused	round end, home: toggle, other: none, Music: no
+2026-09-30T15:22:11	quit-playing	round start
+2026-09-30T11:22:11.760Z	quit-playing	home	launch pid 19572
+2026-09-30T11:22:11.775Z	quit-playing	home	state playing
+2026-09-30T11:22:12.300Z	quit-playing	home	state paused
+2026-09-30T11:22:13.856Z	quit-playing	intruder	launch pid 19581
+2026-09-30T11:22:13.874Z	quit-playing	intruder	state playing
+2026-09-30T11:22:20.938Z	quit-playing	home	command toggle
+2026-09-30T15:22:27	quit-playing	round end, home: toggle, other: none, Music: no
+2026-09-30T15:22:28	cleared	round start
+2026-09-30T11:22:29.104Z	cleared	home	launch pid 19633
+2026-09-30T11:22:29.124Z	cleared	home	state playing
+2026-09-30T11:22:29.649Z	cleared	home	state paused
+2026-09-30T11:22:31.152Z	cleared	intruder	launch pid 19641
+2026-09-30T11:22:31.168Z	cleared	intruder	state playing
+2026-09-30T11:22:33.269Z	cleared	intruder	state cleared
+2026-09-30T11:22:39.908Z	cleared	intruder	command toggle
+2026-09-30T15:22:42	cleared	round end, home: none, other: toggle, Music: no
+2026-09-30T15:22:43	browser	round start
+2026-09-30T11:22:44.331Z	browser	home	launch pid 19691
+2026-09-30T11:22:44.357Z	browser	home	state playing
+2026-09-30T11:22:44.881Z	browser	home	state paused
+2026-09-30T15:23:47	browser	round end, home: none, other: (browser, not observable), Music: no

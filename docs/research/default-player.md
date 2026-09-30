@@ -243,9 +243,30 @@ not run any of them; each needs your go-ahead, and some need your hands
    For B-Side (option A): report `.playing` then `.paused` once at launch.
    Not tested: whether this survives a long idle period, sleep, or another app
    playing in between (that is experiment 2).
-2. **App stack.** B-Side paused → Spotify or a Safari tab plays → that app quits
-   or pauses → press Play. Does the command return to B-Side or start Music?
-   B-Side's log shows `remote system …` if it arrives. *Needs you.*
+2. **App stack. Done 2026-09-30** on macOS 27.0.1, one F8 press per round.
+   A "home" spike claimed the key as B-Side does, then another player took it
+   ([spike](../../spikes/default-player/README.md)):
+
+   | What the other player did before the press | Home got | Other got | Music launched |
+   |---|---|---|---|
+   | played, paused, stayed open | — | toggle | no |
+   | played, paused, quit | toggle | — | no |
+   | played, quit while playing | toggle | — | no |
+   | played, cleared its Now Playing info, set `.stopped`, disabled its commands, stayed open | — | toggle | no |
+   | a real browser tab played for about 5 s and was closed; the browser stayed open | — | (not observable) | no |
+
+   The last app that reported playing keeps the Play key for as long as it
+   runs, paused or not. Clearing its info and disabling its commands does not
+   give the key back, so AntiMusic's way of stepping aside does not work on 27.
+   When that app quits, the key returns to the app that had it before: there
+   is a stack, and Music is not involved. A browser keeps the key after its
+   tab is closed, presumably because the browser itself is still running.
+
+   For B-Side: after Spotify or a browser has played, Play goes to them until
+   they quit; then it comes back to B-Side by itself. B-Side cannot take the
+   key back while they run, except by reporting `.playing` again. That would
+   take over from a player the user chose more recently, so it should happen
+   only on an explicit action (starting playback in B-Side already does it).
 3. **AirPods.** Connect, take out, put in, press the stem, all with B-Side paused
    and with B-Side not running. Which commands arrive (`play`, `toggle`,
    nothing), and when does Music start? *Needs you and AirPods.*
