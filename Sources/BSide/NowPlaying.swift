@@ -61,7 +61,25 @@ final class NowPlaying {
             (event as? MPChangePlaybackPositionCommandEvent).map { .seek($0.positionTime) }
         }
         update(lastState)
+        claimPlayKey()
     }
+
+    /// The system sends Play only to an app that has reported `.playing` at
+    /// least once; `.paused` and track info alone leave Play to Apple Music
+    /// (experiment 1 in docs/research/default-player.md, macOS 27). So right
+    /// after launch, before anything has played, B-Side reports a moment of
+    /// playing, then its real state: the same sequence the experiment tested.
+    private func claimPlayKey() {
+        guard !lastState.isPlaying else { return }
+        MPNowPlayingInfoCenter.default().playbackState = .playing
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.claimDuration) { [weak self] in
+            guard let self, self.registered else { return }
+            self.update(self.lastState)
+            EventLog.write("remote\tclaimed the Play key")
+        }
+    }
+
+    private static let claimDuration: TimeInterval = 0.5
 
     private func unregister() {
         guard registered else { return }
