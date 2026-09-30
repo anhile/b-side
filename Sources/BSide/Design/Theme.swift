@@ -54,8 +54,10 @@ enum Theme {
         static let titleBar: CGFloat = 28
         static let pageDot: CGFloat = 6
         static let pageDotTarget: CGFloat = 24
-        static let heroButton: CGFloat = 96
-        static let heroGlyph: CGFloat = 36
+        /// Two columns inside the window padding, with one gutter.
+        static let tileWidth: CGFloat = (window.width - 2 * Space.m - Space.s) / 2
+        static let tileHeight: CGFloat = 96
+        static let editorWidth: CGFloat = 300
         static let artworkSmall: CGFloat = 36
         static let artworkStrip: CGFloat = 24
         static let artworkLarge: CGFloat = 160

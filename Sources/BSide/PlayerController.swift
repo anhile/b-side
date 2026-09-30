@@ -42,8 +42,10 @@ final class PlayerController: NSObject, ObservableObject {
     @Published private(set) var phase = PlayerPhase.starting
     @Published private(set) var account = Account.unknown
     @Published private(set) var source: PlaySource?
-    /// The Vibe tiles. Editing and saving them comes with the Vibe page.
-    @Published private(set) var moods: [Mood] = [.liked]
+    /// The Vibe tiles, in the user's order. Saved on every change.
+    @Published private(set) var moods: [Mood] = Mood.load() {
+        didSet { if moods != oldValue { Mood.save(moods) } }
+    }
     @Published private(set) var playlists: [Playlist] = []
     @Published private(set) var playlistsState = Loadable.idle
     /// The last thing that went wrong while loading or playing, for the user.
@@ -96,9 +98,11 @@ final class PlayerController: NSObject, ObservableObject {
     static func fixture(state: PlayerState = PlayerState(), account: Account = .signedIn(name: "", handle: "@bside"),
                         phase: PlayerPhase = .ready, source: PlaySource? = nil,
                         playlists: [Playlist] = [], playlistsState: Loadable = .loaded,
-                        problem: String? = nil, volume: Double = 70) -> PlayerController {
+                        problem: String? = nil, volume: Double = 70,
+                        moods: [Mood] = [.liked]) -> PlayerController {
         let controller = PlayerController()
         controller.started = true
+        controller.moods = moods
         controller.state = state
         controller.stateDate = Date()
         controller.account = account
@@ -237,6 +241,19 @@ final class PlayerController: NSObject, ObservableObject {
 
     func play(_ mood: Mood) {
         load(mood.target, from: .mood(mood.id), startAt: nil)
+    }
+
+    /// Adds a tile, or replaces the one with the same id.
+    func save(_ mood: Mood) {
+        if let index = moods.firstIndex(where: { $0.id == mood.id }) {
+            moods[index] = mood
+        } else {
+            moods.append(mood)
+        }
+    }
+
+    func remove(_ mood: Mood) {
+        moods.removeAll { $0.id == mood.id }
     }
 
     func play(_ playlist: Playlist) {

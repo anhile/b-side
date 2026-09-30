@@ -41,7 +41,9 @@ Status: passed the rubric on 2026-09-30, iteration 2 (design/audit).
   (one "Add a mood" tile) / error / long name (two lines, then truncation)
 - Entry and exit: first dot, Command-1, the page the app opens on
 
-Status: not started; the interim page has one Play button.
+Status: passed the rubric on 2026-09-30, iteration 2. Tiles are saved in
+UserDefaults as JSON (`moods`); the editor is a sheet with system controls.
+The playing tile shows an orange speaker in place of its source icon.
 
 ## Screen: Playlists
 

@@ -46,7 +46,7 @@ A 320 by 440 window with three pages, designed as in [DESIGN.md](DESIGN.md).
 
 | Where | What it does |
 |---|---|
-| **Vibe** page | One button: plays Liked Music in random order (mood tiles are next) |
+| **Vibe** page | Your mood tiles in two columns. A tile plays a playlist (in order or shuffled), Liked Music shuffled, or the radio of a track. The plus tile adds one; right-click edits or removes |
 | **Playlists** page | Your playlists, private ones included. Click one to play it |
 | **Now Playing** page | Artwork with the record behind it, title, artist, position, volume, Previous, Play or Pause, Next |
 | Strip under Vibe and Playlists | The current track and a pause button; click it to open Now Playing |

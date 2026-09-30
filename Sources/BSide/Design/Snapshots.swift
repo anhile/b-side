@@ -13,6 +13,13 @@ enum Snapshots {
         title: "Plug Walk", artist: "Rich The Kid", artworkURL: artwork, videoID: "x",
         position: 4, duration: 175, isPlaying: true, isAd: false, queueIndex: 3, queueCount: 50, queueHasMore: true)
 
+    private static let moods = [
+        Mood.liked,
+        Mood(id: "focus", name: "Focus", source: .playlist(id: "1", shuffled: false)),
+        Mood(id: "night", name: "Night drive with a long name", source: .playlist(id: "2", shuffled: true)),
+        Mood(id: "radio", name: "Like Plug Walk", source: .radio(videoID: "x")),
+    ]
+
     /// Name, page, and the situation to show.
     private static var cases: [(String, Page, PlayerController)] {
         var paused = track; paused.isPlaying = false
@@ -37,7 +44,12 @@ enum Snapshots {
             ("nowplaying-empty", .nowPlaying, .fixture(playlists: lists)),
             ("nowplaying-signedout", .nowPlaying, .fixture(account: .signedOut)),
             ("nowplaying-failed", .nowPlaying, .fixture(phase: .failed("YouTube Music could not be loaded. Check the connection and try again."))),
-            ("vibe-playing", .vibe, .fixture(state: track, source: .mood(Mood.liked.id), playlists: lists)),
+            ("vibe-playing", .vibe, .fixture(state: track, source: .mood("focus"), playlists: lists, moods: moods)),
+            ("vibe-one", .vibe, .fixture(playlists: lists)),
+            ("vibe-none", .vibe, .fixture(playlists: lists, moods: [])),
+            ("vibe-many", .vibe, .fixture(state: track, source: .mood("m3"), playlists: lists, moods: moods + (1...5).map {
+                Mood(id: "m\($0)", name: "Mood \($0)", source: .playlist(id: "1", shuffled: $0 % 2 == 0))
+            })),
             ("vibe-problem", .vibe, .fixture(state: paused, source: .mood(Mood.liked.id), playlists: lists,
                                             problem: "This could not be played. It may be empty or unavailable.")),
             ("playlists-playing", .playlists, .fixture(state: track, source: .playlist("1"), playlists: lists)),
