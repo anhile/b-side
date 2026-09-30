@@ -73,8 +73,10 @@ enum Theme {
         static let rowHeight: CGFloat = 44
         static let stripHeight: CGFloat = 44
         static let transportTarget: CGFloat = 32
-        static let transportGlyph: CGFloat = 18
-        static let playGlyph: CGFloat = 28
+        static let transportGlyph: CGFloat = 15
+        static let playGlyph: CGFloat = 22
+        /// Every element of the transport row: the capsule and the circles.
+        static let transportBar: CGFloat = 40
         static let volumeGlyph: CGFloat = 20
         static let volumeSlider: CGFloat = 120
         static let settingsWidth: CGFloat = 460

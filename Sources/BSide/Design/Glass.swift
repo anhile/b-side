@@ -12,10 +12,9 @@ struct GlassSurface<S: InsettableShape>: ViewModifier {
 
     func body(content: Content) -> some View {
         if reduceTransparency || previewReduceTransparency {
-            content.background(
-                shape.fill(Theme.Colors.surface)
-                    .overlay(shape.strokeBorder(Theme.Colors.controlBorder))
-            )
+            content
+                .background(shape.fill(Theme.Colors.surface))
+                .overlay(shape.strokeBorder(Theme.Colors.controlBorder).allowsHitTesting(false))
         } else if #available(macOS 26, *) {
             content.glassEffect(.regular, in: shape)
         } else {

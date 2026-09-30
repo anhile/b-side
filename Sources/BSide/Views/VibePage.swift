@@ -45,8 +45,8 @@ struct VibePage: View {
                     AddTile(isFirst: player.moods.isEmpty)
                 }
                 .buttonStyle(TileButtonStyle())
-                .help("Add a mood")
-                .accessibilityLabel("Add a mood")
+                .help("Add a vibe")
+                .accessibilityLabel("Add a vibe")
             }
             .padding(.horizontal, Theme.Space.m)
             .padding(.top, Theme.Space.xxs)
@@ -115,7 +115,7 @@ struct AddTile: View {
                 .font(Theme.Text.title)
                 .foregroundStyle(Theme.Colors.textMuted)
             if isFirst {
-                Text("Add a mood")
+                Text("Add a vibe")
                     .font(Theme.Text.caption)
                     .foregroundStyle(Theme.Colors.textMuted)
             }

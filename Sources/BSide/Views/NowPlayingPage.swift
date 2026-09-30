@@ -62,26 +62,33 @@ struct NowPlayingPage: View {
         player.state.isAd ? player.state.title : player.state.artist
     }
 
+    /// The record alone, and the two ways to start: the same words and icons
+    /// as the pages they lead to.
     private var nothingPlaying: some View {
-        VStack(spacing: Theme.Space.xs) {
-            Spacer()
+        VStack(spacing: 0) {
+            Spacer(minLength: Theme.Space.m)
             Record(size: Theme.Size.artworkLarge, spinning: false)
-                .padding(.bottom, Theme.Space.m)
+            Spacer(minLength: Theme.Space.l)
             Text("Nothing playing")
-                .font(Theme.Text.title)
+                .font(Theme.Text.display)
                 .foregroundStyle(Theme.Colors.text)
-            Text("Pick a mood or a playlist.")
+            Text("Pick a vibe or a playlist")
                 .font(Theme.Text.caption)
                 .foregroundStyle(Theme.Colors.textMuted)
+                .padding(.top, Theme.Space.xxs)
             HStack(spacing: Theme.Space.xs) {
-                Button("Play Vibe") { player.playVibe() }
-                    .buttonStyle(FilledButtonStyle())
-                    .disabled(!player.account.isSignedIn)
-                Button("Choose a Playlist") { navigation.page = .playlists }
-                    .buttonStyle(OutlineButtonStyle())
+                Button { player.playVibe() } label: {
+                    Label("Play Vibe", systemImage: Page.vibe.symbol)
+                }
+                .buttonStyle(FilledButtonStyle())
+                .disabled(!player.account.isSignedIn)
+                Button { navigation.page = .playlists } label: {
+                    Label("Playlists", systemImage: Page.playlists.symbol)
+                }
+                .buttonStyle(OutlineButtonStyle())
             }
-            .padding(.top, Theme.Space.xs)
-            Spacer()
+            .padding(.top, Theme.Space.m)
+            Spacer(minLength: Theme.Space.l)
         }
         .frame(maxWidth: .infinity)
     }
@@ -116,8 +123,9 @@ struct NowPlayingPage: View {
         }
     }
 
-    /// Previous, Play and Next share one glass capsule; the speaker has its
-    /// own circle on the left. The capsule is centred in the page.
+    /// Previous, Play and Next share one glass capsule, centred; the speaker
+    /// has its own circle on the left and the track menu one on the right.
+    /// All three are the same height.
     private var transport: some View {
         HStack(spacing: Theme.Space.m) {
             TransportButton(symbol: "backward.fill", label: "Previous") { player.previous() }
@@ -128,10 +136,31 @@ struct NowPlayingPage: View {
                 .disabled(!player.state.hasNext)
         }
         .padding(.horizontal, Theme.Space.xs)
-        .padding(.vertical, Theme.Space.xxs)
+        .frame(height: Theme.Size.transportBar)
         .glass(in: Capsule())
         .frame(maxWidth: .infinity)
         .overlay(alignment: .leading) { volumeButton }
+        .overlay(alignment: .trailing) { trackMenu }
+    }
+
+    /// What can be done with the track itself. One thing so far.
+    private var trackMenu: some View {
+        Menu {
+            Button(player.state.isLiked ? "Remove Like" : "Like") { player.toggleLike() }
+                .disabled(player.state.isAd)
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: Theme.Size.transportGlyph, weight: .semibold))
+                .foregroundStyle(Theme.Colors.text)
+                .frame(width: Theme.Size.transportBar, height: Theme.Size.transportBar)
+                .contentShape(Circle())
+        }
+        .menuStyle(.button)
+        .buttonStyle(PressableStyle())
+        .menuIndicator(.hidden)
+        .glass(in: Circle())
+        .help("More")
+        .accessibilityLabel("More")
     }
 
     /// The speaker opens a small vertical slider above it, as in YouTube Music.
@@ -141,7 +170,7 @@ struct NowPlayingPage: View {
             // it, and toggling would open it again.
             showsVolume = true
         }
-        .padding(Theme.Space.xxs)
+        .frame(width: Theme.Size.transportBar, height: Theme.Size.transportBar)
         .glass(in: Circle())
         .help("Volume: \(Int(player.volume))%")
         .accessibilityValue("\(Int(player.volume)) percent")

@@ -292,6 +292,15 @@ final class PlayerController: NSObject, ObservableObject {
         assume(playing: false)
     }
 
+    /// Likes the current track, or takes the like back. Shown at once; the
+    /// page confirms.
+    func toggleLike() {
+        guard hasTrack else { return }
+        let on = !state.isLiked
+        bridge.call("like", state.videoID, on)
+        state.like = on ? "LIKE" : "INDIFFERENT"
+    }
+
     private func assume(playing: Bool) {
         guard hasTrack else { return }
         expected = (playing, Date().addingTimeInterval(Self.expectationWindow))
@@ -505,6 +514,8 @@ final class PlayerController: NSObject, ObservableObject {
                 problem = "This could not be played. It may be empty or unavailable."
             } else if detail.hasPrefix("player error") {
                 problem = "This track could not be played."
+            } else if detail.hasPrefix("like") {
+                problem = "The like could not be saved."
             }
         default:
             status = "\(kind): \(detail)"

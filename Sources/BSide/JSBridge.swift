@@ -14,6 +14,10 @@ struct PlayerState: Equatable {
     var queueCount = 0
     /// The queue has more pages that are not loaded yet.
     var queueHasMore = false
+    /// "LIKE", "INDIFFERENT", or "" when unknown.
+    var like = ""
+
+    var isLiked: Bool { like == "LIKE" }
 
     var hasPrevious: Bool { queueIndex > 0 }
     var hasNext: Bool { queueIndex >= 0 && (queueIndex < queueCount - 1 || queueHasMore) }
@@ -84,6 +88,7 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
             state.queueIndex = (body["queueIndex"] as? NSNumber)?.intValue ?? -1
             state.queueCount = (body["queueCount"] as? NSNumber)?.intValue ?? 0
             state.queueHasMore = body["queueHasMore"] as? Bool ?? false
+            state.like = body["like"] as? String ?? ""
             onState?(state)
         case "account":
             let signedIn = body["signedIn"] as? Bool ?? false

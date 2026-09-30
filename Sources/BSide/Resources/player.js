@@ -41,6 +41,10 @@
   const LIBRARY_ITEM = 'musicTwoRowItemRenderer';      // one tile in that list
   const PLAYLIST_BROWSE_PREFIX = 'VL';  // a playlist's browse ID is 'VL' + its playlist ID
   const ACCOUNT_ENDPOINT = '/youtubei/v1/account/account_menu?prettyPrint=false';
+  const LIKE_ENDPOINT = '/youtubei/v1/like/like?prettyPrint=false';
+  const UNLIKE_ENDPOINT = '/youtubei/v1/like/removelike?prettyPrint=false';
+  const LIKE_KEY = 'likeStatus';        // inside a queue item: 'LIKE' or 'INDIFFERENT'
+  const LIKED = 'LIKE';
   const ACCOUNT_HEADER = 'activeAccountHeaderRenderer'; // carries accountName, channelHandle, accountPhoto (no email)
   const AVATAR_MIN_WIDTH = 64;
   const AUTH_COOKIES = ['SAPISID', '__Secure-3PAPISID'];
@@ -101,6 +105,7 @@
       queueIndex: queueIndex,
       queueCount: queue.length,
       queueHasMore: !!queueContinuation,
+      like: known.like || '',
       position: player.getCurrentTime() || 0,
       duration: isFinite(duration) ? duration : 0,
       playing: state === PLAYING || state === BUFFERING,
@@ -297,6 +302,7 @@
       title: find(chosen.title, 'text') || '',
       artist: find(chosen.shortBylineText, 'text') || find(chosen.longBylineText, 'text') || '',
       artwork: thumbnail(chosen.thumbnail),
+      like: find(chosen, LIKE_KEY) || '', // '' when the item does not say
     };
   }
 
@@ -417,6 +423,13 @@
     },
     playlists() {
       playlists().catch(function (e) { event('error', 'playlists: ' + e); });
+    },
+    like(videoId, on) {
+      api(on ? LIKE_ENDPOINT : UNLIKE_ENDPOINT, { target: { videoId: videoId } }).then(function () {
+        queue.forEach(function (entry) { if (entry.id === videoId) entry.like = on ? LIKED : 'INDIFFERENT'; });
+        event('like', videoId + (on ? ' liked' : ' unliked'));
+        report();
+      }).catch(function (e) { event('error', 'like: ' + e); });
     },
     report: report,
   };
