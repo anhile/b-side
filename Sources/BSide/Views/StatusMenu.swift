@@ -89,13 +89,10 @@ private struct StatusMenuHead: View {
 
     var body: some View {
         VStack(spacing: Theme.Space.xs) {
-            HStack(spacing: Theme.Space.xs) {
-                Artwork(url: player.state.artworkURL, size: Theme.Size.artworkSmall)
-                VStack(alignment: .leading, spacing: 0) {
-                    MarqueeText(text: title, font: Theme.Text.body, color: .primary) // tokens-ok: system menu
-                    if !artist.isEmpty {
-                        MarqueeText(text: artist, font: Theme.Text.caption, color: .secondary) // tokens-ok: system menu
-                    }
+            VStack(spacing: 0) {
+                MarqueeText(text: title, font: Theme.Text.body, color: .primary, centered: true) // tokens-ok: system menu
+                if !artist.isEmpty {
+                    MarqueeText(text: artist, font: Theme.Text.caption, color: .secondary, centered: true) // tokens-ok: system menu
                 }
             }
             HStack(spacing: Theme.Space.l) {

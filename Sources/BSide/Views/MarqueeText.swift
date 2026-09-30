@@ -11,6 +11,8 @@ struct MarqueeText: View {
     let text: String
     let font: Font
     let color: Color
+    /// Where the text sits when it fits. Scrolling always starts at the left.
+    var centered = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -20,8 +22,9 @@ struct MarqueeText: View {
                 .font(font)
                 .foregroundStyle(color)
                 .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: centered ? .center : .leading)
         } else {
-            MarqueeHost(text: text, font: font, color: color)
+            MarqueeHost(text: text, font: font, color: color, centered: centered)
                 .accessibilityLabel(text)
         }
     }
@@ -31,12 +34,14 @@ private struct MarqueeHost: NSViewRepresentable {
     let text: String
     let font: Font
     let color: Color
+    let centered: Bool
 
     func makeNSView(context: Context) -> MarqueeView {
         MarqueeView()
     }
 
     func updateNSView(_ view: MarqueeView, context: Context) {
+        view.centered = centered
         view.set(text: text, font: font, color: color)
     }
 
@@ -46,6 +51,9 @@ private struct MarqueeHost: NSViewRepresentable {
 }
 
 final class MarqueeView: NSView {
+    var centered = false {
+        didSet { if centered != oldValue { configured = nil; needsLayout = true } }
+    }
     private var text = ""
     private var font: Font = .body
     private var color: Color = .primary // tokens-ok: replaced before the first draw
@@ -98,7 +106,8 @@ final class MarqueeView: NSView {
             : AnyView(line(text))
         let label = NSHostingView(rootView: root)
         label.wantsLayer = true
-        label.frame = NSRect(x: 0, y: 0, width: overflows ? textWidth * 2 + gap : width, height: bounds.height)
+        let x = !overflows && centered ? (width - textWidth) / 2 : 0
+        label.frame = NSRect(x: x, y: 0, width: overflows ? textWidth * 2 + gap : textWidth, height: bounds.height)
         addSubview(label)
         self.label = label
         guard overflows else { return }
