@@ -7,6 +7,7 @@ enum Keys {
     static let forceAudioOnly = "forceAudioOnly"
     static let volume = "volume"                 // 0 to 100
     static let moods = "moods"                   // the Vibe tiles, JSON
+    static let wasSignedIn = "wasSignedIn"       // greet with "Welcome back" while the player loads
     // Launch arguments only, e.g. `open B-Side.app --args -play <id> -muted YES`
     static let play = "play"
     static let vibe = "vibe"                     // start Vibe (Liked Music, shuffled) at launch

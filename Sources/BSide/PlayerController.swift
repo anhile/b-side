@@ -16,6 +16,9 @@ enum Account: Equatable {
 }
 
 enum PlayerPhase: Equatable {
+    /// Started in the menu bar: registered for the media keys, but the page
+    /// is not loaded until the first Play or until the window is shown.
+    case asleep
     case starting
     case ready
     case failed(String)
@@ -179,6 +182,7 @@ final class PlayerController: NSObject, ObservableObject {
         window.center()
 
         nowPlaying.onCommand = { [weak self] in self?.receive($0, via: "system") }
+        MainWindow.onShow = { [weak self] in self?.wake() }
         applyNowPlayingSetting()
 
         sampleProcesses()
@@ -199,9 +203,34 @@ final class PlayerController: NSObject, ObservableObject {
             } else if let input = Settings.defaults.string(forKey: Keys.play), let target = PlayTarget(input) {
                 load(target, from: .other, startAt: nil)
             } else {
-                loadHome()
+                // Wait for the launch to be classified: AppDelegate knows
+                // whether this is a start in the menu bar.
+                MainWindow.whenLaunched { [weak self] inMenuBar in
+                    guard let self, self.phase == .starting, self.pendingTarget == nil else { return }
+                    if inMenuBar {
+                        self.phase = .asleep
+                        EventLog.write("page deferred until Play or the window")
+                    } else {
+                        self.loadHome()
+                    }
+                }
             }
         }
+    }
+
+    /// Loads the page after a start in the menu bar. The first Play does it
+    /// through `load`; showing the window or the menu does it here, since
+    /// the user is about to look at the account, playlists or Vibe tiles.
+    func wake() {
+        guard phase == .asleep else { return }
+        EventLog.write("wake")
+        loadHome()
+    }
+
+    /// The page is loading and there is nothing else to show yet: the window
+    /// shows the welcome screen instead of empty pages.
+    var showsWelcome: Bool {
+        !hasTrack && (phase == .asleep || phase == .starting)
     }
 
     private func installScripts() {
@@ -526,6 +555,7 @@ final class PlayerController: NSObject, ObservableObject {
             }
         }
         account = new
+        if new.isSignedIn { Settings.defaults.set(true, forKey: Keys.wasSignedIn) }
         if !new.isSignedIn {
             playlists = []
             playlistsState = .idle

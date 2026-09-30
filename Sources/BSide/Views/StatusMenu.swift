@@ -28,6 +28,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         guard let player else { return }
+        player.wake() // the menu lists playlists and tiles: load them
         menu.removeAllItems()
 
         let head = NSMenuItem()

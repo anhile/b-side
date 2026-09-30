@@ -76,7 +76,9 @@ The window is dragged by the empty strip at the top.
 menu bar, without its window or Dock icon. The Play key and AirPods then
 start B-Side instead of Apple Music: the system sends Play only to a running
 app, and with none it opens Music. Show B-Side in the menu, or opening the app
-again, brings the window back. Why and how this was measured:
+again, brings the window back. Until then the player page is not loaded
+(about 40 MB instead of 130): the first Play, the window or the menu loads it,
+which takes a few seconds behind a welcome screen. Why and how this was measured:
 [docs/research/default-player.md](docs/research/default-player.md).
 
 ## Build

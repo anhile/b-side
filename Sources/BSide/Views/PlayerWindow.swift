@@ -24,10 +24,21 @@ struct PlayerWindow: View {
                 .overlay(alignment: .trailing) {
                     PageTabs(page: $navigation.page)
                         .padding(.trailing, Theme.Space.xs)
+                        .opacity(player.showsWelcome ? 0 : 1)
+                        .allowsHitTesting(!player.showsWelcome)
                 }
                 .frame(height: topInset)
                 .glass(in: Rectangle())
-            pages
+            ZStack {
+                if player.showsWelcome {
+                    WelcomeScreen()
+                        .transition(.opacity)
+                } else {
+                    pages
+                        .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: Theme.Motion.page), value: player.showsWelcome)
                 .overlay(alignment: .bottom) {
                     footer
                         .padding(.bottom, Theme.Space.xs)

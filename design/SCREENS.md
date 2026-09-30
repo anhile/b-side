@@ -67,3 +67,17 @@ Status: passed the rubric on 2026-09-30, iteration 1. Liked Music uses the
 Artwork 24, "Title — Artist" in the caption role, a Play or Pause button.
 The line opens Now Playing. When something failed, the strip's place shows
 the message instead.
+
+## Welcome (while the player page loads)
+
+- User's job here: none; wait a moment
+- Primary action: none, nothing to press
+- Attention order: 1) the turning record 2) "Welcome back" ("Hello" before
+  the first sign-in) 3) "Getting the player ready"
+- States: shown while nothing plays and the page is asleep (after a start in
+  the menu bar) or starting; replaced by the pages with a cross-fade
+- Entry and exit: covers all three pages; the page icons are hidden. It ends
+  when the page reports ready or fails
+
+Status: built 2026-09-30. Laid out like "Nothing playing", with the buttons'
+height kept empty, so the record and the title stay put when it hands over.

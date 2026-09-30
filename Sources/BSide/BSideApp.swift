@@ -104,10 +104,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         // At login B-Side is there for the media keys, not to be looked at.
         let atLogin = LoginItem.launchedAtLogin()
-        if atLogin || Settings.bool(Keys.startHidden) {
+        let inMenuBar = atLogin || Settings.bool(Keys.startHidden)
+        if inMenuBar {
             EventLog.write("start in the menu bar\t\(atLogin ? "login item" : "launch argument")")
             MainWindow.startInMenuBar()
         }
+        MainWindow.launched(inMenuBar: inMenuBar)
     }
 
     /// Opening B-Side again from Finder, Spotlight or the Dock shows the

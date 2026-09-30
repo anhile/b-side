@@ -36,6 +36,27 @@ enum LoginItem {
 enum MainWindow {
     private(set) static weak var window: NSWindow?
     private static var hiddenAtLaunch = false
+    /// Nil until AppDelegate has classified the launch.
+    private static var launchedInMenuBar: Bool?
+    private static var waiting: [(Bool) -> Void] = []
+    /// Called whenever the window is shown from the menu bar or on reopen.
+    static var onShow: (() -> Void)?
+
+    /// AppDelegate's verdict, once per launch. The player starts before it
+    /// (SwiftUI builds the window first) and waits for it.
+    static func launched(inMenuBar: Bool) {
+        launchedInMenuBar = inMenuBar
+        waiting.forEach { $0(inMenuBar) }
+        waiting = []
+    }
+
+    static func whenLaunched(_ action: @escaping (Bool) -> Void) {
+        if let launchedInMenuBar {
+            action(launchedInMenuBar)
+        } else {
+            waiting.append(action)
+        }
+    }
 
     /// Called when the window's content is attached to it.
     static func attach(_ window: NSWindow) {
@@ -55,6 +76,7 @@ enum MainWindow {
     @discardableResult
     static func show() -> Bool {
         hiddenAtLaunch = false
+        onShow?()
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         guard let window else { return false }
