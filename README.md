@@ -61,7 +61,8 @@ and the swipe is off.
 |---|---|
 | Space | Play or pause. With nothing loaded it starts Vibe |
 | Command-Right, Command-Left | Next, previous |
-| Command-L | Play Vibe |
+| Command-L | Like the track, or take the like back |
+| Shift-Command-V | Play Vibe |
 | Command-Up, Command-Down | Volume up, down |
 | Option-Command-Down | Mute, unmute |
 | Command-comma | Settings |

@@ -48,6 +48,7 @@ final class NowPlaying {
     private func register() {
         guard !registered else { return }
         registered = true
+        EventLog.write("remote\tregistered for media keys")
         let center = MPRemoteCommandCenter.shared()
         add(center.playCommand) { _ in .play }
         add(center.pauseCommand) { _ in .pause }
@@ -75,6 +76,7 @@ final class NowPlaying {
         command.isEnabled = true
         command.addTarget { [weak self] event in
             guard let mapped = map(event) else { return .commandFailed }
+            EventLog.write("remote\t\(mapped)") // media keys and the Now Playing widget land here
             DispatchQueue.main.async { self?.onCommand?(mapped) }
             return .success
         }

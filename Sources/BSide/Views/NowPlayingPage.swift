@@ -146,8 +146,12 @@ struct NowPlayingPage: View {
     /// What can be done with the track itself. One thing so far.
     private var trackMenu: some View {
         Menu {
-            Button(player.state.isLiked ? "Remove Like" : "Like") { player.toggleLike() }
-                .disabled(player.state.isAd)
+            Button { player.toggleLike() } label: {
+                Label(player.state.isLiked ? "Remove Like" : "Like",
+                      systemImage: player.state.isLiked ? "heart.slash" : "heart")
+            }
+            .keyboardShortcut("l", modifiers: .command)
+            .disabled(player.state.isAd)
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: Theme.Size.transportGlyph, weight: .semibold))

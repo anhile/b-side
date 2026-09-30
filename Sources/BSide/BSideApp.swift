@@ -66,8 +66,15 @@ struct BSideApp: App {
                     .keyboardShortcut(.leftArrow, modifiers: .command)
                     .disabled(!player.hasTrack)
                 Divider()
+                Button { player.toggleLike() } label: {
+                    Label(player.state.isLiked ? "Remove Like" : "Like",
+                          systemImage: player.state.isLiked ? "heart.slash" : "heart")
+                }
+                .keyboardShortcut("l", modifiers: .command)
+                .disabled(!player.hasTrack || player.state.isAd)
+                Divider()
                 Button("Play Vibe") { player.playVibe() }
-                    .keyboardShortcut("l", modifiers: .command)
+                    .keyboardShortcut("v", modifiers: [.command, .shift])
                     .disabled(!player.account.isSignedIn)
                 Divider()
                 Button("Increase Volume") { player.adjustVolume(by: PlayerController.volumeStep) }
