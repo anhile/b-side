@@ -1,0 +1,20 @@
+tracks found: 39/40
+lyrics page: 39/39
+web plain: 32/39
+android 7.21.50 timed: 31/39
+android 8.30.54 timed: 31/39
+lrclib synced (any step): 36/39
+  raw metadata: 30/39
+  after cleanup: 3/39
+  by search: 3/39
+timed from either: 37/39
+  hip-hop: youtube 4/5, lrclib 5/5
+  k-pop: youtube 3/3, lrclib 3/3
+  latin: youtube 2/2, lrclib 2/2
+  live: youtube 0/2, lrclib 1/2
+  other: youtube 1/1, lrclib 1/1
+  pop: youtube 7/7, lrclib 7/7
+  rock-old: youtube 6/7, lrclib 7/7
+  russian: youtube 8/9, lrclib 8/9
+  video: youtube 0/3, lrclib 2/3
+offset youtube - lrclib, ms: median 0, min -1750, max 440, n 29

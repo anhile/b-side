@@ -1,8 +1,8 @@
 # Live (time-synced) lyrics in B-Side
 
-Research only, no code changes. Written 2026-09-30. Desk research so far:
-nothing below has been tried against the live services yet. Section 6 lists
-the experiments that would confirm it.
+Research only, no code changes. Written 2026-09-30. Experiments 1 and 3 were
+run the same day; their results are in section 8 and in
+[spikes/live-lyrics](../../spikes/live-lyrics/README.md).
 
 ## 1. Short answer
 
@@ -133,7 +133,7 @@ This is not decided, only the options the data allows:
 - Reduce Motion means a jump to the next line instead of a scroll. When the
   source has no timings, the plain text stays as it is, marked as not synced.
 
-## 6. Proposed experiments (not run yet)
+## 6. Proposed experiments (1 and 3 run, see section 8)
 
 All of them would go in `spikes/live-lyrics/`, with no change to `Sources/`.
 
@@ -170,6 +170,54 @@ All of them would go in `spikes/live-lyrics/`, with no change to `Sources/`.
   Experiment 1 covers a public sample only. The user could run it on their
   history later, and nothing would be committed.
 - Where the lyrics should live in the UI (section 5): a design decision.
+
+## 8. Results
+
+Experiment 1 took 40 public searches, of which 39 were found: 34 songs, and 5
+official videos and live recordings. Experiment 3 took three songs.
+
+- **YouTube Music's timed lyrics work, signed out, with no attestation.** It
+  timed 31 of the 34 songs, with Android client versions 7.21.50 and 8.30.54
+  alike. Every song that has lyrics on the web has them timed, except one
+  (Кино, plain only). Russian songs were covered as well as English ones.
+- **Videos have none on YouTube Music.** Official videos and live uploads have
+  an empty lyrics page. YouTube Music times only the song version (`ATV`).
+- **LRCLIB timed 36 of 39**, including 3 of the 5 videos, and both songs
+  YouTube Music had no lyrics for. It matched 30 on the metadata as is, and 6
+  more after cleaning up the title and searching. It missed a Russian song
+  whose title and artist YouTube Music gives in Latin letters. It answered
+  **HTTP 503** to several first requests at one request per 0.6 s.
+- **Together: 37 of 39**, and all 34 songs.
+- **The two agree.** Over the 29 tracks both timed, the median offset is 0 ms,
+  and most are within ±0.2 s. Three are off by 1 to 1.75 s. Which side is
+  right there is not known without listening.
+- **Where to send it from does not matter.** URLSession without cookies, and
+  `fetch()` in the page with or without its cookies, all got the full timed
+  lines. So did the default User-Agent.
+- **Size.** The Android reply is about 610 KB (129 KB gzipped), and 590 KB of
+  it is the Android app's UI framework. The timed lines are in its first
+  20 KB. A lookup takes about 0.5 s; LRCLIB about 0.14 s.
+
+### Recommendation
+
+1. **YouTube Music first, from Swift, without cookies.** The request is not
+   tied to the account, it does not touch the page, and experiment 3 shows
+   it answers the same. The lyrics page ID still comes from the page's `/next`,
+   as today. Parse only the `timedLyricsModel` object, not the whole reply,
+   the same way `player.js` cuts its responses. Keep the answer per `videoId`
+   for the session.
+2. **LRCLIB when YouTube Music has no timings:** for videos, and for songs it
+   has only plain lyrics for. Use `/api/get` with the metadata as is, then
+   with a cleaned-up title and the first artist, then `/api/search` within
+   10 s of the length. Retry once on 503, send a `User-Agent` that names
+   B-Side, and ask at most once per track.
+3. **Otherwise the plain text, as now.**
+4. Videos are the weak spot. LRCLIB times the album version, and a video's
+   intro shifts every line. Either show LRCLIB's timings for videos only when
+   the lengths match within 2 s, or show plain text for videos.
+
+Still open: the drift of the position clock (experiment 2, with music
+playing), which side is right in the 1 s disagreements, and the design.
 
 ## Sources
 

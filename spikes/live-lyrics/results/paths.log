@@ -1,0 +1,14 @@
+start	web client 1.20260927.17.00	android 7.21.50	3 videos
+J7p4bzqLvCw	swift	android agent	HTTP 200	timed 39 lines	608 KB	356 ms
+J7p4bzqLvCw	swift	default agent	HTTP 200	timed 39 lines	608 KB	441 ms
+i5ip7a-VSYs	swift	android agent	HTTP 200	timed 63 lines	614 KB	387 ms
+i5ip7a-VSYs	swift	default agent	HTTP 200	timed 63 lines	614 KB	368 ms
+TjsfgUkT0eg	swift	android agent	HTTP 200	timed 41 lines	609 KB	381 ms
+TjsfgUkT0eg	swift	default agent	HTTP 200	timed 41 lines	609 KB	520 ms
+page	loaded https://music.youtube.com/
+J7p4bzqLvCw	page	include cookies	HTTP 200	timed 39 lines	608 KB	1550 ms
+J7p4bzqLvCw	page	omit cookies	HTTP 200	timed 39 lines	608 KB	240 ms
+i5ip7a-VSYs	page	include cookies	HTTP 200	timed 63 lines	617 KB	1057 ms
+i5ip7a-VSYs	page	omit cookies	HTTP 200	timed 63 lines	612 KB	168 ms
+TjsfgUkT0eg	page	include cookies	HTTP 200	timed 41 lines	609 KB	177 ms
+TjsfgUkT0eg	page	omit cookies	HTTP 200	timed 41 lines	609 KB	193 ms
