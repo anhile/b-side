@@ -136,10 +136,10 @@ From `NowPlaying.swift`, `PlayerController.swift`, `JSBridge.swift`, `BSideApp.s
   - it is not sandboxed and has no hardened runtime (`project.yml`:
     `ENABLE_APP_SANDBOX: NO`, `ENABLE_HARDENED_RUNTIME: NO`, ad-hoc signed);
   - nothing reacts to Music being launched.
-- **Unknown:** whether a freshly launched B-Side that has not played yet counts as
-  Now Playing. AntiMusic sets `playbackState` to `.playing` and then `.stopped`
-  once at launch "to activate media player as something that can show up in
-  Now Playing". That suggests it does not happen by itself.
+- **At launch B-Side is not eligible** (experiment 1, below). It registers with
+  `playbackState = .paused` and no track, and that is not enough: until B-Side
+  has played something, Play after a fresh launch still opens Music. A moment
+  of `.playing` at launch fixes this.
 
 ## 4. Existing tools and their internals
 
@@ -225,10 +225,24 @@ All experiments go into `spikes/default-player/`, not into `Sources/`. I have
 not run any of them; each needs your go-ahead, and some need your hands
 (keys, AirPods).
 
-1. **Eligibility at launch.** A tiny app registers `MPRemoteCommandCenter` and
-   sets `playbackState` (a) not at all, (b) `.paused` with info, (c) `.playing`
-   then `.paused`. Press Play after each. Question: which variant receives Play
-   without having played. *Needs you to press the key.*
+1. **Eligibility at launch. Done 2026-09-30** on macOS 27.0.1, one F8 press
+   per round, B-Side, Music and Spotify quit
+   ([spike](../../spikes/default-player/README.md)):
+
+   | Round | Command received | Music launched |
+   |---|---|---|
+   | baseline (no spike) | — | yes |
+   | `none`: handlers only | none | yes |
+   | `paused`: handlers, info, `.paused` | none | yes |
+   | `playpaused`: info, `.playing`, `.paused` after 0.5 s | toggle | no |
+   | `playstopped`: `.playing`, `.stopped` at once, then info | toggle | no |
+
+   An app becomes the target of Play only after it has reported `.playing` at
+   least once; `.paused` alone does not count, and neither does Now Playing
+   info. The `.playing` moment can be instantaneous, and no audio is needed.
+   For B-Side (option A): report `.playing` then `.paused` once at launch.
+   Not tested: whether this survives a long idle period, sleep, or another app
+   playing in between (that is experiment 2).
 2. **App stack.** B-Side paused → Spotify or a Safari tab plays → that app quits
    or pauses → press Play. Does the command return to B-Side or start Music?
    B-Side's log shows `remote system …` if it arrives. *Needs you.*

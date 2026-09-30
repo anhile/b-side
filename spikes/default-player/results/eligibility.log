@@ -1,0 +1,23 @@
+2026-09-30T15:12:28	baseline	round start
+2026-09-30T15:12:36	baseline	round end, command: none, Music: yes
+2026-09-30T15:12:45	none	round start
+2026-09-30T11:12:45.639Z	none	launch pid 18372
+2026-09-30T11:12:45.659Z	none	registered
+2026-09-30T11:12:53.094Z	none	Music launched
+2026-09-30T15:12:56	none	round end, command: none, Music: yes
+2026-09-30T15:13:11	paused	round start
+2026-09-30T11:13:11.799Z	paused	launch pid 18419
+2026-09-30T11:13:11.819Z	paused	registered
+2026-09-30T11:13:19.669Z	paused	Music launched
+2026-09-30T15:13:22	paused	round end, command: none, Music: yes
+2026-09-30T15:13:27	playpaused	round start
+2026-09-30T11:13:28.154Z	playpaused	launch pid 18454
+2026-09-30T11:13:28.171Z	playpaused	registered
+2026-09-30T11:13:28.691Z	playpaused	state paused
+2026-09-30T11:13:34.537Z	playpaused	command toggle
+2026-09-30T15:13:38	playpaused	round end, command: toggle, Music: no
+2026-09-30T15:13:40	playstopped	round start
+2026-09-30T11:13:40.340Z	playstopped	launch pid 18482
+2026-09-30T11:13:40.359Z	playstopped	registered
+2026-09-30T11:13:47.705Z	playstopped	command toggle
+2026-09-30T15:13:51	playstopped	round end, command: toggle, Music: no
