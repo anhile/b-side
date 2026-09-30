@@ -5,7 +5,9 @@ import WebKit
 enum Account: Equatable {
     case unknown
     case signedOut
-    case signedIn(name: String)
+    /// YouTube Music tells the account's name and channel handle, not its
+    /// email address.
+    case signedIn(name: String, handle: String)
 
     var isSignedIn: Bool {
         if case .signedIn = self { return true }
@@ -362,11 +364,12 @@ final class PlayerController: NSObject, ObservableObject {
     private func handle(account new: Account) {
         // The name arrives after the first "signed in"; keep it across page
         // reloads, which report "signed in" without a name again.
-        if case .signedIn(let name) = new, name.isEmpty, account.isSignedIn { return }
+        if case .signedIn(let name, let handle) = new, name.isEmpty, handle.isEmpty, account.isSignedIn { return }
         if new != account {
             // The name itself stays out of the log.
             switch new {
-            case .signedIn(let name): EventLog.write("account\tsigned in, \(name.isEmpty ? "no name yet" : "name received")")
+            case .signedIn(let name, _):
+                EventLog.write("account\tsigned in, \(name.isEmpty ? "no name yet" : "name received")")
             default: EventLog.write("account\tsigned out")
             }
         }

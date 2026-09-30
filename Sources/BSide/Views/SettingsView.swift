@@ -24,9 +24,16 @@ private struct AccountSettings: View {
             Section {
                 LabeledContent("YouTube Music") {
                     switch player.account {
-                    case .unknown: Text("Checking…")
-                    case .signedOut: Text("Not signed in")
-                    case .signedIn(let name): Text(name.isEmpty ? "Signed in" : name)
+                    case .unknown:
+                        Text("Checking…")
+                    case .signedOut:
+                        Text("Not signed in")
+                    case .signedIn(let name, let handle):
+                        // The channel handle, as in YouTube Music's own
+                        // account menu. An account without a channel has
+                        // none; then the name.
+                        Text(!handle.isEmpty ? handle : !name.isEmpty ? name : "Signed in")
+                            .textSelection(.enabled)
                     }
                 }
                 if player.account.isSignedIn {

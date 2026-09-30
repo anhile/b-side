@@ -87,7 +87,9 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
             onState?(state)
         case "account":
             let signedIn = body["signedIn"] as? Bool ?? false
-            onAccount?(signedIn ? .signedIn(name: body["name"] as? String ?? "") : .signedOut)
+            onAccount?(signedIn
+                ? .signedIn(name: body["name"] as? String ?? "", handle: body["handle"] as? String ?? "")
+                : .signedOut)
         case "event":
             onEvent?(body["kind"] as? String ?? "", body["detail"] as? String ?? "")
         case "playlists":

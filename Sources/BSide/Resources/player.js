@@ -41,7 +41,7 @@
   const LIBRARY_ITEM = 'musicTwoRowItemRenderer';      // one tile in that list
   const PLAYLIST_BROWSE_PREFIX = 'VL';  // a playlist's browse ID is 'VL' + its playlist ID
   const ACCOUNT_ENDPOINT = '/youtubei/v1/account/account_menu?prettyPrint=false';
-  const ACCOUNT_HEADER = 'activeAccountHeaderRenderer'; // carries accountName
+  const ACCOUNT_HEADER = 'activeAccountHeaderRenderer'; // carries accountName and channelHandle (no email)
   const AUTH_COOKIES = ['SAPISID', '__Secure-3PAPISID'];
   const RESTART_THRESHOLD_S = 3;        // Previous restarts the track after this many seconds
   const PLAYER_ELEMENT = '#movie_player';
@@ -174,15 +174,16 @@
     window.yt = window.yt || {};
     window.yt.config_ = data;
     event('config', 'signed in: ' + !!data.LOGGED_IN + ', client ' + data.INNERTUBE_CLIENT_NAME + ' ' + data.INNERTUBE_CLIENT_VERSION);
-    post({ type: 'account', signedIn: !!data.LOGGED_IN, name: '' });
+    post({ type: 'account', signedIn: !!data.LOGGED_IN, name: '', handle: '' });
     if (data.LOGGED_IN) accountName().catch(function () {}); // the name is a nicety
   }
 
   async function accountName() {
     const text = await api(ACCOUNT_ENDPOINT, {});
     cut(text, [ACCOUNT_HEADER], function (key, node) {
-      const name = find(node.accountName, 'text');
-      if (name) post({ type: 'account', signedIn: true, name: name });
+      const name = find(node.accountName, 'text') || '';
+      const handle = find(node.channelHandle, 'text') || '';
+      if (name || handle) post({ type: 'account', signedIn: true, name: name, handle: handle });
     });
   }
 
