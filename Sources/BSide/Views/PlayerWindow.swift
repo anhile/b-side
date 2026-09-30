@@ -65,12 +65,9 @@ struct PlayerWindow: View {
             }
             Spacer(minLength: 0)
             SettingsLink {
-                Image(systemName: "gearshape")
-                    .foregroundStyle(Theme.Colors.textMuted)
-                    .frame(width: Theme.Size.pageDotTarget, height: Theme.Size.pageDotTarget)
-                    .contentShape(Rectangle())
+                IconButton.Label(symbol: "gearshape")
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressableStyle())
             .help("Settings")
             .accessibilityLabel("Settings")
         }
@@ -153,6 +150,38 @@ struct EmptyState: View {
         }
         .padding(Theme.Space.l)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// A quiet icon button in `text-muted` at text size, for secondary actions
+/// such as refresh and settings.
+struct IconButton: View {
+    let symbol: String
+    let label: String
+    let action: () -> Void
+
+    @Environment(\.isEnabled) private var isEnabled
+
+    var body: some View {
+        Button(action: action) {
+            Label(symbol: symbol)
+        }
+        .buttonStyle(PressableStyle())
+        .opacity(isEnabled ? 1 : Theme.Opacity.disabled)
+        .help(label)
+        .accessibilityLabel(label)
+    }
+
+    struct Label: View {
+        let symbol: String
+
+        var body: some View {
+            Image(systemName: symbol)
+                .font(Theme.Text.body)
+                .foregroundStyle(Theme.Colors.textMuted)
+                .frame(width: Theme.Size.pageDotTarget, height: Theme.Size.pageDotTarget)
+                .contentShape(Rectangle())
+        }
     }
 }
 

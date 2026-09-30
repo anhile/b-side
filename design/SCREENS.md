@@ -55,7 +55,9 @@ Status: not started; the interim page has one Play button.
   line, truncation)
 - Entry and exit: second dot, Command-2
 
-Status: built with tokens; design pass not done.
+Status: passed the rubric on 2026-09-30, iteration 1. Liked Music uses the
+`Record` graphic at 36 in place of artwork; rows are custom buttons with a
+`surface` hover shape, no separators; a `Skeleton` list while loading.
 
 ## Strip (Vibe and Playlists, while music plays)
 

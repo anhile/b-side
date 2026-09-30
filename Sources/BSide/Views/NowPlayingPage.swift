@@ -255,17 +255,20 @@ struct Record: View {
         ZStack {
             Circle()
                 .fill(Theme.Colors.record)
-            ForEach(1..<9) { ring in
-                Circle()
-                    .strokeBorder(Theme.Colors.recordGroove.opacity(Theme.Opacity.groove), lineWidth: 1)
-                    .padding(size * CGFloat(ring) * 0.045)
+            // Grooves only where they can be seen: none at row size.
+            if size >= Theme.Size.artworkLarge / 2 {
+                ForEach(1..<9) { ring in
+                    Circle()
+                        .strokeBorder(Theme.Colors.recordGroove.opacity(Theme.Opacity.groove), lineWidth: 1)
+                        .padding(size * CGFloat(ring) * Theme.Size.recordGrooveStep)
+                }
             }
             Circle()
                 .fill(Theme.Colors.accent)
-                .frame(width: Theme.Size.recordLabel, height: Theme.Size.recordLabel)
+                .frame(width: size * Theme.Size.recordLabelRatio, height: size * Theme.Size.recordLabelRatio)
             Circle()
                 .fill(Theme.Colors.accentOn)
-                .frame(width: Theme.Size.recordHole, height: Theme.Size.recordHole)
+                .frame(width: size * Theme.Size.recordHoleRatio, height: size * Theme.Size.recordHoleRatio)
         }
         .frame(width: size, height: size)
         .rotationEffect(angle)

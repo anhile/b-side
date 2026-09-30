@@ -61,8 +61,11 @@ enum Theme {
         static let artworkLarge: CGFloat = 160
         /// How far the record shows from behind the large artwork.
         static let recordPeek: CGFloat = 48
-        static let recordLabel: CGFloat = 56
-        static let recordHole: CGFloat = 6
+        /// Parts of the record as a share of its diameter, so it draws the
+        /// same at 36 and at 160.
+        static let recordLabelRatio: CGFloat = 0.35
+        static let recordHoleRatio: CGFloat = 0.04
+        static let recordGrooveStep: CGFloat = 0.045
         static let rowHeight: CGFloat = 44
         static let stripHeight: CGFloat = 44
         static let transportTarget: CGFloat = 32
@@ -75,6 +78,9 @@ enum Theme {
         /// Symbol sizes for the largest and smallest glyphs. Everything else
         /// takes its size from the text style next to it.
         static let emptyGlyph: CGFloat = 28
+        static let skeletonLine: CGFloat = 10
+        static let skeletonTitle: CGFloat = 160
+        static let skeletonCaption: CGFloat = 72
     }
 
     enum Shadow {
@@ -88,11 +94,14 @@ enum Theme {
         static let pressed: Double = 0.7
         static let disabled: Double = 0.35
         static let groove: Double = 0.18
+        static let skeletonDim: Double = 0.5
     }
 
     enum Motion {
         static let feedback: Double = 0.15
         static let page: Double = 0.3
+        /// Half a cycle of a skeleton's breathing.
+        static let breathe: Double = 0.9
         /// One turn of the record.
         static let recordTurn: Double = 4
     }

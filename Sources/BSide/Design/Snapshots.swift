@@ -42,6 +42,11 @@ enum Snapshots {
                                             problem: "This could not be played. It may be empty or unavailable.")),
             ("playlists-playing", .playlists, .fixture(state: track, source: .playlist("1"), playlists: lists)),
             ("playlists-loading", .playlists, .fixture(playlistsState: .loading)),
+            ("playlists-failed", .playlists, .fixture(playlistsState: .failed("The list of playlists could not be loaded."))),
+            ("playlists-none", .playlists, .fixture(playlists: [])),
+            ("playlists-many", .playlists, .fixture(state: track, source: .playlist("7"), playlists: (1...20).map {
+                Playlist(id: String($0), title: "Playlist \($0)", subtitle: "\($0 * 3) tracks", artworkURL: $0 % 2 == 0 ? artwork : nil)
+            })),
         ]
     }
 
