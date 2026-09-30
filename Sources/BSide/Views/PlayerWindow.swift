@@ -9,8 +9,10 @@ struct PlayerWindow: View {
     /// The hidden title bar still counts as a safe area at the top. The
     /// content goes under it, and the window must not grow by its height.
     @State private var topInset = Theme.Size.titleBar
-    /// The artwork's colour, over the whole window while Now Playing shows.
+    /// The artwork's colour, over the top of the window while Now Playing
+    /// shows: from the title bar down to just above the track's name.
     @State private var tint: Color?
+    @State private var tintBottom: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openWindow) private var openWindow
 
@@ -29,8 +31,10 @@ struct PlayerWindow: View {
             footer
                 .padding(.bottom, Theme.Space.xs)
         }
-        .background(tintLayer)
+        .background(alignment: .top) { tintLayer }
         .background(Theme.Colors.bg)
+        .coordinateSpace(name: "window")
+        .onPreferenceChange(TintBottomKey.self) { tintBottom = $0 }
         .ignoresSafeArea(edges: .top)
         .frame(width: Theme.Size.window.width, height: Theme.Size.window.height - topInset)
         .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.top } action: { topInset = $0 }
@@ -48,6 +52,7 @@ struct PlayerWindow: View {
         let showing = tint != nil && (navigation.page ?? .nowPlaying) == .nowPlaying
         return (tint ?? Theme.Colors.bg)
             .opacity(showing ? Theme.Tint.opacity : 0)
+            .frame(height: max(tintBottom, 0))
             .animation(.easeInOut(duration: Theme.Motion.tintChange), value: tint)
             .animation(.easeInOut(duration: Theme.Motion.tintChange), value: navigation.page)
     }

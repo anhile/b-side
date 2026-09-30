@@ -9,6 +9,7 @@ struct NowPlayingPage: View {
     /// Set while the user drags the slider, so reports do not fight the drag.
     @State private var scrub: Double?
     @State private var showsVolume = false
+    @State private var tintBottom: CGFloat = 0
 
     var body: some View {
         if let blocked = blockingState(for: player) {
@@ -25,6 +26,9 @@ struct NowPlayingPage: View {
             Spacer(minLength: Theme.Space.m)
             ArtworkWithRecord(url: player.state.artworkURL, spinning: player.state.isPlaying)
             Spacer(minLength: Theme.Space.l)
+                // Where the artwork's colour ends: just above the title.
+                .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named("window")).midY } action: { tintBottom = $0 }
+                .preference(key: TintBottomKey.self, value: tintBottom)
             VStack(spacing: Theme.Space.xxs) {
                 Text(title)
                     .font(Theme.Text.title)
@@ -198,6 +202,13 @@ struct NowPlayingPage: View {
         let total = Int(seconds)
         return String(format: "%d:%02d", total / 60, total % 60)
     }
+}
+
+/// How far down the window the artwork's colour reaches, reported by the
+/// Now Playing page.
+struct TintBottomKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }
 
 /// An icon-only button in `text`, with a square click target.
