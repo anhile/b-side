@@ -107,5 +107,10 @@ enum Theme {
         static let breathe: Double = 0.9
         /// One turn of the record.
         static let recordTurn: Double = 4
+        /// The strip's title, when it does not fit: points per second, the
+        /// pause before each pass, and where the fade at the right edge starts.
+        static let marqueeSpeed: Double = 24
+        static let marqueePause: Double = 2
+        static let marqueeFade: Double = 0.92
     }
 }

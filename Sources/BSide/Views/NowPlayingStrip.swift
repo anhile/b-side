@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// One line under Vibe and Playlists: what plays, and a pause button. The
-/// line itself leads to the Now Playing page.
+/// One line under Vibe and Playlists: what plays, Pause and Next. The line
+/// itself leads to the Now Playing page.
 struct NowPlayingStrip: View {
     @EnvironmentObject private var player: PlayerController
     let open: () -> Void
@@ -11,10 +11,9 @@ struct NowPlayingStrip: View {
             Button(action: open) {
                 HStack(spacing: Theme.Space.xs) {
                     Artwork(url: player.state.artworkURL, size: Theme.Size.artworkStrip)
-                    Text(line)
+                    MarqueeText(text: line)
                         .font(Theme.Text.caption)
                         .foregroundStyle(Theme.Colors.text)
-                        .lineLimit(1)
                 }
                 .contentShape(Rectangle())
             }
@@ -26,6 +25,8 @@ struct NowPlayingStrip: View {
                             label: player.state.isPlaying ? "Pause" : "Play") {
                 player.togglePlayPause()
             }
+            TransportButton(symbol: "forward.fill", label: "Next") { player.next() }
+                .disabled(!player.state.hasNext)
         }
     }
 

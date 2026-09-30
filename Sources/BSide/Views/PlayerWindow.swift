@@ -73,7 +73,9 @@ struct PlayerWindow: View {
     }
 
     /// The strip shows on Vibe and Playlists while something plays; Now
-    /// Playing is that content already. The gear is on every page.
+    /// Playing is that content already. Its place is kept on every page so
+    /// nothing moves between them. Settings live in the menu bar and under
+    /// Command-comma.
     private var footer: some View {
         HStack(alignment: .center, spacing: Theme.Space.xs) {
             if let problem = player.problem {
@@ -82,17 +84,10 @@ struct PlayerWindow: View {
                     .foregroundStyle(Theme.Colors.textMuted)
                     .lineLimit(2)
                     .help(problem)
+                Spacer(minLength: 0)
             } else if player.hasTrack, navigation.page != .nowPlaying {
                 NowPlayingStrip { navigation.page = .nowPlaying }
             }
-            Spacer(minLength: 0)
-            SettingsLink {
-                IconButton.Label(symbol: "gearshape")
-                    .glass(in: Circle())
-            }
-            .buttonStyle(PressableStyle())
-            .help("Settings")
-            .accessibilityLabel("Settings")
         }
         .frame(height: Theme.Size.stripHeight)
         .padding(.horizontal, Theme.Space.m)

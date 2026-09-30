@@ -46,6 +46,7 @@ enum Snapshots {
             ("nowplaying-failed", .nowPlaying, .fixture(phase: .failed("YouTube Music could not be loaded. Check the connection and try again."))),
             ("vibe-playing", .vibe, .fixture(state: track, source: .mood("focus"), playlists: lists, moods: moods)),
             ("vibe-one", .vibe, .fixture(playlists: lists)),
+            ("vibe-longstrip", .vibe, .fixture(state: long, source: .mood("focus"), playlists: lists, moods: moods)),
             ("vibe-none", .vibe, .fixture(playlists: lists, moods: [])),
             ("vibe-many", .vibe, .fixture(state: track, source: .mood("m3"), playlists: lists, moods: moods + (1...5).map {
                 Mood(id: "m\($0)", name: "Mood \($0)", source: .playlist(id: "1", shuffled: $0 % 2 == 0))
