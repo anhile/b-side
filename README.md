@@ -49,10 +49,11 @@ A 320 by 440 window with three pages, designed as in [DESIGN.md](DESIGN.md).
 | **Vibe** page | Your mood tiles in two columns. A tile plays a playlist (in order or shuffled), Liked Music shuffled, or the radio of a track. The plus tile adds one; right-click edits or removes |
 | **Playlists** page | Your playlists, private ones included. Click one to play it |
 | **Now Playing** page | Artwork with the record behind it, title, artist, position, volume, Previous, Play or Pause, Next |
-| Strip under Vibe and Playlists | The current track and a pause button; click it to open Now Playing |
-| Gear, bottom right | Opens Settings: Account, Playback, Diagnostics |
+| Strip under Vibe and Playlists | The current track (scrolls when long), Pause and Next; click it to open Now Playing |
+| Icons at the bottom | Vibe, Playlists, Now Playing |
+| Menu bar record or Command-comma | Settings: Account, Playback, Diagnostics |
 
-Move between the pages with a two-finger swipe, the dots at the top, or
+Move between the pages with a two-finger swipe, the icons at the bottom, or
 Command-1, Command-2 and Command-3. With Reduce Motion on, pages cross-fade
 and the swipe is off.
 
@@ -67,7 +68,7 @@ and the swipe is off.
 
 Closing the window does not stop the music. The record in the menu bar has
 the same controls, every Vibe tile and playlist, and brings the window back.
-The window is dragged by the strip with the dots.
+The window is dragged by the empty strip at the top.
 
 ## Build
 

@@ -19,7 +19,7 @@ states, light and dark, into `design/audit/`. Figma keeps the moodboard and
 Foundations only. Screen specs live in [design/SCREENS.md](design/SCREENS.md).
 
 Done: everything below, including glass (`Design/Glass.swift`) and the Reduce
-Motion cross-fade. With Reduce Motion on, pages change by the dots and the
+Motion cross-fade. With Reduce Motion on, pages change by the icons and the
 keyboard only; the swipe is off, since a swipe is a slide.
 
 Moodboard and Foundations: Figma file "B-Side — Design",
@@ -106,7 +106,7 @@ Rules:
 - White or cream on `accent` fails (3.0:1 and 2.5:1). What sits on orange is
   always `accent-on`, as on the icon.
 - Where the accent is allowed: the playing track's indicator, the current
-  page dot, the progress bar's filled part, the label of the record graphic.
+  page icon, the progress bar's filled part, the label of the record graphic.
 - The accent is never a button fill, a row background or a window area.
 - No gradients. No second accent colour.
 
@@ -142,7 +142,7 @@ Scale: 4, 8, 12, 16, 24, 32. No other values.
 |---|---|---|
 | `radius-s` | 6 | Row hover, small artwork |
 | `radius-m` | 12 | Large artwork, grouped areas |
-| `radius-full` | capsule or circle | Buttons, page dots |
+| `radius-full` | capsule or circle | Buttons, the page icons' capsule |
 
 Three levels of depth:
 
@@ -164,7 +164,7 @@ element has a fallback.
 | Primary button | `.glassProminent` tinted `text` | `text` fill, glyph in `bg` |
 | System controls | Adopt glass on their own | System look |
 
-- Glass is for the control layer: page dots, transport controls, the settings
+- Glass is for the control layer: page icons, transport controls, the speaker
   button. Content is never glass.
 - No glass on glass. Controls that sit together share one container.
 - With Reduce Transparency on, glass becomes `surface` with `control-border`.
@@ -193,8 +193,8 @@ not an icon.
 **Main window: a compact player, not a document window.**
 
 - Size 320 by 440 points. Not resizable in the first version.
-- Hidden title bar. The traffic lights stay. The window drags by its
-  background.
+- Hidden title bar. The traffic lights stay. The window drags by the empty
+  strip at the top.
 - Three pages, Vibe, Playlists and Now Playing, side by side. No sidebar, no
   `NavigationSplitView`, no toolbar: the window is too small for them, and
   three destinations do not need a sidebar.
@@ -206,12 +206,14 @@ not an icon.
 | Input | Action |
 |---|---|
 | Two-finger swipe left or right | Next or previous page |
-| Click a page dot | That page |
+| Click a page icon at the bottom | That page |
 | Command-1, Command-2, Command-3 | Vibe, Playlists, Now Playing |
 | View menu | The same two commands |
 
-Page dots are not a standard macOS control, so they are built as real buttons:
-a 24 by 24 click area each, a label for VoiceOver, keyboard focus.
+The page icons (waves, a list with play, a record) are not a standard macOS
+control, so they are built as real buttons in one glass capsule at the bottom:
+a 28 by 24 click area each, the accent on the current one, a name after 1.5 s
+under the pointer, a label for VoiceOver, keyboard focus.
 
 **Settings window: standard macOS.**
 
@@ -263,7 +265,8 @@ The closed set. A screen is composed from these and nothing else.
 | `Record` | vinyl, disc | Decoration behind or beside artwork. Custom drawing |
 | `TransportButton` | previous, play or pause, next | Now Playing area |
 | `IconButton` | glass | Settings gear, shuffle |
-| `PageDots` | | Top of the main window |
+| `PageTabs` | | Bottom of the main window |
+| `MarqueeText` | | The strip's title when it does not fit. Custom |
 | `PlaylistRow` | default, playing | Playlists page |
 | `Artwork` | small 36, large 160 | Rows, Now Playing |
 | `MoodTile` | default, playing | Vibe grid |

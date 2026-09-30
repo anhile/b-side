@@ -3,8 +3,9 @@
 Confirmed by the owner on 2026-09-30. One spec per screen, written before the
 screen is built; the critique in each design pass is checked against it.
 
-Shared: three pages side by side, page dots at the top, the gear at the bottom
-right of every page. Starting music never switches the page.
+Shared: three pages side by side, page icons in a capsule at the bottom, the
+strip with the current track above them. No gear: Settings are in the menu
+bar and under Command-comma. Starting music never switches the page.
 
 ## Screen: Now Playing
 
