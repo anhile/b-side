@@ -10,6 +10,7 @@ struct PlayerWindow: View {
     /// content goes under it, and the window must not grow by its height.
     @State private var topInset = Theme.Size.titleBar
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(spacing: 0) {
@@ -27,7 +28,10 @@ struct PlayerWindow: View {
         .frame(width: Theme.Size.window.width, height: Theme.Size.window.height - topInset)
         .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.top } action: { topInset = $0 }
         .background(WindowSetup())
-        .task { player.start() }
+        .task {
+            player.start()
+            StatusMenu.shared.install(player: player) { openWindow(id: "main") }
+        }
     }
 
     @ViewBuilder

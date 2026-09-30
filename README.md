@@ -66,8 +66,9 @@ and the swipe is off.
 | Option-Command-Down | Mute, unmute |
 | Command-comma | Settings |
 
-Closing the window does not stop the music. The record in the menu bar has
-the same controls, every Vibe tile and playlist, and brings the window back.
+Closing the window does not stop the music. The record in the menu bar shows
+the track (scrolling when long) with Previous, Play or Pause and Next, lists
+every Vibe tile and playlist, and brings the window back.
 The window is dragged by the empty strip at the top.
 
 ## Build
