@@ -62,7 +62,39 @@ enum Snapshots {
         ]
     }
 
+    /// The Settings window, one file per tab.
+    private static func renderSettings(into folder: URL) async {
+        let player = PlayerController.fixture(state: track, account: .signedIn(name: "Emil", handle: "@emil", photoURL: artwork),
+                                              source: .mood(Mood.liked.id))
+        player.processesForSnapshot = [
+            ProcessInfoRow(pid: 501, name: "B-Side", footprintBytes: 41 << 20),
+            ProcessInfoRow(pid: 502, name: "WebContent", footprintBytes: 88 << 20),
+            ProcessInfoRow(pid: 503, name: "GPU", footprintBytes: 16 << 20),
+            ProcessInfoRow(pid: 504, name: "Networking", footprintBytes: 12 << 20),
+        ]
+        for tab in SettingsView.Tab.allCases {
+            for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+                let hosting = NSHostingController(rootView: SettingsView(tab: tab).environmentObject(player))
+                let window = NSWindow(contentViewController: hosting)
+                window.styleMask = [NSWindow.StyleMask.titled, .closable]
+                window.title = "B-Side Settings"
+                window.appearance = NSAppearance(named: appearance)
+                window.isReleasedWhenClosed = false
+                window.setFrameOrigin(NSPoint(x: -4000, y: -4000))
+                window.orderFrontRegardless()
+                try? await Task.sleep(for: .seconds(0.8))
+                window.setContentSize(hosting.view.fittingSize)
+                try? await Task.sleep(for: .seconds(0.4))
+                if let image = capture(window) {
+                    try? image.write(to: folder.appendingPathComponent("settings-\(tab.rawValue)-\(suffix).png"))
+                }
+                window.close()
+            }
+        }
+    }
+
     static func render(into folder: URL) async {
+        await renderSettings(into: folder)
         EventLog.write("snapshot: rendering \(cases.count) cases into \(folder.path)")
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         NSSetUncaughtExceptionHandler { exception in

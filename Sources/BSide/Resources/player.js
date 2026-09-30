@@ -41,7 +41,8 @@
   const LIBRARY_ITEM = 'musicTwoRowItemRenderer';      // one tile in that list
   const PLAYLIST_BROWSE_PREFIX = 'VL';  // a playlist's browse ID is 'VL' + its playlist ID
   const ACCOUNT_ENDPOINT = '/youtubei/v1/account/account_menu?prettyPrint=false';
-  const ACCOUNT_HEADER = 'activeAccountHeaderRenderer'; // carries accountName and channelHandle (no email)
+  const ACCOUNT_HEADER = 'activeAccountHeaderRenderer'; // carries accountName, channelHandle, accountPhoto (no email)
+  const AVATAR_MIN_WIDTH = 64;
   const AUTH_COOKIES = ['SAPISID', '__Secure-3PAPISID'];
   const RESTART_THRESHOLD_S = 3;        // Previous restarts the track after this many seconds
   const PLAYER_ELEMENT = '#movie_player';
@@ -176,7 +177,7 @@
     window.yt = window.yt || {};
     window.yt.config_ = data;
     event('config', 'signed in: ' + !!data.LOGGED_IN + ', client ' + data.INNERTUBE_CLIENT_NAME + ' ' + data.INNERTUBE_CLIENT_VERSION);
-    post({ type: 'account', signedIn: !!data.LOGGED_IN, name: '', handle: '' });
+    post({ type: 'account', signedIn: !!data.LOGGED_IN, name: '', handle: '', photo: '' });
     if (data.LOGGED_IN) accountName().catch(function () {}); // the name is a nicety
   }
 
@@ -185,7 +186,8 @@
     cut(text, [ACCOUNT_HEADER], function (key, node) {
       const name = find(node.accountName, 'text') || '';
       const handle = find(node.channelHandle, 'text') || '';
-      if (name || handle) post({ type: 'account', signedIn: true, name: name, handle: handle });
+      const photo = thumbnail(node.accountPhoto, AVATAR_MIN_WIDTH);
+      if (name || handle) post({ type: 'account', signedIn: true, name: name, handle: handle, photo: photo });
     });
   }
 
@@ -299,9 +301,9 @@
   }
 
   // The smallest thumbnail that is wide enough, or the largest there is.
-  function thumbnail(node) {
+  function thumbnail(node, minWidth) {
     const list = (find(node, 'thumbnails') || []).slice().sort(function (a, b) { return a.width - b.width; });
-    const fit = list.find(function (item) { return item.width >= ARTWORK_MIN_WIDTH; }) || list[list.length - 1];
+    const fit = list.find(function (item) { return item.width >= (minWidth || ARTWORK_MIN_WIDTH); }) || list[list.length - 1];
     return fit ? fit.url : '';
   }
 

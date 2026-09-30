@@ -7,7 +7,7 @@ enum Account: Equatable {
     case signedOut
     /// YouTube Music tells the account's name and channel handle, not its
     /// email address.
-    case signedIn(name: String, handle: String)
+    case signedIn(name: String, handle: String, photoURL: URL? = nil)
 
     var isSignedIn: Bool {
         if case .signedIn = self { return true }
@@ -54,6 +54,10 @@ final class PlayerController: NSObject, ObservableObject {
     @Published private(set) var status = "Starting"
     @Published private(set) var isWebViewVisible = false
     @Published private(set) var processes: [ProcessInfoRow] = []
+    /// Snapshots only: rows to show instead of the live ones.
+    var processesForSnapshot: [ProcessInfoRow] = [] {
+        didSet { processes = processesForSnapshot }
+    }
     /// 0 to 100. Kept between launches.
     @Published var volume: Double = Settings.defaults.double(forKey: Keys.volume) {
         didSet {
@@ -434,11 +438,11 @@ final class PlayerController: NSObject, ObservableObject {
     private func handle(account new: Account) {
         // The name arrives after the first "signed in"; keep it across page
         // reloads, which report "signed in" without a name again.
-        if case .signedIn(let name, let handle) = new, name.isEmpty, handle.isEmpty, account.isSignedIn { return }
+        if case .signedIn(let name, let handle, _) = new, name.isEmpty, handle.isEmpty, account.isSignedIn { return }
         if new != account {
             // The name itself stays out of the log.
             switch new {
-            case .signedIn(let name, _):
+            case .signedIn(let name, _, _):
                 EventLog.write("account\tsigned in, \(name.isEmpty ? "no name yet" : "name received")")
             default: EventLog.write("account\tsigned out")
             }

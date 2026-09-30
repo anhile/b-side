@@ -76,7 +76,8 @@ enum Theme {
         static let volumeGlyph: CGFloat = 20
         static let volumeSlider: CGFloat = 120
         static let settingsWidth: CGFloat = 460
-        static let logHeight: CGFloat = 160
+        static let logHeight: CGFloat = 200
+        static let avatar: CGFloat = 40
         /// Symbol sizes for the largest and smallest glyphs. Everything else
         /// takes its size from the text style next to it.
         static let emptyGlyph: CGFloat = 28

@@ -1,15 +1,30 @@
 import SwiftUI
 
 /// The standard macOS settings window: Command-comma, tabs, grouped forms.
+/// System controls and system colours on purpose; only the account row and
+/// the copy are B-Side's.
 struct SettingsView: View {
+    enum Tab: String, CaseIterable {
+        case account, playback, diagnostics
+    }
+
+    @State private var tab: Tab
+
+    init(tab: Tab = .account) {
+        _tab = State(initialValue: tab)
+    }
+
     var body: some View {
-        TabView {
+        TabView(selection: $tab) {
             AccountSettings()
                 .tabItem { Label("Account", systemImage: "person.crop.circle") }
+                .tag(Tab.account)
             PlaybackSettings()
                 .tabItem { Label("Playback", systemImage: "play.circle") }
+                .tag(Tab.playback)
             DiagnosticsSettings()
                 .tabItem { Label("Diagnostics", systemImage: "gauge.with.dots.needle.33percent") }
+                .tag(Tab.diagnostics)
         }
         .frame(width: Theme.Size.settingsWidth)
     }
@@ -22,24 +37,35 @@ private struct AccountSettings: View {
     var body: some View {
         Form {
             Section {
-                LabeledContent("YouTube Music") {
-                    switch player.account {
-                    case .unknown:
-                        Text("Checking…")
-                    case .signedOut:
-                        Text("Not signed in")
-                    case .signedIn(let name, let handle):
-                        // The channel handle, as in YouTube Music's own
-                        // account menu. An account without a channel has
-                        // none; then the name.
-                        Text(!handle.isEmpty ? handle : !name.isEmpty ? name : "Signed in")
-                            .textSelection(.enabled)
-                    }
-                }
-                if player.account.isSignedIn {
-                    Button("Sign Out…") { confirmingSignOut = true }
-                } else {
+                switch player.account {
+                case .unknown:
+                    LabeledContent("YouTube Music", value: "Checking…")
+                case .signedOut:
+                    LabeledContent("YouTube Music", value: "Not signed in")
                     Button("Sign In…") { player.showSignIn() }
+                case .signedIn(let name, let handle, let photoURL):
+                    HStack(spacing: Theme.Space.s) {
+                        AsyncImage(url: photoURL) { image in
+                            image.resizable().aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            Image(systemName: "person.crop.circle.fill")
+                                .resizable()
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(width: Theme.Size.avatar, height: Theme.Size.avatar)
+                        .clipShape(Circle())
+                        .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(name.isEmpty ? "YouTube Music" : name)
+                            Text(handle.isEmpty ? "Signed in" : handle)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        .textSelection(.enabled)
+                        Spacer()
+                        Button("Sign Out…") { confirmingSignOut = true }
+                    }
+                    .padding(.vertical, Theme.Space.xxs)
                 }
             } footer: {
                 Text("You sign in on Google's own page. B-Side never sees your password.")
@@ -69,20 +95,24 @@ private struct PlaybackSettings: View {
                 Toggle("Audio only", isOn: $audioOnly)
                     .onChange(of: audioOnly) { player.applyPageSettings() }
             } footer: {
-                Text("Plays the song version of a track when there is one, and videos at the lowest quality. Uses less memory. Changing it restarts the player; the track resumes.")
+                Text("Plays the song version of a track when there is one. Videos play at the lowest quality. Uses less memory; changing it restarts the track where it was.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
             Section {
-                Toggle("Show in Now Playing and respond to media keys", isOn: $nativeNowPlaying)
+                Toggle("Media keys and Now Playing", isOn: $nativeNowPlaying)
                     .onChange(of: nativeNowPlaying) { player.applyNowPlayingSetting() }
+            } footer: {
+                Text("Play, pause and skip from the keyboard, and the track in Control Center.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
             Section {
-                Toggle("Free memory when paused for a while", isOn: $reloadWhenPaused)
+                Toggle("Unload the player when paused", isOn: $reloadWhenPaused)
                 Stepper("After \(reloadAfterMinutes) min", value: $reloadAfterMinutes, in: 1...120)
                     .disabled(!reloadWhenPaused)
             } footer: {
-                Text("The player is unloaded and starts again on the next Play, at the same position.")
+                Text("Frees most of the memory. The next Play loads the player again at the same position.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -98,24 +128,19 @@ private struct DiagnosticsSettings: View {
 
     var body: some View {
         Form {
-            Section("Memory") {
-                LabeledContent("Total") {
-                    Text("\(player.totalMegabytes, specifier: "%.0f") MB").monospacedDigit()
-                }
+            Section("Memory: \(player.totalMegabytes, specifier: "%.0f") MB") {
                 ForEach(player.processes) { process in
                     LabeledContent("\(process.name) (\(String(process.pid)))") {
                         Text("\(process.megabytes, specifier: "%.0f") MB").monospacedDigit()
                     }
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
                 }
             }
             Section("Player") {
                 LabeledContent("Status") {
-                    Text(player.status).lineLimit(2)
+                    Text(player.status).lineLimit(2).multilineTextAlignment(.trailing)
                 }
                 HStack {
-                    TextField("Video ID, playlist ID, or URL", text: $input)
+                    TextField("Play", text: $input, prompt: Text("Video ID, playlist ID, or link"))
                         .onSubmit { player.load(input) }
                     Button("Play") { player.load(input) }
                         .disabled(input.isEmpty)
@@ -126,7 +151,7 @@ private struct DiagnosticsSettings: View {
             }
             Section("Event log") {
                 ScrollView {
-                    Text(log.joined(separator: "\n"))
+                    Text(log.map(Self.short).joined(separator: "\n"))
                         .font(.caption.monospaced())
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -142,5 +167,13 @@ private struct DiagnosticsSettings: View {
         }
         .formStyle(.grouped)
         .onAppear { log = EventLog.tail(lines: 40) }
+    }
+
+    /// `2026-09-30T12:51:57+04:00<TAB>D<TAB>track<TAB>…` becomes `12:51:57  track  …`.
+    private static func short(_ line: String) -> String {
+        let parts = line.split(separator: "\t", omittingEmptySubsequences: false)
+        guard parts.count >= 3 else { return line }
+        let time = parts[0].split(separator: "T").last.map { $0.prefix(8) } ?? ""
+        return ([String(time)] + parts.dropFirst(2).map(String.init)).joined(separator: "  ")
     }
 }
