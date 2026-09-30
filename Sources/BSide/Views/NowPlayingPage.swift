@@ -229,25 +229,16 @@ struct PressableStyle: ButtonStyle {
 }
 
 /// Large artwork as the sleeve, with the record out of it on the right while
-/// music plays and inside it while paused. The one shadow in the app sits
-/// under the sleeve.
+/// music plays and inside it while paused. Both move, so the pair stays
+/// centred. All of it is Core Animation (see SleeveAndRecord).
 struct ArtworkWithRecord: View {
     let url: URL?
     let spinning: Bool
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     var body: some View {
-        ZStack(alignment: .leading) {
-            Record(size: Theme.Size.artworkLarge, spinning: spinning)
-                .offset(x: spinning ? Theme.Size.recordPeek : 0)
-                .animation(reduceMotion ? nil : .easeInOut(duration: Theme.Motion.recordSlide), value: spinning)
-            Artwork(url: url, size: Theme.Size.artworkLarge, radius: Theme.Radius.sleeve)
-                .shadow(color: Theme.Colors.shadow.opacity(Theme.Shadow.artworkOpacity),
-                        radius: Theme.Shadow.artworkRadius, y: Theme.Shadow.artworkY)
-        }
-        .frame(width: Theme.Size.artworkLarge + Theme.Size.recordPeek, height: Theme.Size.artworkLarge)
-        .accessibilityHidden(true)
+        SleeveAndRecord(url: url, spinning: spinning)
+            .frame(width: Theme.Size.artworkLarge + Theme.Size.recordPeek, height: Theme.Size.artworkLarge)
+            .accessibilityHidden(true)
     }
 }
 
@@ -260,13 +251,18 @@ struct Record: View {
 
     var body: some View {
         Spinning(spinning: spinning, period: Theme.Motion.recordTurn) {
-            disc
+            RecordDisc(size: size)
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)
     }
+}
 
-    private var disc: some View {
+/// The still drawing of the record, at a given size.
+struct RecordDisc: View {
+    let size: CGFloat
+
+    var body: some View {
         ZStack {
             Circle()
                 .fill(Theme.Colors.record)
