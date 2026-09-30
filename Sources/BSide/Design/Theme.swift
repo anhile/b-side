@@ -89,6 +89,15 @@ enum Theme {
         static let skeletonCaption: CGFloat = 72
     }
 
+    /// The artwork colour behind Now Playing: how much of it shows over
+    /// `bg`, and the range it is kept in.
+    enum Tint {
+        static let opacity: Double = 0.38
+        static let minSaturation: CGFloat = 0.30
+        static let minBrightness: CGFloat = 0.40
+        static let maxBrightness: CGFloat = 0.80
+    }
+
     enum Shadow {
         /// The only shadow in the app, under large artwork.
         static let artworkRadius: CGFloat = 12
@@ -117,6 +126,8 @@ enum Theme {
         static let recordStop: Double = 0.7
         /// The record sliding into or out of the sleeve.
         static let recordSlide: Double = 0.5
+        /// The background taking a new track's colour.
+        static let tintChange: Double = 0.6
         static let recordOvershoot: Double = 0.18
         static let recordRollback: Double = 0.05
         /// The strip's title, when it does not fit: points per second, the

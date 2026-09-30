@@ -109,6 +109,10 @@ Rules:
   page icon, the progress bar's filled part, the label of the record graphic.
 - The accent is never a button fill, a row background or a window area.
 - No gradients. No second accent colour.
+- One exception, decided 2026-09-30: while Now Playing shows, the window's
+  background carries the artwork's own colour at 38% over `bg` (saturation-
+  weighted mean, kept between 40% and 80% brightness so text stays readable).
+  It fades out when the page changes. Content colour, not a design colour.
 
 ## Typography
 

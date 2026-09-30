@@ -9,6 +9,8 @@ struct PlayerWindow: View {
     /// The hidden title bar still counts as a safe area at the top. The
     /// content goes under it, and the window must not grow by its height.
     @State private var topInset = Theme.Size.titleBar
+    /// The artwork's colour, over the whole window while Now Playing shows.
+    @State private var tint: Color?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openWindow) private var openWindow
 
@@ -27,6 +29,7 @@ struct PlayerWindow: View {
             footer
                 .padding(.bottom, Theme.Space.xs)
         }
+        .background(tintLayer)
         .background(Theme.Colors.bg)
         .ignoresSafeArea(edges: .top)
         .frame(width: Theme.Size.window.width, height: Theme.Size.window.height - topInset)
@@ -36,6 +39,17 @@ struct PlayerWindow: View {
             player.start()
             StatusMenu.shared.install(player: player) { openWindow(id: "main") }
         }
+        .task(id: player.state.artworkURL) {
+            tint = player.hasTrack ? await ArtworkTint.color(for: player.state.artworkURL) : nil
+        }
+    }
+
+    private var tintLayer: some View {
+        let showing = tint != nil && (navigation.page ?? .nowPlaying) == .nowPlaying
+        return (tint ?? Theme.Colors.bg)
+            .opacity(showing ? Theme.Tint.opacity : 0)
+            .animation(.easeInOut(duration: Theme.Motion.tintChange), value: tint)
+            .animation(.easeInOut(duration: Theme.Motion.tintChange), value: navigation.page)
     }
 
     @ViewBuilder
