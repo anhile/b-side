@@ -1,11 +1,13 @@
 import AppKit
 import MediaPlayer
+import WebKit
 
 /// System Now Playing widget and media keys.
 ///
-/// UNCERTAIN: WebKit also publishes Now Playing on its own, from the page's
-/// `navigator.mediaSession`. The two may compete. The "Native Now Playing"
-/// toggle in the UI turns this class off so the two can be compared.
+/// WebKit also publishes Now Playing for the playing element, so some key
+/// presses reach the page instead of here; `JSBridge` hands those back to the
+/// app through Media Session handlers. The "Media keys and Now Playing"
+/// toggle in Settings turns this class off.
 @MainActor
 final class NowPlaying {
     enum Command {
@@ -76,7 +78,6 @@ final class NowPlaying {
         command.isEnabled = true
         command.addTarget { [weak self] event in
             guard let mapped = map(event) else { return .commandFailed }
-            EventLog.write("remote\t\(mapped)") // media keys and the Now Playing widget land here
             DispatchQueue.main.async { self?.onCommand?(mapped) }
             return .success
         }
@@ -94,5 +95,20 @@ final class NowPlaying {
             self.artwork = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
             self.update(self.lastState)
         }
+    }
+}
+
+/// Whether WebKit holds a Now Playing session of its own for the page.
+/// Written to the event log once per launch, as a check on the key routing.
+///
+/// UNCERTAIN: private WebKit API, found by listing the selectors of
+/// `WKWebView`; guarded with `responds(to:)`.
+enum WebKitNowPlaying {
+    private static let hasSession = Selector(("_hasActiveNowPlayingSession"))
+
+    static func hasSession(_ webView: WKWebView) -> Bool? {
+        guard webView.responds(to: hasSession), let method = webView.method(for: hasSession) else { return nil }
+        typealias Getter = @convention(c) (AnyObject, Selector) -> Bool
+        return unsafeBitCast(method, to: Getter.self)(webView, hasSession)
     }
 }

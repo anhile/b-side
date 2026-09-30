@@ -42,6 +42,10 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
     /// The signed-in user's playlists.
     var onPlaylists: (([Playlist]) -> Void)?
     var onAccount: ((Account) -> Void)?
+    /// A media key or Control Center command that WebKit gave to the page:
+    /// the Media Session action ("play", "nexttrack", ...) and, for "seekto",
+    /// the position.
+    var onRemote: ((_ action: String, _ seconds: Double?) -> Void)?
 
     static let script = "player"
 
@@ -52,7 +56,7 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
         controller.removeScriptMessageHandler(forName: Self.handlerName)
         controller.add(self, name: Self.handlerName)
 
-        let config = "window.__bsideConfig = \(Self.json(pageConfig));"
+        let config = "window.__bsideConfig = \(Self.json(pageConfig));" + Self.mediaSessionHandlers
         controller.addUserScript(WKUserScript(source: config, injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
         guard let url = Bundle.main.url(forResource: Self.script, withExtension: "js"),
@@ -62,6 +66,31 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
         }
         controller.addUserScript(WKUserScript(source: source, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
     }
+
+    /// WebKit registers the playing element with the system on its own, as
+    /// Safari does, so some media key presses reach WebKit instead of the
+    /// app's MPRemoteCommandCenter. Without Media Session handlers WebKit
+    /// then pauses or plays the element itself, behind the app's back. With
+    /// handlers it calls them instead (WebKit's
+    /// `MediaElementSession::didReceiveRemoteControlCommand`), so these
+    /// hand every action to the app, which treats it like its own command.
+    /// The page's player may not replace them.
+    private static let mediaSessionHandlers = """
+    (function () {
+      var session = navigator.mediaSession;
+      if (!session) return;
+      var set = session.setActionHandler.bind(session);
+      ['play', 'pause', 'stop', 'nexttrack', 'previoustrack', 'seekto'].forEach(function (action) {
+        try {
+          set(action, function (details) {
+            window.webkit.messageHandlers.bside.postMessage({ type: 'remote', action: action,
+              seconds: details && typeof details.seekTime === 'number' ? details.seekTime : null });
+          });
+        } catch (e) {}
+      });
+      session.setActionHandler = function () {};
+    })();
+    """
 
     /// Calls `window.__bside.<method>(args...)`. Arguments are JSON-encoded.
     func call(_ method: String, _ args: Any...) {
@@ -96,6 +125,8 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
                 ? .signedIn(name: body["name"] as? String ?? "", handle: body["handle"] as? String ?? "",
                             photoURL: (body["photo"] as? String).flatMap { $0.isEmpty ? nil : URL(string: $0) })
                 : .signedOut)
+        case "remote":
+            onRemote?(body["action"] as? String ?? "", (body["seconds"] as? NSNumber)?.doubleValue)
         case "event":
             onEvent?(body["kind"] as? String ?? "", body["detail"] as? String ?? "")
         case "playlists":

@@ -78,6 +78,11 @@ final class PlayerController: NSObject, ObservableObject {
     private let bridge = JSBridge()
     private let nowPlaying = NowPlaying()
     private var started = false
+    private var webKitSessionChecked = false
+    private var lastRemote: (kind: String, at: Date)?
+    /// Two copies of one key press arrive well within this; two presses
+    /// by hand are further apart.
+    private static let remoteEchoWindow: TimeInterval = 0.3
 
     private var currentListID: String?
     /// When `state` arrived, to run the position forward between reports.
@@ -138,6 +143,17 @@ final class PlayerController: NSObject, ObservableObject {
         bridge.onState = { [weak self] in self?.handle(state: $0) }
         bridge.onEvent = { [weak self] in self?.handle(event: $0, detail: $1) }
         bridge.onAccount = { [weak self] in self?.handle(account: $0) }
+        bridge.onRemote = { [weak self] action, seconds in
+            let command: NowPlaying.Command? = switch action {
+            case "play": .play
+            case "pause", "stop": .pause
+            case "nexttrack": .next
+            case "previoustrack": .previous
+            case "seekto": seconds.map { .seek($0) }
+            default: nil
+            }
+            if let command { self?.receive(command, via: "page") }
+        }
         bridge.onPlaylists = { [weak self] in
             self?.playlists = $0
             self?.playlistsState = .loaded
@@ -162,7 +178,7 @@ final class PlayerController: NSObject, ObservableObject {
         window.delegate = self
         window.center()
 
-        nowPlaying.onCommand = { [weak self] in self?.handle(command: $0) }
+        nowPlaying.onCommand = { [weak self] in self?.receive($0, via: "system") }
         applyNowPlayingSetting()
 
         sampleProcesses()
@@ -385,6 +401,24 @@ final class PlayerController: NSObject, ObservableObject {
         }
     }
 
+    /// A command from a media key, AirPods or Control Center. It comes
+    /// either straight from the system or through WebKit and the page; one
+    /// press may arrive both ways, so the second copy is dropped.
+    private func receive(_ command: NowPlaying.Command, via path: String) {
+        let kind = switch command {
+        case .play, .pause, .toggle: "play/pause"
+        default: "\(command)"
+        }
+        let now = Date()
+        if let last = lastRemote, last.kind == kind, now.timeIntervalSince(last.at) < Self.remoteEchoWindow {
+            EventLog.write("remote\t\(path) \(command), same press, ignored")
+            return
+        }
+        lastRemote = (kind, now)
+        EventLog.write("remote\t\(path) \(command)")
+        handle(command: command)
+    }
+
     private func handle(command: NowPlaying.Command) {
         switch command {
         case .play: if !state.isPlaying { togglePlayPause() }
@@ -468,6 +502,14 @@ final class PlayerController: NSObject, ObservableObject {
         }
         if new.isPlaying != old.isPlaying {
             playingChanged(new.isPlaying)
+        }
+        if new.isPlaying, !webKitSessionChecked {
+            webKitSessionChecked = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+                guard let webView = self?.webView else { return }
+                let answer = WebKitNowPlaying.hasSession(webView).map { $0 ? "yes" : "no" } ?? "unknown"
+                EventLog.write("remote\tWebKit now-playing session: \(answer)")
+            }
         }
     }
 
