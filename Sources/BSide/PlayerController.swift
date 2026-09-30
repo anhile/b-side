@@ -43,6 +43,21 @@ enum PlaySource: Equatable {
 final class PlayerController: NSObject, ObservableObject {
     @Published private(set) var state = PlayerState()
     @Published private(set) var phase = PlayerPhase.starting
+    /// Chose to use B-Side without signing in. Cleared by signing in.
+    @Published private(set) var isGuest = Settings.bool(Keys.guest) {
+        didSet { Settings.defaults.set(isGuest, forKey: Keys.guest) }
+    }
+    /// The playlist whose tracks the Playlists page shows, if any.
+    @Published private(set) var openPlaylist: Playlist?
+    @Published private(set) var tracks: [Track] = []
+    @Published private(set) var tracksState = Loadable.idle
+    /// The current track's lyrics, fetched when the lyrics are opened. Only
+    /// the last track's are kept.
+    @Published private(set) var lyrics: Lyrics?
+    @Published private(set) var lyricsState = Loadable.idle
+    private var tracksHaveMore = false
+    private var loadingMoreTracks = false
+    private var launchTrackPlayed = false
     @Published private(set) var account = Account.unknown
     @Published private(set) var source: PlaySource?
     /// The Vibe tiles, in the user's order. Saved on every change.
@@ -116,7 +131,8 @@ final class PlayerController: NSObject, ObservableObject {
                         phase: PlayerPhase = .ready, source: PlaySource? = nil,
                         playlists: [Playlist] = [], playlistsState: Loadable = .loaded,
                         problem: String? = nil, volume: Double = 70,
-                        moods: [Mood] = [.liked]) -> PlayerController {
+                        moods: [Mood] = [.liked], isGuest: Bool = false, openPlaylist: Playlist? = nil,
+                        tracks: [Track] = [], tracksState: Loadable = .idle) -> PlayerController {
         let controller = PlayerController()
         controller.started = true
         controller.moods = moods
@@ -127,6 +143,10 @@ final class PlayerController: NSObject, ObservableObject {
         controller.source = source
         controller.playlists = playlists
         controller.playlistsState = playlistsState
+        controller.isGuest = isGuest
+        controller.openPlaylist = openPlaylist
+        controller.tracks = tracks
+        controller.tracksState = tracksState
         controller.problem = problem
         controller.volume = volume
         return controller
@@ -146,6 +166,14 @@ final class PlayerController: NSObject, ObservableObject {
         bridge.onState = { [weak self] in self?.handle(state: $0) }
         bridge.onEvent = { [weak self] in self?.handle(event: $0, detail: $1) }
         bridge.onAccount = { [weak self] in self?.handle(account: $0) }
+        bridge.onLyrics = { [weak self] lyrics in
+            guard let self, lyrics.videoID == self.state.videoID else { return } // the track moved on
+            self.lyrics = lyrics
+            self.lyricsState = .loaded
+        }
+        bridge.onTracks = { [weak self] listID, items, append, more in
+            self?.receive(tracks: items, of: listID, append: append, more: more)
+        }
         bridge.onRemote = { [weak self] action, seconds in
             let command: NowPlaying.Command? = switch action {
             case "play": .play
@@ -288,9 +316,25 @@ final class PlayerController: NSObject, ObservableObject {
     // MARK: - Commands
 
     /// Liked Music in random order: the first tile, and what Play does when
-    /// nothing is loaded.
+    /// nothing is loaded. A guest gets the first tile that needs no account.
     func playVibe() {
-        play(Mood.liked)
+        if let mood = vibeMood {
+            play(mood)
+        } else {
+            problem = "Sign in to play Liked Music, or add a vibe from a track."
+        }
+    }
+
+    /// What Play Vibe starts. While the account is not known yet (right
+    /// after launch) it is Liked Music, unless the user chose to be a guest.
+    var vibeMood: Mood? {
+        if account.isSignedIn || (account == .unknown && !isGuest) { return .liked }
+        return moods.first { !$0.needsAccount }
+    }
+
+    func continueAsGuest() {
+        isGuest = true
+        EventLog.write("account\tguest")
     }
 
     func play(_ mood: Mood) {
@@ -400,6 +444,110 @@ final class PlayerController: NSObject, ObservableObject {
     }
 
     /// Asks the page for the signed-in user's playlists.
+    // MARK: - Playlists
+
+    /// A library subtitle reads "Author • 19 tracks". The author is left out
+    /// when it is the user: the account's name, or whoever made most of the
+    /// library. Playlists saved from someone else keep theirs.
+    func subtitle(of playlist: Playlist) -> String {
+        let parts = playlist.subtitle.components(separatedBy: Self.subtitleSeparator)
+        guard parts.count > 1, let author = parts.first, isOwnName(author) else { return playlist.subtitle }
+        return parts.dropFirst().joined(separator: Self.subtitleSeparator)
+    }
+
+    private static let subtitleSeparator = " • "
+
+    private func isOwnName(_ author: String) -> Bool {
+        if case .signedIn(let name, _, _) = account, !name.isEmpty, name == author { return true }
+        return author == libraryAuthor
+    }
+
+    /// The author of most playlists in the library, if there is one that
+    /// made at least two of them.
+    private var libraryAuthor: String? {
+        let authors = playlists.compactMap { playlist -> String? in
+            let parts = playlist.subtitle.components(separatedBy: Self.subtitleSeparator)
+            return parts.count > 1 ? parts.first : nil
+        }
+        let counts = Dictionary(authors.map { ($0, 1) }, uniquingKeysWith: +)
+        guard let top = counts.max(by: { $0.value < $1.value }), top.value >= 2 else { return nil }
+        return top.key
+    }
+
+    // MARK: - Lyrics
+
+    /// Asks for the current track's lyrics, unless they are here already.
+    func loadLyrics() {
+        let video = state.videoID
+        guard !video.isEmpty, !state.isAd, pageReady else { return }
+        if lyrics?.videoID == video, lyricsState == .loaded { return }
+        lyrics = nil
+        lyricsState = .loading
+        bridge.call("lyrics", video)
+    }
+
+    // MARK: - A playlist's tracks
+
+    func open(_ playlist: Playlist) {
+        openPlaylist = playlist
+        tracks = []
+        tracksHaveMore = false
+        loadingMoreTracks = false
+        tracksState = .loading
+        if pageReady { bridge.call("tracks", playlist.id) } // otherwise "ready" asks
+    }
+
+    func closePlaylist() {
+        openPlaylist = nil
+        tracks = []
+        tracksState = .idle
+    }
+
+    func retryTracks() {
+        if let openPlaylist { open(openPlaylist) }
+    }
+
+    /// Called as the list nears its end.
+    func loadMoreTracks() {
+        guard tracksHaveMore, !loadingMoreTracks, pageReady else { return }
+        loadingMoreTracks = true
+        bridge.call("moreTracks")
+    }
+
+    private func receive(tracks items: [Track], of listID: String, append: Bool, more: Bool) {
+        guard listID == openPlaylist?.id else { return } // an answer for a list closed meanwhile
+        defer { playTrackFromLaunchArgument() }
+        let start = append ? tracks.count : 0
+        let numbered = items.enumerated().map { offset, track in
+            Track(index: start + offset, videoID: track.videoID, title: track.title,
+                  artist: track.artist, artworkURL: track.artworkURL)
+        }
+        tracks = append ? tracks + numbered : numbered
+        tracksHaveMore = more
+        loadingMoreTracks = false
+        tracksState = .loaded
+    }
+
+    /// `-listTracks <id> -playTrack <n>`, for scripted test runs.
+    private func playTrackFromLaunchArgument() {
+        guard Settings.defaults.object(forKey: Keys.playTrack) != nil, !launchTrackPlayed else { return }
+        launchTrackPlayed = true
+        let index = Settings.defaults.integer(forKey: Keys.playTrack)
+        if tracks.indices.contains(index) { playOpenPlaylist(from: tracks[index]) }
+    }
+
+    /// Plays the open playlist from one of its tracks, in the list's order.
+    func playOpenPlaylist(from track: Track) {
+        guard let playlist = openPlaylist else { return }
+        guard pageReady else { return play(playlist) } // the list lives in the page
+        unloaded = nil
+        problem = nil
+        source = .playlist(playlist.id)
+        currentListID = playlist.id
+        EventLog.write("load\t\(track.videoID)\t\(playlist.id)\tfrom track \(track.index + 1)")
+        bridge.call("playListing", playlist.id, track.index)
+    }
+
     func loadPlaylists() {
         guard pageReady else { return }
         if playlists.isEmpty { playlistsState = .loading }
@@ -525,6 +673,7 @@ final class PlayerController: NSObject, ObservableObject {
         // The title arrives a moment after the video ID, so wait for it.
         if !new.title.isEmpty, new.videoID != old.videoID || new.title != old.title {
             EventLog.write("track\t\(new.videoID)\t\(new.artist) - \(new.title)")
+            if Settings.bool(Keys.lyrics), lyrics == nil { loadLyrics() }
         }
         if new.isAd, !old.isAd {
             EventLog.write("ad")
@@ -555,7 +704,10 @@ final class PlayerController: NSObject, ObservableObject {
             }
         }
         account = new
-        if new.isSignedIn { Settings.defaults.set(true, forKey: Keys.wasSignedIn) }
+        if new.isSignedIn {
+            Settings.defaults.set(true, forKey: Keys.wasSignedIn)
+            isGuest = false
+        }
         if !new.isSignedIn {
             playlists = []
             playlistsState = .idle
@@ -570,6 +722,10 @@ final class PlayerController: NSObject, ObservableObject {
             pageReady = true
             bridge.call("volume", volume)
             if account.isSignedIn { loadPlaylists() }
+            if let openPlaylist, tracksState == .loading { bridge.call("tracks", openPlaylist.id) }
+            if openPlaylist == nil, let id = Settings.defaults.string(forKey: Keys.listTracks) {
+                open(Playlist(id: id, title: id))
+            }
             if let pending = pendingTarget {
                 pendingTarget = nil
                 sendToPage(pending.target, startAt: pending.position)
@@ -580,6 +736,11 @@ final class PlayerController: NSObject, ObservableObject {
             // player.js starts every error with the step that failed.
             if detail.hasPrefix("boot") {
                 phase = .failed("YouTube Music could not be loaded. Check the connection and try again.")
+            } else if detail.hasPrefix("lyrics") {
+                lyricsState = .failed("The lyrics could not be loaded.")
+            } else if detail.hasPrefix("tracks") {
+                loadingMoreTracks = false
+                if tracks.isEmpty { tracksState = .failed("The tracks of this playlist could not be loaded.") }
             } else if detail.hasPrefix("playlists") {
                 playlistsState = .failed("The list of playlists could not be loaded.")
             } else if detail.hasPrefix("load") {

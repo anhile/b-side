@@ -19,6 +19,12 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         self.openMain = openMain
         guard item == nil else { return }
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        // Where the user drags the icon (Command-drag, or with a menu bar
+        // manager such as Hidden Bar) is saved under this name as "NSStatusItem
+        // Preferred Position B-Side" and restored at launch. Without a saved
+        // position a new icon lands at the left end of the app icons, which
+        // is inside a menu bar manager's hidden section.
+        item.autosaveName = "B-Side"
         item.button?.image = MenuBarIcon.image
         item.button?.toolTip = "B-Side"
         item.menu = menu
@@ -38,12 +44,15 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         menu.addItem(head)
         menu.addItem(.separator())
 
-        let vibe = NSMenuItem(title: "Vibe", action: nil, keyEquivalent: "")
-        vibe.submenu = NSMenu(title: "Vibe")
+        let vibe = NSMenuItem(title: Page.vibe.title, action: nil, keyEquivalent: "")
+        vibe.submenu = NSMenu(title: Page.vibe.title)
+        vibe.submenu?.autoenablesItems = false
         for mood in player.moods {
-            vibe.submenu?.addItem(Self.item(mood.name) { [weak player] in player?.play(mood) })
+            let item = Self.item(mood.name) { [weak player] in player?.play(mood) }
+            item.isEnabled = player.account.isSignedIn || !mood.needsAccount
+            vibe.submenu?.addItem(item)
         }
-        vibe.isEnabled = player.account.isSignedIn
+        vibe.isEnabled = player.account.isSignedIn || player.isGuest
         menu.addItem(vibe)
 
         let playlists = NSMenuItem(title: "Playlists", action: nil, keyEquivalent: "")

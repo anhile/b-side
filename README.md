@@ -46,15 +46,15 @@ A 320 by 440 window with three pages, designed as in [DESIGN.md](DESIGN.md).
 
 | Where | What it does |
 |---|---|
-| **Vibe** page | Your mood tiles in two columns. A tile plays a playlist (in order or shuffled), Liked Music shuffled, or the radio of a track. The plus tile adds one; right-click edits or removes |
-| **Playlists** page | Your playlists, private ones included. Click one to play it |
-| **Now Playing** page | Artwork with the record behind it, title, artist, position, volume, Previous, Play or Pause, Next |
+| **Vibes** page | Your mood tiles in two columns. A tile plays a playlist (in order or shuffled), Liked Music shuffled, or the radio of a track. The plus tile adds one; right-click edits or removes |
+| **Playlists** page | Your playlists, private ones included. Click one to see its tracks and play from any of them; the button at the end of a row plays it at once |
+| **Now Playing** page | Artwork with the record behind it, title, artist, position, volume, Previous, Play or Pause, Next. Over the artwork: Like and Lyrics (plain text from YouTube Music, fetched only when opened) |
 | Strip under Vibe and Playlists | The current track (scrolls when long), Pause and Next; click it to open Now Playing |
 | Icons at the top right | Now Playing, Vibe, Playlists |
 | Menu bar record or Command-comma | Settings: Account, Playback, Diagnostics |
 
 Move between the pages with a two-finger swipe, the icons at the top right,
-or Command-1 (Now Playing), Command-2 (Vibe) and Command-3 (Playlists). With Reduce Motion on, pages cross-fade
+or Command-1 (Now Playing), Command-2 (Vibes) and Command-3 (Playlists). With Reduce Motion on, pages cross-fade
 and the swipe is off.
 
 | Shortcut | Action |
@@ -71,6 +71,9 @@ Closing the window does not stop the music. The record in the menu bar shows
 the track (scrolling when long) with Previous, Play or Pause and Next, lists
 every Vibe tile and playlist, and brings the window back.
 The window is dragged by the empty strip at the top.
+
+**Without an account:** Continue as Guest on the sign-in screen. Tiles that
+play a track's radio work; Liked Music and your playlists ask you to sign in.
 
 **Open at login** (Settings, Playback; off by default) starts B-Side in the
 menu bar, without its window or Dock icon. The Play key and AirPods then
@@ -114,6 +117,9 @@ Launch arguments, for scripted runs:
 | `-volume 30` | Volume at launch, 0 to 100 |
 | `-muted YES` | Mutes the player; decoding still runs, so memory is comparable |
 | `-startIndex 48` | Starts a playlist at this track, counting from 0 |
+| `-listTracks LM` | Debug: opens this playlist's track list at launch |
+| `-lyrics YES` | Debug: fetches the first track's lyrics, as opening them does |
+| `-playTrack 3` | Debug: with `-listTracks`, plays the list from this track, counting from 0 |
 | `-forceAudioOnly NO` | Plays videos at normal quality, for comparison |
 | `-url <url>` | Debug: loads this URL instead of the player page (`about:blank` measures the floor) |
 | `-snapshot <folder>` | Renders every page in its states, light and dark, as PNG into the folder and quits. For design review |

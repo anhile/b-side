@@ -34,12 +34,15 @@
   const RADIO_PREFIX = 'RDAMVM';        // playlist ID of the automatic radio for a track
   const SHUFFLE_PARAMS = 'wAEB8gECKAE%3D'; // `params` value that makes the server shuffle a playlist
   const ARTWORK_MIN_WIDTH = 320;        // smallest thumbnail that still looks sharp at 160 pt
+  const ROW_ARTWORK_MIN_WIDTH = 96;     // the same for a 36 pt row in a track list
   const CONTINUATION = /"next(?:Radio)?ContinuationData":\{"continuation":"([^"]+)"/; // token for the next page
   const REFILL_THRESHOLD = 3;           // fetch the next page this many tracks before the end
   const BROWSE_ENDPOINT = '/youtubei/v1/browse?prettyPrint=false';
   const LIBRARY_PLAYLISTS = 'FEmusic_liked_playlists'; // browse ID of the user's playlists
   const LIBRARY_ITEM = 'musicTwoRowItemRenderer';      // one tile in that list
   const PLAYLIST_BROWSE_PREFIX = 'VL';  // a playlist's browse ID is 'VL' + its playlist ID
+  const LYRICS_BROWSE = /"browseId":"(MPLYt[^"]*)"/; // in a track's /next response: its lyrics page
+  const LYRICS_SHELF = 'musicDescriptionShelfRenderer'; // the lyrics text and its source on that page
   const ACCOUNT_ENDPOINT = '/youtubei/v1/account/account_menu?prettyPrint=false';
   const LIKE_ENDPOINT = '/youtubei/v1/like/like?prettyPrint=false';
   const UNLIKE_ENDPOINT = '/youtubei/v1/like/removelike?prettyPrint=false';
@@ -302,6 +305,7 @@
       title: find(chosen.title, 'text') || '',
       artist: find(chosen.shortBylineText, 'text') || find(chosen.longBylineText, 'text') || '',
       artwork: thumbnail(chosen.thumbnail),
+      thumb: thumbnail(chosen.thumbnail, ROW_ARTWORK_MIN_WIDTH),
       like: find(chosen, LIKE_KEY) || '', // '' when the item does not say
     };
   }
@@ -381,6 +385,71 @@
     playAt(0, startSeconds);
   }
 
+  // The tracks of one playlist, for the list in the app window: the same
+  // request and order as the queue. Kept, so playing from a track in the
+  // list needs no second request and starts exactly there.
+  let listing = null; // { id, tracks, continuation, loading }
+
+  async function tracks(id) {
+    const page = await fetchQueue({ playlistId: id });
+    listing = { id: id, tracks: page.tracks, continuation: page.continuation, loading: false };
+    postTracks(page.tracks, false);
+  }
+
+  async function moreTracks() {
+    if (!listing || !listing.continuation || listing.loading) return;
+    const current = listing;
+    current.loading = true;
+    try {
+      const page = await fetchQueue({ continuation: current.continuation });
+      if (listing !== current) return; // another playlist was opened meanwhile
+      current.tracks = current.tracks.concat(page.tracks);
+      current.continuation = page.tracks.length ? page.continuation : null;
+      postTracks(page.tracks, true);
+    } finally {
+      current.loading = false;
+    }
+  }
+
+  function postTracks(items, append) {
+    post({
+      type: 'tracks', listId: listing.id, append: append, more: !!listing.continuation,
+      items: items.map(function (entry) {
+        return { videoId: entry.id, title: entry.title, artist: entry.artist, artwork: entry.thumb };
+      }),
+    });
+    event('tracks', listing.tracks.length + ' tracks listed' + (listing.continuation ? ', more available' : ''));
+  }
+
+  function playListing(id, index) {
+    if (!player) return event('error', 'load: player not ready');
+    if (!listing || listing.id !== id || !listing.tracks[index]) return event('error', 'load: the track list changed');
+    queue = listing.tracks.slice();
+    queueContinuation = listing.continuation;
+    event('queue', describe(queue, 'playlist from track ' + (index + 1)));
+    playAt(index, 0);
+  }
+
+  // Plain lyrics, as the web client shows them: the track's /next response
+  // names its lyrics page, and that page holds the text and its source.
+  // Only asked for when the lyrics are opened; nothing is timed.
+  async function lyrics(videoId) {
+    const next = await api(QUEUE_ENDPOINT, { videoId: videoId });
+    const page = next.match(LYRICS_BROWSE);
+    let text = '', source = '', bytes = next.length;
+    if (page) {
+      const response = await api(BROWSE_ENDPOINT, { browseId: page[1] });
+      bytes += response.length;
+      cut(response, [LYRICS_SHELF], function (key, node) {
+        text = ((node.description && node.description.runs) || []).map(function (run) { return run.text; }).join('');
+        source = ((node.footer && node.footer.runs) || []).map(function (run) { return run.text; }).join('');
+      });
+    }
+    post({ type: 'lyrics', videoId: videoId, text: text, source: source });
+    event('lyrics', videoId + ': ' + (text ? text.split('\n').length + ' lines' : 'none')
+      + ' (' + Math.round(bytes / 1024) + ' KB)');
+  }
+
   // The signed-in user's playlists, for the picker in the app window.
   async function playlists() {
     const text = await api(BROWSE_ENDPOINT, { browseId: LIBRARY_PLAYLISTS });
@@ -423,6 +492,16 @@
     },
     playlists() {
       playlists().catch(function (e) { event('error', 'playlists: ' + e); });
+    },
+    tracks(id) {
+      tracks(id).catch(function (e) { event('error', 'tracks: ' + e); });
+    },
+    moreTracks() {
+      moreTracks().catch(function (e) { event('error', 'tracks: ' + e); });
+    },
+    playListing: playListing,
+    lyrics(videoId) {
+      lyrics(videoId).catch(function (e) { event('error', 'lyrics: ' + e); });
     },
     like(videoId, on) {
       api(on ? LIKE_ENDPOINT : UNLIKE_ENDPOINT, { target: { videoId: videoId } }).then(function () {

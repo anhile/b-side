@@ -20,6 +20,17 @@ enum Snapshots {
         Mood(id: "radio", name: "Like Plug Walk", source: .radio(videoID: "x")),
     ]
 
+    /// A playlist's tracks, the second one being the one that plays.
+    private static func tracks(current: String) -> [Track] {
+        let names = [("Sicko Mode", "Travis Scott"), ("Plug Walk", "Rich The Kid"),
+                     ("A title long enough to be cut at the end of the row", "Someone feat. Someone Else"),
+                     ("Goosebumps", "Travis Scott"), ("", ""), ("Money Longer", "Lil Uzi Vert")]
+        return names.enumerated().map { index, name in
+            Track(index: index, videoID: index == 1 ? current : "t\(index)", title: name.0, artist: name.1,
+                  artworkURL: index % 2 == 0 ? artwork : nil)
+        }
+    }
+
     /// Name, page, and the situation to show.
     private static var cases: [(String, Page, PlayerController)] {
         var paused = track; paused.isPlaying = false
@@ -30,9 +41,9 @@ enum Snapshots {
         var ad = track; ad.isAd = true; ad.title = ""
         var loading = PlayerState(); loading.videoID = "x"
         let lists = [
-            Playlist(id: "1", title: "Focus", subtitle: "12 tracks", artworkURL: artwork),
-            Playlist(id: "2", title: "Night drive with an unreasonably long playlist name", subtitle: "Private · 87 tracks", artworkURL: nil),
-            Playlist(id: "3", title: "Workout", subtitle: "34 tracks", artworkURL: artwork),
+            Playlist(id: "1", title: "Focus", subtitle: "Emil • 12 tracks", artworkURL: artwork),
+            Playlist(id: "2", title: "Night drive with an unreasonably long playlist name", subtitle: "Someone Else • 87 tracks", artworkURL: nil),
+            Playlist(id: "3", title: "Workout", subtitle: "Emil • 34 tracks", artworkURL: artwork),
         ]
         return [
             ("nowplaying-playing", .nowPlaying, .fixture(state: track, source: .mood(Mood.liked.id), playlists: lists)),
@@ -43,6 +54,9 @@ enum Snapshots {
             ("nowplaying-loading", .nowPlaying, .fixture(state: loading, source: .mood(Mood.liked.id), playlists: lists)),
             ("nowplaying-empty", .nowPlaying, .fixture(playlists: lists)),
             ("nowplaying-signedout", .nowPlaying, .fixture(account: .signedOut)),
+            ("nowplaying-guest", .nowPlaying, .fixture(account: .signedOut, moods: [.liked], isGuest: true)),
+            ("vibe-guest", .vibe, .fixture(account: .signedOut, moods: moods, isGuest: true)),
+            ("playlists-guest", .playlists, .fixture(account: .signedOut, isGuest: true)),
             ("welcome", .nowPlaying, .fixture(account: .unknown, phase: .asleep)),
             ("nowplaying-failed", .nowPlaying, .fixture(phase: .failed("YouTube Music could not be loaded. Check the connection and try again."))),
             ("vibe-playing", .vibe, .fixture(state: track, source: .mood("focus"), playlists: lists, moods: moods)),
@@ -55,6 +69,9 @@ enum Snapshots {
             ("vibe-problem", .vibe, .fixture(state: paused, source: .mood(Mood.liked.id), playlists: lists,
                                             problem: "This could not be played. It may be empty or unavailable.")),
             ("playlists-playing", .playlists, .fixture(state: track, source: .playlist("1"), playlists: lists)),
+            ("playlist-tracks", .playlists, .fixture(state: track, source: .playlist("1"), playlists: lists,
+                                                     openPlaylist: lists[0], tracks: tracks(current: track.videoID), tracksState: .loaded)),
+            ("playlist-tracks-loading", .playlists, .fixture(playlists: lists, openPlaylist: lists[1], tracksState: .loading)),
             ("playlists-loading", .playlists, .fixture(playlistsState: .loading)),
             ("playlists-failed", .playlists, .fixture(playlistsState: .failed("The list of playlists could not be loaded."))),
             ("playlists-none", .playlists, .fixture(playlists: [])),
@@ -99,6 +116,26 @@ enum Snapshots {
         await renderSettings(into: folder)
         await renderPage(.nowPlaying, player: .fixture(state: track, source: .mood(Mood.liked.id)),
                          name: "nowplaying-reduce-transparency", appearance: .aqua, into: folder,
+                         reduceTransparency: true)
+        await renderPage(.nowPlaying, player: .fixture(state: track, source: .mood(Mood.liked.id)),
+                         name: "nowplaying-hover", appearance: .aqua, into: folder,
+                         reduceTransparency: true, artworkHover: true)
+        var pausedTrack = track; pausedTrack.isPlaying = false
+        await renderPage(.nowPlaying, player: .fixture(state: pausedTrack, source: .mood(Mood.liked.id)),
+                         name: "nowplaying-hover-paused", appearance: .darkAqua, into: folder,
+                         artworkHover: true)
+        // Glass does not draw offscreen; these show the strip's panel shape.
+        let many = (1...20).map { Playlist(id: "\($0)", title: "Playlist \($0)", subtitle: "\($0 * 3) tracks", artworkURL: nil) }
+        await renderPage(.playlists, player: .fixture(state: track, source: .playlist("1"), playlists: many),
+                         name: "playlists-reduce-transparency", appearance: .aqua, into: folder,
+                         reduceTransparency: true)
+        await renderPage(.playlists, player: .fixture(state: track, source: .playlist("1"), playlists: many,
+                                                      openPlaylist: many[0], tracks: tracks(current: track.videoID),
+                                                      tracksState: .loaded),
+                         name: "playlist-tracks-reduce-transparency", appearance: .aqua, into: folder,
+                         reduceTransparency: true)
+        await renderPage(.vibe, player: .fixture(state: track, source: .mood("focus"), moods: moods),
+                         name: "vibe-reduce-transparency", appearance: .darkAqua, into: folder,
                          reduceTransparency: true)
         EventLog.write("snapshot: rendering \(cases.count) cases into \(folder.path)")
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -147,7 +184,7 @@ enum Snapshots {
     /// One page in one appearance, with the accessibility settings given.
     private static func renderPage(_ page: Page, player: PlayerController, name: String,
                                    appearance: NSAppearance.Name, into folder: URL,
-                                   reduceTransparency: Bool = false) async {
+                                   reduceTransparency: Bool = false, artworkHover: Bool = false) async {
         let navigation = Navigation()
         let window = NSWindow(
             contentRect: NSRect(origin: .zero, size: Theme.Size.window),
@@ -160,7 +197,8 @@ enum Snapshots {
         let hosting = NSHostingView(rootView: PlayerWindow()
             .environmentObject(player)
             .environmentObject(navigation)
-            .environment(\.previewReduceTransparency, reduceTransparency))
+            .environment(\.previewReduceTransparency, reduceTransparency)
+            .environment(\.previewArtworkHover, artworkHover))
         hosting.sizingOptions = []
         hosting.frame = NSRect(origin: .zero, size: Theme.Size.window)
         window.contentView = hosting

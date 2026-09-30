@@ -10,6 +10,9 @@ struct NowPlayingPage: View {
     @State private var scrub: Double?
     @State private var showsVolume = false
     @State private var tintBottom: CGFloat = 0
+    @State private var hoveringArtwork = false
+    @State private var showsLyrics = false
+    @Environment(\.previewArtworkHover) private var previewArtworkHover
 
     var body: some View {
         if let blocked = blockingState(for: player) {
@@ -23,13 +26,9 @@ struct NowPlayingPage: View {
 
     private var content: some View {
         VStack(spacing: 0) {
-            Spacer(minLength: Theme.Space.m)
-            ArtworkWithRecord(url: player.state.artworkURL, spinning: player.state.isPlaying)
+            artworkZone
                 .layoutPriority(1) // the record takes the free height, not the gaps
-            Spacer(minLength: Theme.Space.l)
-                // Where the artwork's colour ends: just above the title.
-                .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named("window")).midY } action: { tintBottom = $0 }
-                .preference(key: TintBottomKey.self, value: tintBottom)
+            Spacer(minLength: Theme.Space.s)
             VStack(spacing: Theme.Space.xxs) {
                 Text(title)
                     .font(Theme.Text.title)
@@ -37,7 +36,7 @@ struct NowPlayingPage: View {
                     .lineLimit(1)
                     .help(title)
                 Text(subtitle)
-                    .font(Theme.Text.caption)
+                    .font(Theme.Text.body)
                     .foregroundStyle(Theme.Colors.textMuted)
                     .lineLimit(1)
                     .help(subtitle)
@@ -49,7 +48,57 @@ struct NowPlayingPage: View {
             Spacer(minLength: Theme.Space.m)
             transport
                 .padding(.horizontal, Theme.Space.m)
-                .padding(.bottom, Theme.Space.xs)
+                .padding(.bottom, Theme.Space.m) // as far from the bottom as from the sides
+        }
+    }
+
+    /// The zone the artwork's colour fills: from the top of the page to half
+    /// way to the title. While the pointer is over it (or the lyrics are
+    /// open), a dark veil covers all of it, with Like and Lyrics in the middle.
+    private var artworkZone: some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: Theme.Space.m)
+            ArtworkWithRecord(url: player.state.artworkURL, spinning: player.state.isPlaying)
+            Spacer(minLength: Theme.Space.s)
+        }
+        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named("window")).maxY } action: { tintBottom = $0 }
+        .preference(key: TintBottomKey.self, value: tintBottom)
+        .overlay {
+            if showsArtworkActions {
+                ZStack {
+                    Theme.Colors.shadow.opacity(Theme.Opacity.scrim)
+                    artworkActions
+                }
+                .environment(\.colorScheme, .dark) // light glass and icons on the veil
+                .transition(.opacity)
+            }
+        }
+        .contentShape(Rectangle())
+        .onHover { hoveringArtwork = $0 }
+        .animation(.easeOut(duration: Theme.Motion.feedback), value: showsArtworkActions)
+    }
+
+    private var showsArtworkActions: Bool {
+        hoveringArtwork || showsLyrics || previewArtworkHover
+    }
+
+    private var artworkActions: some View {
+        HStack(spacing: Theme.Space.s) {
+            TransportButton(symbol: player.state.isLiked ? "heart.fill" : "heart",
+                            label: player.state.isLiked ? "Remove Like" : "Like",
+                            glyph: Theme.Size.playGlyph, target: Theme.Size.artworkAction) {
+                player.toggleLike()
+            }
+            .glass(in: Circle())
+            .disabled(player.state.isAd)
+            TransportButton(symbol: "quote.bubble", label: "Lyrics",
+                            glyph: Theme.Size.playGlyph, target: Theme.Size.artworkAction) {
+                showsLyrics = true
+            }
+            .glass(in: Circle())
+            .popover(isPresented: $showsLyrics, arrowEdge: .bottom) {
+                LyricsPanel()
+            }
         }
     }
 
@@ -73,7 +122,7 @@ struct NowPlayingPage: View {
             Text("Nothing playing")
                 .font(Theme.Text.display)
                 .foregroundStyle(Theme.Colors.text)
-            Text("Pick a vibe or a playlist")
+            Text(player.isGuest ? "Add a vibe from a track, or sign in" : "Pick a vibe or a playlist")
                 .font(Theme.Text.caption)
                 .foregroundStyle(Theme.Colors.textMuted)
                 .padding(.top, Theme.Space.xxs)
@@ -82,11 +131,19 @@ struct NowPlayingPage: View {
                     Label("Play Vibe", systemImage: Page.vibe.symbol)
                 }
                 .buttonStyle(FilledButtonStyle())
-                .disabled(!player.account.isSignedIn)
-                Button { navigation.page = .playlists } label: {
-                    Label("Playlists", systemImage: Page.playlists.symbol)
+                .disabled(player.vibeMood == nil)
+                // A guest has no playlists: the way to them is signing in.
+                if player.isGuest {
+                    Button { player.showSignIn() } label: {
+                        Label("Sign In…", systemImage: "person.crop.circle")
+                    }
+                    .buttonStyle(OutlineButtonStyle())
+                } else {
+                    Button { navigation.page = .playlists } label: {
+                        Label("Playlists", systemImage: Page.playlists.symbol)
+                    }
+                    .buttonStyle(OutlineButtonStyle())
                 }
-                .buttonStyle(OutlineButtonStyle())
             }
             .padding(.top, Theme.Space.m)
             Spacer(minLength: Theme.Space.l)
@@ -128,15 +185,16 @@ struct NowPlayingPage: View {
     /// has its own circle on the left and the track menu one on the right.
     /// All three are the same height.
     private var transport: some View {
-        HStack(spacing: Theme.Space.m) {
-            TransportButton(symbol: "backward.fill", label: "Previous") { player.previous() }
+        // Each button is as tall as the capsule, so its hover fills it and
+        // the end ones follow the capsule's rounding.
+        HStack(spacing: Theme.Space.xxs) {
+            TransportButton(symbol: "backward.fill", label: "Previous", target: Theme.Size.transportBar) { player.previous() }
             TransportButton(symbol: player.state.isPlaying ? "pause.fill" : "play.fill",
                             label: player.state.isPlaying ? "Pause" : "Play",
-                            glyph: Theme.Size.playGlyph) { player.togglePlayPause() }
-            TransportButton(symbol: "forward.fill", label: "Next") { player.next() }
+                            glyph: Theme.Size.playGlyph, target: Theme.Size.transportBar) { player.togglePlayPause() }
+            TransportButton(symbol: "forward.fill", label: "Next", target: Theme.Size.transportBar) { player.next() }
                 .disabled(!player.state.hasNext)
         }
-        .padding(.horizontal, Theme.Space.xs)
         .frame(height: Theme.Size.transportBar)
         .glass(in: Capsule())
         .frame(maxWidth: .infinity)
@@ -170,12 +228,11 @@ struct NowPlayingPage: View {
 
     /// The speaker opens a small vertical slider above it, as in YouTube Music.
     private var volumeButton: some View {
-        TransportButton(symbol: volumeSymbol, label: "Volume") {
+        TransportButton(symbol: volumeSymbol, label: "Volume", target: Theme.Size.transportBar) {
             // Not a toggle: a click while the popover is open already closes
             // it, and toggling would open it again.
             showsVolume = true
         }
-        .frame(width: Theme.Size.transportBar, height: Theme.Size.transportBar)
         .glass(in: Circle())
         .help("Volume: \(Int(player.volume))%")
         .accessibilityValue("\(Int(player.volume)) percent")
@@ -203,7 +260,8 @@ struct NowPlayingPage: View {
     }
 
     /// SwiftUI's Slider is horizontal only on macOS; AppKit's is vertical when
-    /// it is taller than wide.
+    /// it is taller than wide. Its fill is the accent, fainter the quieter it
+    /// plays, so the level reads at a glance.
     private struct VerticalSlider: NSViewRepresentable {
         @Binding var value: Double
         let range: ClosedRange<Double>
@@ -214,12 +272,21 @@ struct NowPlayingPage: View {
             slider.isVertical = true
             slider.isContinuous = true
             slider.controlSize = .small
+            Self.fill(slider)
             return slider
         }
 
         func updateNSView(_ slider: NSSlider, context: Context) {
             context.coordinator.parent = self
             if slider.doubleValue != value { slider.doubleValue = value }
+            Self.fill(slider)
+        }
+
+        static func fill(_ slider: NSSlider) {
+            let span = slider.maxValue - slider.minValue
+            let level = span > 0 ? (slider.doubleValue - slider.minValue) / span : 1
+            let floor = Theme.Opacity.volumeFloor
+            slider.trackFillColor = NSColor(Theme.Colors.accent).withAlphaComponent(floor + (1 - floor) * level) // tokens-ok: the accent token, for AppKit
         }
 
         func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -227,7 +294,10 @@ struct NowPlayingPage: View {
         final class Coordinator: NSObject {
             var parent: VerticalSlider
             init(_ parent: VerticalSlider) { self.parent = parent }
-            @objc func changed(_ slider: NSSlider) { parent.value = slider.doubleValue }
+            @objc func changed(_ slider: NSSlider) {
+                parent.value = slider.doubleValue
+                VerticalSlider.fill(slider)
+            }
         }
     }
 
@@ -250,6 +320,9 @@ struct TransportButton: View {
     let symbol: String
     let label: String
     var glyph: CGFloat = Theme.Size.transportGlyph
+    /// The round glass buttons pass their full size, so the hover fills them.
+    var target: CGFloat = Theme.Size.transportTarget
+    var color: Color = Theme.Colors.text
     let action: () -> Void
 
     @Environment(\.isEnabled) private var isEnabled
@@ -258,8 +331,8 @@ struct TransportButton: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: glyph, weight: .semibold))
-                .foregroundStyle(Theme.Colors.text)
-                .frame(width: Theme.Size.transportTarget, height: Theme.Size.transportTarget)
+                .foregroundStyle(color)
+                .frame(width: target, height: target)
                 .contentShape(Rectangle())
         }
         .buttonStyle(PressableStyle())
@@ -269,12 +342,33 @@ struct TransportButton: View {
     }
 }
 
-/// Feedback for icon buttons: a short dip in opacity while pressed.
+/// Feedback for icon buttons: a soft capsule in the text colour under the
+/// pointer, and a short dip in opacity while pressed. It fills the button's
+/// frame: a circle on square buttons and the round glass ones, the shape of
+/// the page pill on the page tabs.
 struct PressableStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .opacity(configuration.isPressed ? Theme.Opacity.pressed : 1)
-            .animation(.easeOut(duration: Theme.Motion.feedback), value: configuration.isPressed)
+        HoverLabel(configuration: configuration)
+    }
+
+    private struct HoverLabel: View {
+        let configuration: Configuration
+        @Environment(\.isEnabled) private var isEnabled
+        @State private var hovering = false
+
+        var body: some View {
+            configuration.label
+                .background {
+                    Capsule()
+                        .fill(Theme.Colors.text.opacity(Theme.Opacity.hover))
+                        .padding(Theme.Size.hoverInset)
+                        .opacity(hovering && isEnabled ? 1 : 0)
+                }
+                .opacity(configuration.isPressed ? Theme.Opacity.pressed : 1)
+                .onHover { hovering = $0 }
+                .animation(.easeOut(duration: Theme.Motion.feedback), value: hovering)
+                .animation(.easeOut(duration: Theme.Motion.feedback), value: configuration.isPressed)
+        }
     }
 }
 
@@ -290,7 +384,8 @@ struct ArtworkWithRecord: View {
     var body: some View {
         SleeveAndRecord(url: url, spinning: spinning)
             .aspectRatio((Theme.Size.artworkLarge + Theme.Size.recordPeek) / Theme.Size.artworkLarge, contentMode: .fit)
-            .frame(minHeight: Theme.Size.artworkLarge, maxHeight: .infinity)
+            .padding(Theme.Space.s) // a little smaller than the zone it sets
+            .frame(maxWidth: .infinity, minHeight: Theme.Size.artworkLarge, maxHeight: .infinity)
             .padding(.horizontal, Theme.Space.m)
             .accessibilityHidden(true)
     }
@@ -350,5 +445,78 @@ struct RecordDisc: View {
                 .frame(width: size * Theme.Size.recordHoleRatio, height: size * Theme.Size.recordHoleRatio)
         }
         .frame(width: size, height: size)
+    }
+}
+
+/// The current track's lyrics, in a popover from the Lyrics button. Plain
+/// text as YouTube Music's web client has it, with its source; fetched when
+/// opened, and again when the track changes while it is open.
+struct LyricsPanel: View {
+    @EnvironmentObject private var player: PlayerController
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Space.xs) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(player.state.title.isEmpty ? "Lyrics" : player.state.title)
+                    .font(Theme.Text.label)
+                    .foregroundStyle(Theme.Colors.text)
+                    .lineLimit(1)
+                if !player.state.artist.isEmpty {
+                    Text(player.state.artist)
+                        .font(Theme.Text.caption)
+                        .foregroundStyle(Theme.Colors.textMuted)
+                        .lineLimit(1)
+                }
+            }
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+        .padding(Theme.Space.m)
+        .frame(width: Theme.Size.editorWidth, height: Theme.Size.lyricsHeight)
+        .task(id: player.state.videoID) { player.loadLyrics() }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if player.state.isAd {
+            note("No lyrics during an ad.")
+        } else {
+            switch player.lyricsState {
+            case .idle, .loading:
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            case .failed(let reason):
+                note(reason)
+            case .loaded:
+                if let lyrics = player.lyrics, !lyrics.text.isEmpty {
+                    ScrollView {
+                        Text(lyrics.text)
+                            .font(Theme.Text.body)
+                            .foregroundStyle(Theme.Colors.text)
+                            .lineSpacing(Theme.Space.xxs)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        if !lyrics.source.isEmpty {
+                            Text(lyrics.source)
+                                .font(Theme.Text.caption)
+                                .foregroundStyle(Theme.Colors.textMuted)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.top, Theme.Space.s)
+                        }
+                    }
+                    .scrollIndicators(.never)
+                } else {
+                    note("No lyrics for this track.")
+                }
+            }
+        }
+    }
+
+    private func note(_ text: String) -> some View {
+        Text(text)
+            .font(Theme.Text.caption)
+            .foregroundStyle(Theme.Colors.textMuted)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

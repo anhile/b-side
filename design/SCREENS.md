@@ -64,9 +64,15 @@ Status: passed the rubric on 2026-09-30, iteration 1. Liked Music uses the
 
 ## Strip (Vibe and Playlists, while music plays)
 
-Artwork 24, "Title — Artist" in the caption role, a Play or Pause button.
-The line opens Now Playing. When something failed, the strip's place shows
-the message instead.
+Artwork 24, "Title — Artist" in the caption role, Pause or Play, Next. The
+line opens Now Playing. When something failed, the panel shows the message
+instead.
+
+A glass panel of its own (radius m), 8 inside the window edges, floating over
+the bottom of the page: the lists run under it and keep its height as scroll
+margin, so the last row can scroll clear. Changed 2026-09-30: it used to sit
+flat on the background and read as part of the page. Vibe and Playlists also
+gained air under the title bar (16 and 12).
 
 ## Welcome (while the player page loads)
 

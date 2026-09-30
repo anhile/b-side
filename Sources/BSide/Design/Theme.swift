@@ -49,6 +49,8 @@ enum Theme {
         static let sleeve: CGFloat = 3
         static let s: CGFloat = 6
         static let m: CGFloat = 12
+        /// Inside a radius-m panel, 4 in: the corners stay concentric.
+        static let nested: CGFloat = m - Space.xxs
     }
 
     enum Size {
@@ -56,12 +58,17 @@ enum Theme {
         static let titleBar: CGFloat = 28
         static let pageDotTarget: CGFloat = 24
         static let pageTabTarget: CGFloat = 28
+        /// The Playlists page's bar under the title bar: one line, the
+        /// compact filled button with 6 above and below.
+        static let pageBar: CGFloat = 36
         /// Two columns inside the window padding, with one gutter.
         static let tileWidth: CGFloat = (window.width - 2 * Space.m - Space.s) / 2
         static let tileHeight: CGFloat = 96
         static let editorWidth: CGFloat = 300
+        static let lyricsHeight: CGFloat = 360
         static let artworkSmall: CGFloat = 36
-        static let artworkStrip: CGFloat = 24
+        /// The strip's artwork fills the panel, 4 in from its edges.
+        static let artworkStrip: CGFloat = stripHeight - 2 * Space.xxs
         static let artworkLarge: CGFloat = 160
         /// How far the record shows from behind the large artwork.
         static let recordPeek: CGFloat = 48
@@ -76,8 +83,14 @@ enum Theme {
         static let transportTarget: CGFloat = 32
         static let transportGlyph: CGFloat = 15
         static let playGlyph: CGFloat = 22
+        /// Pause at 15 has 60% of the ink of Next at 15; at 18 they weigh alike.
+        static let stripPlayGlyph: CGFloat = 18
         /// Every element of the transport row: the capsule and the circles.
         static let transportBar: CGFloat = 40
+        /// Like and Lyrics over the album cover.
+        static let artworkAction: CGFloat = 48
+        /// The hover shape stops this short of the button's edge.
+        static let hoverInset: CGFloat = 2
         static let volumeGlyph: CGFloat = 20
         static let volumeSlider: CGFloat = 120
         static let settingsWidth: CGFloat = 460
@@ -110,11 +123,18 @@ enum Theme {
 
     enum Opacity {
         static let pressed: Double = 0.7
+        /// The dark veil over the album cover while its actions show.
+        static let scrim: Double = 0.45
+        /// The hover circle under icon buttons, in the text colour.
+        static let hover: Double = 0.08
         static let disabled: Double = 0.35
         static let groove: Double = 0.18
         /// The light on the record's surface, which makes its turning visible.
         static let sheen: Double = 0.22
         static let skeletonDim: Double = 0.5
+        /// The volume slider's orange at the lowest volume; it reaches full
+        /// strength at 100%.
+        static let volumeFloor: Double = 0.3
     }
 
     enum Motion {

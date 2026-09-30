@@ -42,9 +42,9 @@ struct PlayerWindow: View {
                 .overlay(alignment: .bottom) {
                     footer
                         .padding(.bottom, Theme.Space.xs)
+                        .animation(.easeInOut(duration: Theme.Motion.feedback), value: showsFooter)
                 }
         }
-        .background(alignment: .top) { tintLayer }
         .background(Theme.Colors.bg)
         .coordinateSpace(name: "window")
         .onPreferenceChange(TintBottomKey.self) { tintBottom = $0 }
@@ -63,15 +63,14 @@ struct PlayerWindow: View {
         }
     }
 
+    /// Part of the Now Playing page, so it leaves with the page instead of
+    /// fading out over the next one. The page starts under the title bar,
+    /// whose glass keeps the plain background.
     private var tintLayer: some View {
-        let showing = tint != nil && (navigation.page ?? .nowPlaying) == .nowPlaying
-        return (tint ?? Theme.Colors.bg)
-            .opacity(showing ? Theme.Tint.opacity : 0)
-            // Below the title bar only: its glass shows the plain background.
+        (tint ?? Theme.Colors.bg)
+            .opacity(tint != nil ? Theme.Tint.opacity : 0)
             .frame(height: max(tintBottom - topInset, 0))
-            .padding(.top, topInset)
             .animation(.easeInOut(duration: Theme.Motion.tintChange), value: tint)
-            .animation(.easeInOut(duration: Theme.Motion.tintChange), value: navigation.page)
     }
 
     @ViewBuilder
@@ -117,7 +116,13 @@ struct PlayerWindow: View {
             case .nowPlaying: NowPlayingPage()
             }
         }
-        .padding(.bottom, footerRoom(on: page))
+        // Vibe and Playlists let their lists run under the glass strip and
+        // keep the room as scroll margin; Now Playing is pushed up instead.
+        .environment(\.footerRoom, footerRoom(on: page))
+        .padding(.bottom, page == .nowPlaying ? footerRoom(on: page) : 0)
+        .background(alignment: .top) {
+            if page == .nowPlaying { tintLayer }
+        }
         .animation(.easeInOut(duration: Theme.Motion.feedback), value: player.problem)
     }
 
@@ -125,14 +130,30 @@ struct PlayerWindow: View {
     /// not jump when music starts. Now Playing is that content already and
     /// takes the whole height, unless there is a problem to show.
     private func footerRoom(on page: Page) -> CGFloat {
-        page != .nowPlaying || player.problem != nil ? Theme.Size.stripHeight + Theme.Space.xs : 0
+        // The strip, the gap under it, and as much again above it.
+        page != .nowPlaying || player.problem != nil ? Theme.Size.stripHeight + Theme.Space.xs * 2 : 0
+    }
+
+    private var showsFooter: Bool {
+        player.problem != nil || (player.hasTrack && navigation.page != .nowPlaying)
     }
 
     /// The strip shows on Vibe and Playlists while something plays; Now
-    /// Playing is that content already. It lies over the bottom of the pages,
-    /// in the room `footerRoom` keeps. Settings live in the menu bar and
-    /// under Command-comma.
+    /// Playing is that content already. A glass panel of its own, 8 inside
+    /// the window edges, over the bottom of the pages. Settings live in the
+    /// menu bar and under Command-comma.
+    @ViewBuilder
     private var footer: some View {
+        if showsFooter {
+            footerContent
+                .frame(height: Theme.Size.stripHeight)
+                .glass(in: RoundedRectangle(cornerRadius: Theme.Radius.m, style: .continuous))
+                .padding(.horizontal, Theme.Space.xs)
+                .transition(.opacity)
+        }
+    }
+
+    private var footerContent: some View {
         HStack(alignment: .center, spacing: Theme.Space.xs) {
             if let problem = player.problem {
                 Label(problem, systemImage: "exclamationmark.triangle")
@@ -140,13 +161,13 @@ struct PlayerWindow: View {
                     .foregroundStyle(Theme.Colors.textMuted)
                     .lineLimit(2)
                     .help(problem)
+                    .padding(.leading, Theme.Space.xs)
                 Spacer(minLength: 0)
             } else if player.hasTrack, navigation.page != .nowPlaying {
                 NowPlayingStrip { navigation.page = .nowPlaying }
+                    .padding(.horizontal, Theme.Space.xxs) // artwork and buttons fill the panel's height
             }
         }
-        .frame(height: Theme.Size.stripHeight)
-        .padding(.horizontal, Theme.Space.m)
     }
 }
 
@@ -169,7 +190,9 @@ struct PageTabs: View {
                 .transition(.opacity)
             HStack(spacing: 0) {
                 ForEach(Page.allCases) { item in
-                    PageTab(item: item, isCurrent: item == current, pill: pill) { page = item }
+                    PageTab(item: item, isCurrent: item == current, pill: pill,
+                            // The last tab is near the window edge: its tooltip ends under it.
+                            tooltipAlignment: item == Page.allCases.last ? .topTrailing : .top) { page = item }
                 }
             }
         }
@@ -183,6 +206,7 @@ private struct PageTab: View {
     let item: Page
     let isCurrent: Bool
     let pill: Namespace.ID
+    var tooltipAlignment: Alignment = .top
     let select: () -> Void
 
     @State private var hovering = false
@@ -205,7 +229,7 @@ private struct PageTab: View {
         .buttonStyle(PressableStyle())
         .onHover { hovering = $0 }
         .animation(.easeOut(duration: Theme.Motion.feedback), value: hovering)
-        .tooltip(item.title, shown: hovering && !isCurrent)
+        .tooltip(item.title, shortcut: item.shortcutLabel, alignment: tooltipAlignment, shown: hovering && !isCurrent)
         .accessibilityLabel(item.title)
         .accessibilityAddTraits(isCurrent ? .isSelected : [])
     }
@@ -215,6 +239,10 @@ private struct PageTab: View {
 /// moment. The system tooltip cannot be told when to appear.
 private struct Tooltip: ViewModifier {
     let text: String
+    /// Shown after the name, muted, as menus show shortcuts.
+    let shortcut: String?
+    /// Centred under the control, or flush with one of its edges.
+    let alignment: Alignment
     let shown: Bool
 
     @State private var visible = false
@@ -222,19 +250,25 @@ private struct Tooltip: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .overlay(alignment: .top) {
+            .overlay(alignment: alignment) {
                 if visible {
-                    Text(text)
-                        .font(Theme.Text.caption)
-                        .foregroundStyle(Theme.Colors.text)
-                        .padding(.horizontal, Theme.Space.xs)
-                        .padding(.vertical, Theme.Space.xxs)
-                        .background(Theme.Colors.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.s))
-                        .overlay(RoundedRectangle(cornerRadius: Theme.Radius.s).strokeBorder(Theme.Colors.border))
-                        .fixedSize()
-                        .offset(y: Theme.Size.pageDotTarget + Theme.Space.xxs)
-                        .transition(.opacity)
-                        .allowsHitTesting(false)
+                    HStack(spacing: Theme.Space.xs) {
+                        Text(text)
+                            .foregroundStyle(Theme.Colors.text)
+                        if let shortcut {
+                            Text(shortcut)
+                                .foregroundStyle(Theme.Colors.textMuted)
+                        }
+                    }
+                    .font(Theme.Text.caption)
+                    .padding(.horizontal, Theme.Space.xs)
+                    .padding(.vertical, Theme.Space.xxs)
+                    .background(Theme.Colors.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.s))
+                    .overlay(RoundedRectangle(cornerRadius: Theme.Radius.s).strokeBorder(Theme.Colors.border))
+                    .fixedSize()
+                    .offset(y: Theme.Size.pageDotTarget + Theme.Space.xxs)
+                    .transition(.opacity)
+                    .allowsHitTesting(false)
                         .accessibilityHidden(true)
                 }
             }
@@ -254,8 +288,8 @@ private struct Tooltip: ViewModifier {
 }
 
 extension View {
-    func tooltip(_ text: String, shown: Bool) -> some View {
-        modifier(Tooltip(text: text, shown: shown))
+    func tooltip(_ text: String, shortcut: String? = nil, alignment: Alignment = .top, shown: Bool) -> some View {
+        modifier(Tooltip(text: text, shortcut: shortcut, alignment: alignment, shown: shown))
     }
 }
 
@@ -295,6 +329,9 @@ struct EmptyState: View {
     let message: String
     var actionTitle: String?
     var action: (() -> Void)?
+    /// A quieter way out under the action, e.g. "Continue as Guest".
+    var secondaryTitle: String?
+    var secondaryAction: (() -> Void)?
 
     var body: some View {
         VStack(spacing: Theme.Space.xs) {
@@ -312,6 +349,10 @@ struct EmptyState: View {
                 Button(actionTitle, action: action)
                     .buttonStyle(OutlineButtonStyle())
                     .padding(.top, Theme.Space.xs)
+            }
+            if let secondaryTitle, let secondaryAction {
+                Button(secondaryTitle, action: secondaryAction)
+                    .buttonStyle(QuietButtonStyle())
             }
         }
         .padding(Theme.Space.l)
@@ -369,14 +410,19 @@ struct OutlineButtonStyle: ButtonStyle {
 }
 
 struct FilledButtonStyle: ButtonStyle {
+    /// For a bar: the height of the small icon buttons, a smaller glyph.
+    var compact = false
+
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(Theme.Text.label)
+            .imageScale(compact ? .small : .medium)
             .foregroundStyle(Theme.Colors.bg)
-            .padding(.horizontal, Theme.Space.m)
-            .padding(.vertical, Theme.Space.xs)
+            .padding(.horizontal, compact ? Theme.Space.s : Theme.Space.m)
+            .padding(.vertical, compact ? 0 : Theme.Space.xs)
+            .frame(height: compact ? Theme.Size.pageDotTarget : nil)
             .background(Theme.Colors.text, in: Capsule())
             .contentShape(Capsule())
             .opacity(configuration.isPressed ? Theme.Opacity.pressed : isEnabled ? 1 : Theme.Opacity.disabled)
@@ -395,10 +441,50 @@ func blockingState(for player: PlayerController) -> EmptyState? {
     case .unknown:
         return nil
     case .signedOut:
+        if player.isGuest { return nil }
         return EmptyState(symbol: "person.crop.circle", title: "Sign in to YouTube Music",
                           message: "B-Side plays the music from your account.",
-                          actionTitle: "Sign In…") { player.showSignIn() }
+                          actionTitle: "Sign In…", action: { player.showSignIn() },
+                          secondaryTitle: "Continue as Guest", secondaryAction: { player.continueAsGuest() })
     case .signedIn:
         return nil
+    }
+}
+
+/// How much of a page's bottom the glass strip covers. Pages with a list
+/// use it as scroll margin, so the list runs under the glass and its last
+/// row can still scroll clear of it; other states keep out of it.
+private struct FooterRoomKey: EnvironmentKey {
+    static let defaultValue: CGFloat = 0
+}
+
+extension EnvironmentValues {
+    var footerRoom: CGFloat {
+        get { self[FooterRoomKey.self] }
+        set { self[FooterRoomKey.self] = newValue }
+    }
+}
+
+/// A text button with no shape: caption in `text-muted`, `text` under the
+/// pointer. For a second, quieter choice next to a real button.
+struct QuietButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        QuietLabel(configuration: configuration)
+    }
+
+    private struct QuietLabel: View {
+        let configuration: Configuration
+        @State private var hovering = false
+
+        var body: some View {
+            configuration.label
+                .font(Theme.Text.caption)
+                .foregroundStyle(hovering ? Theme.Colors.text : Theme.Colors.textMuted)
+                .padding(.vertical, Theme.Space.xxs)
+                .contentShape(Rectangle())
+                .opacity(configuration.isPressed ? Theme.Opacity.pressed : 1)
+                .onHover { hovering = $0 }
+                .animation(.easeOut(duration: Theme.Motion.feedback), value: hovering)
+        }
     }
 }

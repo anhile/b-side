@@ -21,6 +21,13 @@ struct Mood: Identifiable, Equatable, Codable {
     /// The tile every account starts with.
     static let liked = Mood(id: "liked", name: "Liked Music", source: .likedShuffled)
 
+    /// Liked Music belongs to an account; a track's radio and a public
+    /// playlist play without one.
+    var needsAccount: Bool {
+        if case .likedShuffled = source { return true }
+        return false
+    }
+
     var target: PlayTarget {
         switch source {
         case .likedShuffled: return PlayTarget(videoID: nil, listID: Tuning.likedMusicID, shuffle: true)

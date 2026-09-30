@@ -30,6 +30,25 @@ struct Playlist: Identifiable, Equatable {
     var artworkURL: URL?
 }
 
+/// A track's lyrics: plain text, and where they come from ("Source: Musixmatch").
+/// Empty text means the track has none.
+struct Lyrics: Equatable {
+    let videoID: String
+    let text: String
+    let source: String
+}
+
+/// One track in a playlist's list. A playlist can hold a track twice, so the
+/// identity is the position.
+struct Track: Identifiable, Equatable {
+    let index: Int
+    let videoID: String
+    let title: String
+    let artist: String
+    var artworkURL: URL?
+    var id: Int { index }
+}
+
 /// Talks to `window.__bside`, which Resources/player.js defines in the page.
 @MainActor
 final class JSBridge: NSObject, WKScriptMessageHandler {
@@ -46,6 +65,10 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
     /// the Media Session action ("play", "nexttrack", ...) and, for "seekto",
     /// the position.
     var onRemote: ((_ action: String, _ seconds: Double?) -> Void)?
+    /// A page of a playlist's tracks: new items, whether they follow the
+    /// ones before, and whether there are more.
+    var onTracks: ((_ listID: String, _ items: [Track], _ append: Bool, _ more: Bool) -> Void)?
+    var onLyrics: ((Lyrics) -> Void)?
 
     static let script = "player"
 
@@ -125,6 +148,20 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
                 ? .signedIn(name: body["name"] as? String ?? "", handle: body["handle"] as? String ?? "",
                             photoURL: (body["photo"] as? String).flatMap { $0.isEmpty ? nil : URL(string: $0) })
                 : .signedOut)
+        case "lyrics":
+            onLyrics?(Lyrics(videoID: body["videoId"] as? String ?? "",
+                             text: body["text"] as? String ?? "",
+                             source: body["source"] as? String ?? ""))
+        case "tracks":
+            let items = body["items"] as? [[String: Any]] ?? []
+            // Positions are filled in by the receiver, which knows the count so far.
+            onTracks?(body["listId"] as? String ?? "", items.compactMap { item in
+                guard let video = item["videoId"] as? String else { return nil }
+                return Track(index: 0, videoID: video,
+                             title: item["title"] as? String ?? "",
+                             artist: item["artist"] as? String ?? "",
+                             artworkURL: (item["artwork"] as? String).flatMap { $0.isEmpty ? nil : URL(string: $0) })
+            }, body["append"] as? Bool ?? false, body["more"] as? Bool ?? false)
         case "remote":
             onRemote?(body["action"] as? String ?? "", (body["seconds"] as? NSNumber)?.doubleValue)
         case "event":

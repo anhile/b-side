@@ -106,7 +106,9 @@ Rules:
 - White or cream on `accent` fails (3.0:1 and 2.5:1). What sits on orange is
   always `accent-on`, as on the icon.
 - Where the accent is allowed: the playing track's indicator, the current
-  page icon, the progress bar's filled part, the label of the record graphic.
+  page icon, the progress bar's filled part, the volume slider's filled part
+  (fainter the lower the volume, from 30% opacity at mute to full at 100%),
+  the label of the record graphic.
 - The accent is never a button fill, a row background or a window area.
 - No gradients. No second accent colour.
 - One exception, decided 2026-09-30: while Now Playing shows, the window's
@@ -274,6 +276,7 @@ The closed set. A screen is composed from these and nothing else.
 | Component | Variants | Use |
 |---|---|---|
 | `PlayButton` | hero | The Vibe page. One per screen. Filled with `text`, never orange |
+| `FilledButton` | standard, compact | Capsule filled with `text`. Compact (24 high, small glyph) goes in a page bar |
 | `Record` | vinyl, disc | Decoration behind or beside artwork. Custom drawing |
 | `TransportButton` | previous, play or pause, next | Now Playing area |
 | `IconButton` | glass | Settings gear, shuffle |

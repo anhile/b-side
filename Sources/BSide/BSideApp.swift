@@ -7,11 +7,18 @@ enum Page: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .vibe: return "Vibe"
+        case .vibe: return "Vibes"
         case .playlists: return "Playlists"
         case .nowPlaying: return "Now Playing"
         }
     }
+
+    /// Command-1, 2, 3, in page order.
+    var shortcutKey: Character {
+        Character(String((Page.allCases.firstIndex(of: self) ?? 0) + 1))
+    }
+
+    var shortcutLabel: String { "⌘\(shortcutKey)" }
 
     /// Waves, a list with play, a record.
     var symbol: String {
@@ -50,9 +57,9 @@ struct BSideApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {}
             CommandGroup(before: .toolbar) {
-                ForEach(Array(Page.allCases.enumerated()), id: \.element) { index, page in
+                ForEach(Page.allCases) { page in
                     Button(page.title) { navigation.page = page }
-                        .keyboardShortcut(KeyEquivalent(Character(String(index + 1))), modifiers: .command)
+                        .keyboardShortcut(KeyEquivalent(page.shortcutKey), modifiers: .command)
                 }
                 Divider()
             }
@@ -75,7 +82,7 @@ struct BSideApp: App {
                 Divider()
                 Button("Play Vibe") { player.playVibe() }
                     .keyboardShortcut("v", modifiers: [.command, .shift])
-                    .disabled(!player.account.isSignedIn)
+                    .disabled(player.vibeMood == nil)
                 Divider()
                 Button("Increase Volume") { player.adjustVolume(by: PlayerController.volumeStep) }
                     .keyboardShortcut(.upArrow, modifiers: .command)

@@ -55,3 +55,16 @@ extension EnvironmentValues {
         set { self[PreviewReduceTransparencyKey.self] = newValue }
     }
 }
+
+/// Snapshots only: shows the Like and Lyrics overlay on the artwork, which
+/// otherwise needs the pointer.
+private struct PreviewArtworkHoverKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var previewArtworkHover: Bool {
+        get { self[PreviewArtworkHoverKey.self] }
+        set { self[PreviewArtworkHoverKey.self] = newValue }
+    }
+}

@@ -3,6 +3,7 @@ import SwiftUI
 /// One job: start music for how I feel right now, in one click.
 struct VibePage: View {
     @EnvironmentObject private var player: PlayerController
+    @Environment(\.footerRoom) private var footerRoom
 
     /// The tile being edited, or a new one.
     @State private var editing: Mood?
@@ -15,8 +16,11 @@ struct VibePage: View {
     var body: some View {
         if let blocked = blockingState(for: player) {
             blocked
+                .padding(.bottom, footerRoom)
         } else if player.account == .unknown {
             SkeletonList()
+                .padding(.top, Theme.Space.s)
+                .padding(.bottom, footerRoom)
         } else {
             grid
         }
@@ -26,10 +30,11 @@ struct VibePage: View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: Theme.Space.s) {
                 ForEach(player.moods) { mood in
+                    let locked = mood.needsAccount && player.account == .signedOut
                     Button {
-                        player.play(mood)
+                        locked ? player.showSignIn() : player.play(mood)
                     } label: {
-                        MoodTile(mood: mood, subtitle: mood.subtitle(playlists: player.playlists),
+                        MoodTile(mood: mood, subtitle: locked ? "Sign in to play" : mood.subtitle(playlists: player.playlists),
                                  isCurrent: player.source == .mood(mood.id), isPlaying: player.state.isPlaying)
                     }
                     .buttonStyle(TileButtonStyle())
@@ -49,10 +54,12 @@ struct VibePage: View {
                 .accessibilityLabel("Add a vibe")
             }
             .padding(.horizontal, Theme.Space.m)
-            .padding(.top, Theme.Space.xxs)
+            .padding(.top, Theme.Space.m) // air under the title bar
             .padding(.bottom, Theme.Space.xs)
             .background(OverlayScrollers())
         }
+        .contentMargins(.bottom, footerRoom, for: .scrollContent)
+        .contentMargins(.bottom, footerRoom, for: .scrollIndicators)
         .sheet(item: $editing) { mood in
             MoodEditor(mood: mood, playlists: player.playlists) { saved in
                 player.save(saved)
