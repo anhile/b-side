@@ -1,0 +1,8 @@
+2026-09-30T15:27:00	round	commands	Music launched	output
+2026-09-30T15:27:32	none-connect	none	no	AirPods>MacBook Air Speakers>AirPods
+2026-09-30T15:27:43	none-press	none	yes	AirPods
+2026-09-30T15:28:22	home-connect	pause,pause	no	AirPods>MacBook Air Speakers>AirPods
+2026-09-30T15:28:32	home-press	play	no	AirPods
+2026-09-30T15:28:50	home-ear	pause	no	AirPods
+2026-09-30T15:29:19	bside-ear	remote system pause,paused 2s,remote page pause, same press, ignored,remote system play,playing,remote page play, same press, ignored	no	-
+2026-09-30T15:29:32	bside-press	remote system pause,paused 15s,remote page pause, same press, ignored,remote system play,playing,remote page play, same press, ignored,remote page pause,paused 18s	no	-

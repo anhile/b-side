@@ -75,12 +75,11 @@ ID signing and notarization, and both layers are compatible with those.
 ### AirPods, Control Center, lock screen, Siri
 
 - **AirPods:** with Automatic Ear Detection, taking them out pauses and
-  putting them back in resumes; pressing the stem sends play/pause. With
-  nothing playing, these start Music. Apple offers no setting for this
+  putting them back in resumes; pressing the stem sends play or pause. With
+  no app holding the Play key, the stem starts Music; connecting the AirPods
+  does not (experiment 3). Apple offers no setting for this
   ([Intego, July 2026](https://www.intego.com/mac-security-blog/stop-apple-music-automatically-playing/);
-  [Apple Community](https://discussions.apple.com/thread/252821077)). Whether
-  simply *connecting* sends Play depends on the headset. *Unconfirmed for AirPods
-  on 27.*
+  [Apple Community](https://discussions.apple.com/thread/252821077)).
 - **Control Center and the lock screen** show the Now Playing app. With none,
   they offer Music, and its Play button launches Music. *Observed behaviour; no
   Apple document found.*
@@ -267,9 +266,31 @@ not run any of them; each needs your go-ahead, and some need your hands
    key back while they run, except by reporting `.playing` again. That would
    take over from a player the user chose more recently, so it should happen
    only on an explicit action (starting playback in B-Side already does it).
-3. **AirPods.** Connect, take out, put in, press the stem, all with B-Side paused
-   and with B-Side not running. Which commands arrive (`play`, `toggle`,
-   nothing), and when does Music start? *Needs you and AirPods.*
+3. **AirPods. Done 2026-09-30** on macOS 27.0.1 with AirPods connected to
+   this Mac ([spike](../../spikes/default-player/README.md)):
+
+   | Setup | Action | Received | Music launched |
+   |---|---|---|---|
+   | nothing registered | into the case, back into the ears | nothing | no |
+   | nothing registered | stem press | nothing | **yes** |
+   | home app has claimed the key | into the case, back into the ears | pause, pause (on going into the case) | no |
+   | same | stem press | play | no |
+   | same, nothing playing | one AirPod out and back | pause (on taking out) | no |
+   | B-Side playing | one AirPod out and back | pause, then play | no |
+   | B-Side playing | stem press, stem press | pause, then play | no |
+
+   - Connecting AirPods sends no Play and does not start Music. Only the stem
+     does, and only when no app has the key; that is the same case as F8.
+   - With the key claimed, the stem sends `play` or `pause`, not `toggle`.
+     Taking an AirPod out sends `pause` even when nothing plays. Putting it
+     back sends `play` only if something was playing when it came out.
+   - In B-Side every AirPods command arrived twice, from the system and from
+     WebKit through the page, and the duplicate filter dropped the second
+     copy each time.
+   - One more `pause` came through the page path alone, 2 s after the last
+     `play`: the user had pressed the stem a third time. That press reached
+     only WebKit, not the app, so a press can arrive by either path or both,
+     and the page path is needed.
 4. **Watch and replace.** A spike with noTunes' observer. Does
    `willLaunchApplicationNotification` fire for every way Music gets launched on
    27 (key, AirPods, Control Center, Siri)? How visible is the flash? Is there a

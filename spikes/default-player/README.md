@@ -61,3 +61,35 @@ Results go to `results/stack-summary.tsv`, details to `results/stack.log`.
 Result (2026-09-30, macOS 27.0.1): the last app that played keeps the key
 while it runs, even after clearing its entry; when it quits, the key goes back
 to the previous app, not to Music. See the report.
+
+## Experiment 3: AirPods
+
+Question: what do AirPods send (connecting, the stem, taking one out and
+putting it back), who receives it, and when does Apple Music start?
+
+Same executable as experiment 2, with an `observer` role that registers
+nothing and only watches. Every role logs the default audio output device
+(AirPods names are shortened to "AirPods": results are committed) and any
+launch of Apple Music.
+
+| Round | Setup | What you do |
+|---|---|---|
+| `none-connect` | nothing registered | AirPods into the case, then back into your ears |
+| `none-press` | nothing registered | Press the stem once |
+| `home-connect` | a home app has claimed the key | AirPods into the case, then back into your ears |
+| `home-press` | same | Press the stem once |
+| `home-ear` | same, nothing playing | One AirPod out for 3 s, then back |
+| `bside-ear` | B-Side playing through the AirPods | One AirPod out for 3 s, then back |
+| `bside-press` | same | Press the stem, wait, press again |
+
+```bash
+spikes/default-player/run-airpods.sh
+```
+
+For B-Side rounds only command and play-state lines are copied from B-Side's
+event log, no track titles. Results go to `results/airpods-summary.tsv`,
+details to `results/airpods.log`.
+
+Result (2026-09-30, macOS 27.0.1): connecting AirPods sends nothing; the stem
+starts Music only when no app holds the Play key; with the key claimed, all
+AirPods commands reach the app. See the report.

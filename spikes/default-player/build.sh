@@ -40,7 +40,7 @@ done
 # Experiment 2: does the Play key come back after another player. The
 # bundle IDs carry the build time, so every build starts with fresh ones.
 xcrun swiftc -O stack/main.swift -o build/Stack
-rm -rf build/Stack-*.app
+rm -rf build/Stack-*.app build/AirPods-*.app
 stamp=$(date +%y%m%d%H%M%S)
 for round in paused quit-paused quit-playing cleared browser; do
   roles="home intruder"
@@ -49,5 +49,12 @@ for round in paused quit-paused quit-playing cleared browser; do
     bundle "build/Stack-$round-$role.app" Stack "dev.bside.spike.stack.$stamp.$round.$role" \
       "Stack $round $role" "<key>SpikeRole</key><string>$role</string><key>SpikeRound</key><string>$round</string>"
   done
+done
+# Experiment 3: AirPods. Same executable, its own bundles.
+for round in none-connect none-press home-connect home-press home-ear; do
+  role=observer
+  case $round in home-*) role=home ;; esac
+  bundle "build/AirPods-$round.app" Stack "dev.bside.spike.airpods.$stamp.$round" \
+    "AirPods $round" "<key>SpikeRole</key><string>$role</string><key>SpikeRound</key><string>$round</string>"
 done
 echo "Built: $(pwd)/build"

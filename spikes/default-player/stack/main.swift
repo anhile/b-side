@@ -4,6 +4,7 @@
 // Two roles, from the bundle's Info.plist (`SpikeRole`):
 //   home      stands in for B-Side: claims the Play key at launch the way
 //             B-Side does (.playing, then .paused after 0.5 s)
+//   observer  registers nothing with the system; only watches (experiment 3)
 //   intruder  stands in for another player: reports .playing, and after
 //             two seconds does what `-then` says:
 //               paused    .paused, keeps its info
@@ -11,8 +12,11 @@
 //               cleared   removes its info, .stopped, handlers disabled
 // Every round uses its own pair of bundle IDs. No audio is played. Both
 // roles log every remote command they receive to the file given with -log.
+// Every role logs changes of the default audio output device (to see when
+// AirPods connect) and launches of Apple Music.
 
 import AppKit
+import CoreAudio
 import MediaPlayer
 
 final class Spike: NSObject, NSApplicationDelegate {
@@ -43,6 +47,9 @@ final class Spike: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         menu.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         item.menu = menu
+        watchOutputDevice()
+        watchMusic()
+        guard role != "observer" else { return }
 
         let center = MPRemoteCommandCenter.shared()
         let named: [(MPRemoteCommand, String)] = [
@@ -88,13 +95,45 @@ final class Spike: NSObject, NSApplicationDelegate {
                 }
             }
         }
+    }
 
+    func watchMusic() {
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didLaunchApplicationNotification, object: nil, queue: .main
         ) { [weak self] note in
             let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
-            if app?.bundleIdentifier == "com.apple.Music", self?.role == "home" { self?.log("Music launched") }
+            if app?.bundleIdentifier == "com.apple.Music", self?.role != "intruder" { self?.log("Music launched") }
         }
+    }
+
+    func watchOutputDevice() {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+        log("output \(outputDeviceName())")
+        AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &address, .main) { [weak self] _, _ in
+            guard let self else { return }
+            self.log("output \(self.outputDeviceName())")
+        }
+    }
+
+    func outputDeviceName() -> String {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+        var device = AudioObjectID(0)
+        var size = UInt32(MemoryLayout<AudioObjectID>.size)
+        guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, &device) == noErr else { return "?" }
+        address.mSelector = kAudioObjectPropertyName
+        var name: Unmanaged<CFString>?
+        size = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
+        guard AudioObjectGetPropertyData(device, &address, 0, nil, &size, &name) == noErr, let name else { return "?" }
+        let text = name.takeRetainedValue() as String
+        // Device names carry the owner's name ("Anna's AirPods"); results are committed.
+        if let range = text.range(of: "AirPods") { return String(text[range.lowerBound...]) }
+        return text
     }
 
     func after(_ seconds: Double, _ work: @escaping () -> Void) {
