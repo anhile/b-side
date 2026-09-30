@@ -4,6 +4,7 @@ import SwiftUI
 /// One job: see what plays and control it.
 struct NowPlayingPage: View {
     @EnvironmentObject private var player: PlayerController
+    @EnvironmentObject private var navigation: Navigation
 
     /// Set while the user drags the slider, so reports do not fight the drag.
     @State private var scrub: Double?
@@ -68,10 +69,14 @@ struct NowPlayingPage: View {
             Text("Pick a mood or a playlist.")
                 .font(Theme.Text.caption)
                 .foregroundStyle(Theme.Colors.textMuted)
-            Button("Play Vibe") { player.playVibe() }
-                .buttonStyle(FilledButtonStyle())
-                .disabled(!player.account.isSignedIn)
-                .padding(.top, Theme.Space.xs)
+            HStack(spacing: Theme.Space.xs) {
+                Button("Play Vibe") { player.playVibe() }
+                    .buttonStyle(FilledButtonStyle())
+                    .disabled(!player.account.isSignedIn)
+                Button("Choose a Playlist") { navigation.page = .playlists }
+                    .buttonStyle(OutlineButtonStyle())
+            }
+            .padding(.top, Theme.Space.xs)
             Spacer()
         }
         .frame(maxWidth: .infinity)

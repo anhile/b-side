@@ -50,11 +50,11 @@ A 320 by 440 window with three pages, designed as in [DESIGN.md](DESIGN.md).
 | **Playlists** page | Your playlists, private ones included. Click one to play it |
 | **Now Playing** page | Artwork with the record behind it, title, artist, position, volume, Previous, Play or Pause, Next |
 | Strip under Vibe and Playlists | The current track (scrolls when long), Pause and Next; click it to open Now Playing |
-| Icons at the bottom | Vibe, Playlists, Now Playing |
+| Icons at the top right | Now Playing, Vibe, Playlists |
 | Menu bar record or Command-comma | Settings: Account, Playback, Diagnostics |
 
-Move between the pages with a two-finger swipe, the icons at the bottom, or
-Command-1, Command-2 and Command-3. With Reduce Motion on, pages cross-fade
+Move between the pages with a two-finger swipe, the icons at the top right,
+or Command-1 (Now Playing), Command-2 (Vibe) and Command-3 (Playlists). With Reduce Motion on, pages cross-fade
 and the swipe is off.
 
 | Shortcut | Action |

@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum Page: String, CaseIterable, Identifiable {
-    case vibe, playlists, nowPlaying
+    case nowPlaying, vibe, playlists
 
     var id: String { rawValue }
 
@@ -17,7 +17,7 @@ enum Page: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .vibe: return "waveform"
-        case .playlists: return "text.line.first.and.arrowtriangle.forward"
+        case .playlists: return "music.note.list"
         case .nowPlaying: return "opticaldisc"
         }
     }
@@ -26,7 +26,7 @@ enum Page: String, CaseIterable, Identifiable {
 /// Which page of the main window is showing. Shared with the menu bar.
 @MainActor
 final class Navigation: ObservableObject {
-    @Published var page: Page? = .vibe
+    @Published var page: Page? = .nowPlaying
 }
 
 @main

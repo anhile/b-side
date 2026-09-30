@@ -14,13 +14,17 @@ struct PlayerWindow: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // The title bar's height stays empty: traffic lights on the left,
-            // and the window is dragged here.
+            // A glass bar the height of the title bar: traffic lights on the
+            // left, the page icons on the right, the window dragged by the rest.
             DragHandle()
-                .frame(height: Theme.Size.titleBar)
+                .overlay(alignment: .trailing) {
+                    PageTabs(page: $navigation.page)
+                        .padding(.trailing, Theme.Space.xs)
+                }
+                .frame(height: topInset)
+                .glass(in: Rectangle())
             pages
             footer
-            PageTabs(page: $navigation.page)
                 .padding(.bottom, Theme.Space.xs)
         }
         .background(Theme.Colors.bg)
@@ -40,8 +44,8 @@ struct PlayerWindow: View {
             // Nothing slides: the current page fades in over the previous
             // one. Dots and Command-1, 2, 3 change pages; the swipe does not.
             ZStack {
-                page(navigation.page ?? .vibe)
-                    .id(navigation.page ?? .vibe)
+                page(navigation.page ?? .nowPlaying)
+                    .id(navigation.page ?? .nowPlaying)
                     .transition(.opacity)
             }
             .animation(.easeInOut(duration: Theme.Motion.page), value: navigation.page)
@@ -100,30 +104,39 @@ struct PlayerWindow: View {
     }
 }
 
-/// CUSTOM: macOS has no page control. One icon per page in a glass capsule;
-/// the current one carries the accent, the pointer brightens the others, and
-/// a name appears after a moment under the pointer.
+/// CUSTOM: macOS has no page control. Three icons in fixed slots that never
+/// move; a `surface` pill slides under the current one, which carries the
+/// accent, and the current page's name stands to the left and cross-fades.
+/// The pointer brightens the others, and their name appears after a moment.
 struct PageTabs: View {
     @Binding var page: Page?
 
+    @Namespace private var pill
+
     var body: some View {
-        HStack(spacing: 0) {
-            ForEach(Page.allCases) { item in
-                PageTab(item: item, isCurrent: isCurrent(item)) { page = item }
+        HStack(spacing: Theme.Space.xs) {
+            Text(current.title)
+                .font(Theme.Text.label)
+                .foregroundStyle(Theme.Colors.accentText)
+                .fixedSize()
+                .id(current)
+                .transition(.opacity)
+            HStack(spacing: 0) {
+                ForEach(Page.allCases) { item in
+                    PageTab(item: item, isCurrent: item == current, pill: pill) { page = item }
+                }
             }
         }
-        .padding(.horizontal, Theme.Space.xxs)
-        .glass(in: Capsule())
+        .animation(.easeOut(duration: Theme.Motion.page), value: current)
     }
 
-    private func isCurrent(_ item: Page) -> Bool {
-        (page ?? .vibe) == item
-    }
+    private var current: Page { page ?? .nowPlaying }
 }
 
 private struct PageTab: View {
     let item: Page
     let isCurrent: Bool
+    let pill: Namespace.ID
     let select: () -> Void
 
     @State private var hovering = false
@@ -131,15 +144,22 @@ private struct PageTab: View {
     var body: some View {
         Button(action: select) {
             Image(systemName: item.symbol)
-                .font(Theme.Text.caption)
+                .font(Theme.Text.body)
                 .foregroundStyle(isCurrent ? Theme.Colors.accentText : hovering ? Theme.Colors.text : Theme.Colors.textMuted)
                 .frame(width: Theme.Size.pageTabTarget, height: Theme.Size.pageDotTarget)
+                .background {
+                    if isCurrent {
+                        Capsule()
+                            .fill(Theme.Colors.surface)
+                            .matchedGeometryEffect(id: "pill", in: pill)
+                    }
+                }
                 .contentShape(Rectangle())
         }
         .buttonStyle(PressableStyle())
         .onHover { hovering = $0 }
         .animation(.easeOut(duration: Theme.Motion.feedback), value: hovering)
-        .tooltip(item.title, shown: hovering)
+        .tooltip(item.title, shown: hovering && !isCurrent)
         .accessibilityLabel(item.title)
         .accessibilityAddTraits(isCurrent ? .isSelected : [])
     }
@@ -156,7 +176,7 @@ private struct Tooltip: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .overlay(alignment: .bottom) {
+            .overlay(alignment: .top) {
                 if visible {
                     Text(text)
                         .font(Theme.Text.caption)
@@ -166,7 +186,7 @@ private struct Tooltip: ViewModifier {
                         .background(Theme.Colors.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.s))
                         .overlay(RoundedRectangle(cornerRadius: Theme.Radius.s).strokeBorder(Theme.Colors.border))
                         .fixedSize()
-                        .offset(y: -(Theme.Size.pageDotTarget + Theme.Space.xxs))
+                        .offset(y: Theme.Size.pageDotTarget + Theme.Space.xxs)
                         .transition(.opacity)
                         .allowsHitTesting(false)
                         .accessibilityHidden(true)

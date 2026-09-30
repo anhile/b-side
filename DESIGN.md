@@ -212,12 +212,14 @@ not an icon.
 | Input | Action |
 |---|---|
 | Two-finger swipe left or right | Next or previous page |
-| Click a page icon at the bottom | That page |
-| Command-1, Command-2, Command-3 | Vibe, Playlists, Now Playing |
+| Click a page icon at the top right | That page |
+| Command-1, Command-2, Command-3 | Now Playing, Vibe, Playlists |
 | View menu | The same two commands |
 
 The page icons (waves, a list with play, a record) are not a standard macOS
-control, so they are built as real buttons in one glass capsule at the bottom:
+control, so they are built as real buttons in the glass bar at the top
+right: fixed slots that never move, a `surface` pill sliding under the
+current one, the page's name to the left of the group;
 a 28 by 24 click area each, the accent on the current one, a name after 1.5 s
 under the pointer, a label for VoiceOver, keyboard focus.
 
@@ -271,7 +273,7 @@ The closed set. A screen is composed from these and nothing else.
 | `Record` | vinyl, disc | Decoration behind or beside artwork. Custom drawing |
 | `TransportButton` | previous, play or pause, next | Now Playing area |
 | `IconButton` | glass | Settings gear, shuffle |
-| `PageTabs` | | Bottom of the main window |
+| `PageTabs` | | Top right of the main window |
 | `MarqueeText` | | The strip's title when it does not fit. Custom |
 | `PlaylistRow` | default, playing | Playlists page |
 | `Artwork` | small 36, large 160 | Rows, Now Playing |
