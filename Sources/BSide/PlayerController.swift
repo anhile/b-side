@@ -82,6 +82,11 @@ final class PlayerController: NSObject, ObservableObject {
     private var currentListID: String?
     /// When `state` arrived, to run the position forward between reports.
     private var stateDate = Date()
+    /// What Play or Pause just asked for, and until when the page's reports
+    /// may still say otherwise. The button and the record follow the click,
+    /// not the round trip.
+    private var expected: (isPlaying: Bool, until: Date)?
+    private static let expectationWindow: TimeInterval = 1.5
     /// Set while the page is unloaded by "free memory when paused".
     private var unloaded: (target: PlayTarget, position: Double)?
     /// Whether the page has reported its player ready, and what to play once
@@ -278,10 +283,24 @@ final class PlayerController: NSObject, ObservableObject {
             load(unloaded.target, from: source ?? .other, startAt: unloaded.position)
         } else {
             bridge.call("play")
+            assume(playing: true)
         }
     }
 
-    func pause() { bridge.call("pause") }
+    func pause() {
+        bridge.call("pause")
+        assume(playing: false)
+    }
+
+    private func assume(playing: Bool) {
+        guard hasTrack else { return }
+        expected = (playing, Date().addingTimeInterval(Self.expectationWindow))
+        guard state.isPlaying != playing else { return }
+        state.isPlaying = playing
+        stateDate = Date()
+        nowPlaying.update(state)
+        playingChanged(playing)
+    }
     func next() { bridge.call("next") }
     func previous() { bridge.call("previous") }
 
@@ -418,6 +437,14 @@ final class PlayerController: NSObject, ObservableObject {
 
     private func handle(state new: PlayerState) {
         guard unloaded == nil else { return }
+        var new = new
+        if let expected {
+            if Date() < expected.until, new.isPlaying != expected.isPlaying {
+                new.isPlaying = expected.isPlaying // the page has not caught up yet
+            } else {
+                self.expected = nil
+            }
+        }
         let old = state
         state = new
         stateDate = Date()
