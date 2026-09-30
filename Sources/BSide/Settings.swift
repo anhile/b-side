@@ -10,6 +10,7 @@ enum Keys {
     // Launch arguments only, e.g. `open B-Side.app --args -play <id> -muted YES`
     static let play = "play"
     static let vibe = "vibe"                     // start Vibe (Liked Music, shuffled) at launch
+    static let startHidden = "startHidden"       // start in the menu bar without the window, as at login
     static let muted = "muted"
     static let startIndex = "startIndex"         // start a playlist at this track (0-based)
     static let url = "url"                       // debug: load this URL instead of the player page

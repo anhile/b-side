@@ -43,7 +43,9 @@ struct PlayerWindow: View {
         .background(WindowSetup())
         .task {
             player.start()
-            StatusMenu.shared.install(player: player) { openWindow(id: "main") }
+            StatusMenu.shared.install(player: player) {
+                if !MainWindow.show() { openWindow(id: "main") }
+            }
         }
         .task(id: player.state.artworkURL) {
             tint = player.hasTrack ? await ArtworkTint.color(for: player.state.artworkURL) : nil
@@ -251,7 +253,9 @@ private struct WindowSetup: NSViewRepresentable {
     final class View: NSView {
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
-            window?.backgroundColor = NSColor(named: "bg") // tokens-ok
+            guard let window else { return }
+            window.backgroundColor = NSColor(named: "bg") // tokens-ok
+            MainWindow.attach(window)
         }
     }
 

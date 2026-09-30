@@ -72,6 +72,13 @@ the track (scrolling when long) with Previous, Play or Pause and Next, lists
 every Vibe tile and playlist, and brings the window back.
 The window is dragged by the empty strip at the top.
 
+**Open at login** (Settings, Playback; off by default) starts B-Side in the
+menu bar, without its window or Dock icon. The Play key and AirPods then
+start B-Side instead of Apple Music: the system sends Play only to a running
+app, and with none it opens Music. Show B-Side in the menu, or opening the app
+again, brings the window back. Why and how this was measured:
+[docs/research/default-player.md](docs/research/default-player.md).
+
 ## Build
 
 Requires Xcode and [XcodeGen](https://github.com/yonaskolb/XcodeGen)
@@ -100,6 +107,7 @@ Launch arguments, for scripted runs:
 | Argument | Effect |
 |---|---|
 | `-vibe YES` | Starts Vibe at launch: Liked Music, shuffled |
+| `-startHidden YES` | Starts in the menu bar without the window, as a login launch does |
 | `-play <id or URL>` | Starts playing a video ID, playlist ID, or URL at launch. `LM` is Liked Music |
 | `-volume 30` | Volume at launch, 0 to 100 |
 | `-muted YES` | Mutes the player; decoding still runs, so memory is comparable |

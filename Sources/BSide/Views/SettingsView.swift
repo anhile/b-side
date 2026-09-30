@@ -1,3 +1,4 @@
+import ServiceManagement
 import SwiftUI
 
 /// The standard macOS settings window: Command-comma, tabs, grouped forms.
@@ -91,6 +92,7 @@ private struct PlaybackSettings: View {
 
     var body: some View {
         Form {
+            OpenAtLogin()
             Section {
                 Toggle("Audio only", isOn: $audioOnly)
                     .onChange(of: audioOnly) { player.applyPageSettings() }
@@ -118,6 +120,47 @@ private struct PlaybackSettings: View {
             }
         }
         .formStyle(.grouped)
+    }
+}
+
+/// Reads the system's Login Items each time Settings appear, since the user
+/// can change it there too.
+private struct OpenAtLogin: View {
+    @State private var status = LoginItem.status
+    @State private var failure: String?
+
+    private var isOn: Binding<Bool> {
+        Binding {
+            status == .enabled || status == .requiresApproval
+        } set: { on in
+            do {
+                try LoginItem.set(on)
+                failure = nil
+            } catch {
+                failure = error.localizedDescription
+            }
+            status = LoginItem.status
+        }
+    }
+
+    var body: some View {
+        Section {
+            Toggle("Open at login", isOn: isOn)
+            if status == .requiresApproval {
+                LabeledContent("Waiting for your approval in Login Items") {
+                    Button("Open Login Items") { SMAppService.openSystemSettingsLoginItems() }
+                }
+            }
+            if let failure {
+                Text(failure)
+                    .foregroundStyle(.secondary)
+            }
+        } footer: {
+            Text("B-Side starts in the menu bar, without its window, so the Play key and AirPods start B-Side instead of Apple Music.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .onAppear { status = LoginItem.status }
     }
 }
 

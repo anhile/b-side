@@ -100,7 +100,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 await Snapshots.render(into: URL(fileURLWithPath: folder))
                 NSApp.terminate(nil)
             }
+            return
         }
+        // At login B-Side is there for the media keys, not to be looked at.
+        let atLogin = LoginItem.launchedAtLogin()
+        if atLogin || Settings.bool(Keys.startHidden) {
+            EventLog.write("start in the menu bar\t\(atLogin ? "login item" : "launch argument")")
+            MainWindow.startInMenuBar()
+        }
+    }
+
+    /// Opening B-Side again from Finder, Spotlight or the Dock shows the
+    /// window it started without.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+        hasVisibleWindows || !MainWindow.show()
     }
 
     /// Playback must continue with every window closed.
