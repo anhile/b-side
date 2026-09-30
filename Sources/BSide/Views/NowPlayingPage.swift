@@ -25,6 +25,7 @@ struct NowPlayingPage: View {
         VStack(spacing: 0) {
             Spacer(minLength: Theme.Space.m)
             ArtworkWithRecord(url: player.state.artworkURL, spinning: player.state.isPlaying)
+                .layoutPriority(1) // the record takes the free height, not the gaps
             Spacer(minLength: Theme.Space.l)
                 // Where the artwork's colour ends: just above the title.
                 .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named("window")).midY } action: { tintBottom = $0 }
@@ -280,13 +281,17 @@ struct PressableStyle: ButtonStyle {
 /// Large artwork as the sleeve, with the record out of it on the right while
 /// music plays and inside it while paused. Both move, so the pair stays
 /// centred. All of it is Core Animation (see SleeveAndRecord).
+/// Grows into whatever height the page leaves, keeping the sleeve square
+/// and the record's peek in proportion. `artworkLarge` is the smallest size.
 struct ArtworkWithRecord: View {
     let url: URL?
     let spinning: Bool
 
     var body: some View {
         SleeveAndRecord(url: url, spinning: spinning)
-            .frame(width: Theme.Size.artworkLarge + Theme.Size.recordPeek, height: Theme.Size.artworkLarge)
+            .aspectRatio((Theme.Size.artworkLarge + Theme.Size.recordPeek) / Theme.Size.artworkLarge, contentMode: .fit)
+            .frame(minHeight: Theme.Size.artworkLarge, maxHeight: .infinity)
+            .padding(.horizontal, Theme.Space.m)
             .accessibilityHidden(true)
     }
 }

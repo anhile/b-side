@@ -28,8 +28,10 @@ struct PlayerWindow: View {
                 .frame(height: topInset)
                 .glass(in: Rectangle())
             pages
-            footer
-                .padding(.bottom, Theme.Space.xs)
+                .overlay(alignment: .bottom) {
+                    footer
+                        .padding(.bottom, Theme.Space.xs)
+                }
         }
         .background(alignment: .top) { tintLayer }
         .background(Theme.Colors.bg)
@@ -52,7 +54,9 @@ struct PlayerWindow: View {
         let showing = tint != nil && (navigation.page ?? .nowPlaying) == .nowPlaying
         return (tint ?? Theme.Colors.bg)
             .opacity(showing ? Theme.Tint.opacity : 0)
-            .frame(height: max(tintBottom, 0))
+            // Below the title bar only: its glass shows the plain background.
+            .frame(height: max(tintBottom - topInset, 0))
+            .padding(.top, topInset)
             .animation(.easeInOut(duration: Theme.Motion.tintChange), value: tint)
             .animation(.easeInOut(duration: Theme.Motion.tintChange), value: navigation.page)
     }
@@ -92,19 +96,29 @@ struct PlayerWindow: View {
         .animation(.spring(duration: Theme.Motion.page, bounce: 0), value: navigation.page)
     }
 
-    @ViewBuilder
     private func page(_ page: Page) -> some View {
-        switch page {
-        case .vibe: VibePage()
-        case .playlists: PlaylistsPage()
-        case .nowPlaying: NowPlayingPage()
+        Group {
+            switch page {
+            case .vibe: VibePage()
+            case .playlists: PlaylistsPage()
+            case .nowPlaying: NowPlayingPage()
+            }
         }
+        .padding(.bottom, footerRoom(on: page))
+        .animation(.easeInOut(duration: Theme.Motion.feedback), value: player.problem)
+    }
+
+    /// Vibe and Playlists always keep the strip's place, so their lists do
+    /// not jump when music starts. Now Playing is that content already and
+    /// takes the whole height, unless there is a problem to show.
+    private func footerRoom(on page: Page) -> CGFloat {
+        page != .nowPlaying || player.problem != nil ? Theme.Size.stripHeight + Theme.Space.xs : 0
     }
 
     /// The strip shows on Vibe and Playlists while something plays; Now
-    /// Playing is that content already. Its place is kept on every page so
-    /// nothing moves between them. Settings live in the menu bar and under
-    /// Command-comma.
+    /// Playing is that content already. It lies over the bottom of the pages,
+    /// in the room `footerRoom` keeps. Settings live in the menu bar and
+    /// under Command-comma.
     private var footer: some View {
         HStack(alignment: .center, spacing: Theme.Space.xs) {
             if let problem = player.problem {

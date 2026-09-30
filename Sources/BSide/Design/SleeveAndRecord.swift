@@ -70,7 +70,10 @@ final class SleeveAndRecordView: NSView {
     override func layout() {
         super.layout()
         let square = CGRect(x: 0, y: 0, width: side, height: side)
-        disc.bounds = square
+        // A record is a little smaller than its sleeve, so no edge of it
+        // shows above or below the sleeve.
+        let discSquare = CGRect(x: 0, y: 0, width: side * Theme.Size.recordInSleeve, height: side * Theme.Size.recordInSleeve)
+        disc.bounds = discSquare
         sleeveShadow.bounds = square
         sleeve.bounds = square
         sleeve.position = CGPoint(x: side / 2, y: side / 2)
@@ -83,7 +86,7 @@ final class SleeveAndRecordView: NSView {
             let scale = window?.backingScaleFactor ?? 2
             disc.contentsScale = scale
             sleeve.contentsScale = scale
-            disc.contents = render(RecordDisc(size: side), size: square.size, scale: scale)
+            disc.contents = render(RecordDisc(size: discSquare.width), size: discSquare.size, scale: scale)
             if artwork == nil {
                 sleeve.contents = render(Artwork(url: nil, size: side, radius: 0), size: square.size, scale: scale)
             }

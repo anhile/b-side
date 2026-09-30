@@ -65,6 +65,7 @@ enum Theme {
         static let artworkLarge: CGFloat = 160
         /// How far the record shows from behind the large artwork.
         static let recordPeek: CGFloat = 48
+        static let recordInSleeve: CGFloat = 0.97   // a 12-inch record in its 12 3/8-inch sleeve
         /// Parts of the record as a share of its diameter, so it draws the
         /// same at 36 and at 160.
         static let recordLabelRatio: CGFloat = 0.35
