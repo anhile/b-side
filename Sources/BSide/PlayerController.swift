@@ -50,6 +50,16 @@ final class PlayerController: NSObject, ObservableObject {
     @Published private(set) var status = "Starting"
     @Published private(set) var isWebViewVisible = false
     @Published private(set) var processes: [ProcessInfoRow] = []
+    /// 0 to 100. Kept between launches.
+    @Published var volume: Double = Settings.defaults.double(forKey: Keys.volume) {
+        didSet {
+            guard volume != oldValue else { return }
+            Settings.defaults.set(volume, forKey: Keys.volume)
+            bridge.call("volume", volume)
+        }
+    }
+    /// Where the volume was before it was muted with the speaker button.
+    private var volumeBeforeMute: Double = 100
 
     var totalMegabytes: Double { processes.reduce(0) { $0 + $1.megabytes } }
     var hasTrack: Bool { !state.videoID.isEmpty }
@@ -245,6 +255,22 @@ final class PlayerController: NSObject, ObservableObject {
         }
     }
 
+    func toggleMute() {
+        if volume > 0 {
+            volumeBeforeMute = volume
+            volume = 0
+        } else {
+            volume = volumeBeforeMute > 0 ? volumeBeforeMute : 100
+        }
+    }
+
+    /// One menu command's worth, in percent.
+    static let volumeStep: Double = 10
+
+    func adjustVolume(by step: Double) {
+        volume = min(100, max(0, volume + step))
+    }
+
     /// The page reports its position every few seconds; in between, time runs.
     func position(at date: Date) -> Double {
         guard state.isPlaying else { return state.position }
@@ -386,6 +412,7 @@ final class PlayerController: NSObject, ObservableObject {
             status = "Player ready"
             phase = .ready
             pageReady = true
+            bridge.call("volume", volume)
             if account.isSignedIn { loadPlaylists() }
             if let pending = pendingTarget {
                 pendingTarget = nil

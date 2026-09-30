@@ -28,6 +28,8 @@ enum Theme {
         static let heroButton: CGFloat = 96
         static let heroGlyph: CGFloat = 36
         static let artworkSmall: CGFloat = 36
+        static let volumeWidth: CGFloat = 88
+        static let volumeGlyph: CGFloat = 16
         static let artworkNowPlaying: CGFloat = 48
         static let rowHeight: CGFloat = 44
         static let settingsWidth: CGFloat = 460

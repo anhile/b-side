@@ -49,7 +49,7 @@ design in [DESIGN.md](DESIGN.md) is applied in a later pass.
 |---|---|
 | **Vibe** page | One button: plays Liked Music in random order |
 | **Playlists** page | Your playlists, private ones included. Click one to play it |
-| Bottom of both pages | What is playing: artwork, title, artist, position, Previous, Play or Pause, Next |
+| Bottom of both pages | What is playing: artwork, title, artist, position, volume, Previous, Play or Pause, Next |
 | Gear, bottom right | Opens Settings: Account, Playback, Diagnostics |
 
 Move between the pages with a two-finger swipe, the dots at the top, or
@@ -60,6 +60,8 @@ Command-1 and Command-2.
 | Space | Play or pause. With nothing loaded it starts Vibe |
 | Command-Right, Command-Left | Next, previous |
 | Command-L | Play Vibe |
+| Command-Up, Command-Down | Volume up, down |
+| Option-Command-Down | Mute, unmute |
 | Command-comma | Settings |
 
 Closing the window does not stop the music.

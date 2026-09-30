@@ -60,6 +60,8 @@ struct NowPlayingView: View {
 
     private var transport: some View {
         HStack(spacing: Theme.Space.l) {
+            Spacer(minLength: Theme.Size.volumeWidth) // keeps the buttons centred with the volume on the left
+
             Button {
                 player.previous()
             } label: {
@@ -85,9 +87,39 @@ struct NowPlayingView: View {
             .disabled(!player.state.hasNext)
             .help("Next")
             .accessibilityLabel("Next")
+            Spacer(minLength: Theme.Size.volumeWidth)
         }
         .buttonStyle(.borderless)
         .frame(maxWidth: .infinity)
+        .overlay(alignment: .leading) { volumeControl }
+    }
+
+    private var volumeControl: some View {
+        HStack(spacing: Theme.Space.xxs) {
+            Button {
+                player.toggleMute()
+            } label: {
+                Image(systemName: volumeSymbol)
+                    .frame(width: Theme.Size.volumeGlyph)
+            }
+            .buttonStyle(.borderless)
+            .help(player.volume > 0 ? "Mute" : "Unmute")
+            .accessibilityLabel(player.volume > 0 ? "Mute" : "Unmute")
+            Slider(value: $player.volume, in: 0...100)
+                .controlSize(.mini)
+                .accessibilityLabel("Volume")
+                .accessibilityValue("\(Int(player.volume)) percent")
+        }
+        .frame(width: Theme.Size.volumeWidth)
+    }
+
+    private var volumeSymbol: String {
+        switch player.volume {
+        case ..<1: return "speaker.slash.fill"
+        case ..<34: return "speaker.wave.1.fill"
+        case ..<67: return "speaker.wave.2.fill"
+        default: return "speaker.wave.3.fill"
+        }
     }
 
     private func time(_ seconds: Double) -> String {

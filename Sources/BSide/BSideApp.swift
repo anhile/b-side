@@ -59,6 +59,13 @@ struct BSideApp: App {
                 Button("Play Vibe") { player.playVibe() }
                     .keyboardShortcut("l", modifiers: .command)
                     .disabled(!player.account.isSignedIn)
+                Divider()
+                Button("Increase Volume") { player.adjustVolume(by: PlayerController.volumeStep) }
+                    .keyboardShortcut(.upArrow, modifiers: .command)
+                Button("Decrease Volume") { player.adjustVolume(by: -PlayerController.volumeStep) }
+                    .keyboardShortcut(.downArrow, modifiers: .command)
+                Button(player.volume > 0 ? "Mute" : "Unmute") { player.toggleMute() }
+                    .keyboardShortcut(.downArrow, modifiers: [.command, .option])
             }
         }
 

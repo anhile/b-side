@@ -5,6 +5,7 @@ enum Keys {
     static let reloadWhenPaused = "reloadWhenPaused"
     static let reloadAfterMinutes = "reloadAfterMinutes"
     static let forceAudioOnly = "forceAudioOnly"
+    static let volume = "volume"                 // 0 to 100
     // Launch arguments only, e.g. `open B-Side.app --args -play <id> -muted YES`
     static let play = "play"
     static let vibe = "vibe"                     // start Vibe (Liked Music, shuffled) at launch
@@ -22,6 +23,7 @@ enum Settings {
             Keys.reloadWhenPaused: false,
             Keys.reloadAfterMinutes: 5,
             Keys.forceAudioOnly: true,
+            Keys.volume: 100.0,
         ])
     }
 

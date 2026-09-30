@@ -62,6 +62,7 @@
   let lastQueueBytes = 0;
   let queueContinuation = null;
   let refilling = false;
+  let volume = 100;      // 0 to 100, set by the app
 
   function post(message) {
     try { window.webkit.messageHandlers.bside.postMessage(message); } catch (e) {}
@@ -77,7 +78,7 @@
     if (!videoId || videoId === announcedFor || !track || track.id !== videoId) return;
     if (player.getPlayerState() !== PLAYING) return;
     announcedFor = videoId;
-    event('version', videoId + (track.audio ? ' song' : ' video at quality ' + player.getPlaybackQuality()));
+    event('version', videoId + (track.audio ? ' song' : ' video at quality ' + player.getPlaybackQuality()) + ', volume ' + player.getVolume());
   }
 
   function report() {
@@ -123,6 +124,7 @@
         clearInterval(timer);
         player = candidate;
         if (config.muted) player.mute();
+        player.setVolume(volume);
         player.addEventListener('onError', function (code) { event('error', 'player error ' + code); });
         player.addEventListener('onStateChange', function (state) { if (state === ENDED) playAt(queueIndex + 1); });
         event('ready', 'player');
@@ -339,6 +341,7 @@
     if (!player || index < 0 || index >= queue.length) return false;
     queueIndex = index;
     player.loadVideoById({ videoId: queue[index].id, startSeconds: startSeconds || 0 });
+    player.setVolume(volume); // the player keeps its own idea of the volume across loads; make sure
     // Nothing shows the picture, so a video without a song version is decoded
     // as small as the player allows.
     if (config.audioOnly && !queue[index].audio) player.setPlaybackQualityRange(LOWEST_QUALITY, LOWEST_QUALITY);
@@ -406,6 +409,10 @@
       if (player.getCurrentTime() > RESTART_THRESHOLD_S || !playAt(queueIndex - 1)) player.seekTo(0, true);
     },
     seek(seconds) { if (player) player.seekTo(seconds, true); },
+    volume(level) {
+      volume = Math.max(0, Math.min(100, Number(level) || 0));
+      if (player) player.setVolume(volume);
+    },
     playlists() {
       playlists().catch(function (e) { event('error', 'playlists: ' + e); });
     },
