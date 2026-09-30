@@ -30,7 +30,7 @@ enum Loadable: Equatable {
 
 /// What started the current queue.
 enum PlaySource: Equatable {
-    case vibe
+    case mood(String)
     case playlist(String)
     case other
 }
@@ -42,6 +42,8 @@ final class PlayerController: NSObject, ObservableObject {
     @Published private(set) var phase = PlayerPhase.starting
     @Published private(set) var account = Account.unknown
     @Published private(set) var source: PlaySource?
+    /// The Vibe tiles. Editing and saving them comes with the Vibe page.
+    @Published private(set) var moods: [Mood] = [.liked]
     @Published private(set) var playlists: [Playlist] = []
     @Published private(set) var playlistsState = Loadable.idle
     /// The last thing that went wrong while loading or playing, for the user.
@@ -227,9 +229,14 @@ final class PlayerController: NSObject, ObservableObject {
 
     // MARK: - Commands
 
-    /// Liked Music in random order.
+    /// Liked Music in random order: the first tile, and what Play does when
+    /// nothing is loaded.
     func playVibe() {
-        load(PlayTarget(videoID: nil, listID: Tuning.likedMusicID, shuffle: true), from: .vibe, startAt: nil)
+        play(Mood.liked)
+    }
+
+    func play(_ mood: Mood) {
+        load(mood.target, from: .mood(mood.id), startAt: nil)
     }
 
     func play(_ playlist: Playlist) {

@@ -64,7 +64,9 @@ Command-1, Command-2 and Command-3.
 | Option-Command-Down | Mute, unmute |
 | Command-comma | Settings |
 
-Closing the window does not stop the music.
+Closing the window does not stop the music. The record in the menu bar has
+the same controls, every Vibe tile and playlist, and brings the window back.
+The window is dragged by the strip with the dots.
 
 ## Build
 

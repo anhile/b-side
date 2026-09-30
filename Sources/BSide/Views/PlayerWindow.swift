@@ -14,6 +14,8 @@ struct PlayerWindow: View {
         VStack(spacing: 0) {
             PageDots(page: $navigation.page)
                 .frame(height: Theme.Size.titleBar)
+                .frame(maxWidth: .infinity)
+                .background(DragHandle())
             pages
             footer
         }
@@ -107,14 +109,26 @@ struct PageDots: View {
     }
 }
 
-/// Window details SwiftUI does not expose: dragging by the background, since
-/// there is no title bar, and the window's own colour behind the content.
+/// The window's own colour behind the content, which SwiftUI does not expose.
 private struct WindowSetup: NSViewRepresentable {
     final class View: NSView {
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
-            window?.isMovableByWindowBackground = true
             window?.backgroundColor = NSColor(named: "bg") // tokens-ok
+        }
+    }
+
+    func makeNSView(context: Context) -> View { View() }
+    func updateNSView(_ nsView: View, context: Context) {}
+}
+
+/// The strip with the dots moves the window, since there is no title bar.
+/// Only that strip: with the whole background movable, a click that moves
+/// by a pixel becomes a window drag, and buttons and sliders miss it.
+private struct DragHandle: NSViewRepresentable {
+    final class View: NSView {
+        override func mouseDown(with event: NSEvent) {
+            window?.performDrag(with: event)
         }
     }
 

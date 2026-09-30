@@ -74,6 +74,15 @@ struct BSideApp: App {
             SettingsView()
                 .environmentObject(player)
         }
+
+        MenuBarExtra {
+            MenuBarMenu()
+                .environmentObject(player)
+        } label: {
+            Image(nsImage: MenuBarIcon.image)
+                .accessibilityLabel("B-Side")
+        }
+        .menuBarExtraStyle(.menu)
     }
 }
 

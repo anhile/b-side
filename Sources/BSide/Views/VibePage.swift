@@ -30,7 +30,7 @@ struct VibePage: View {
     }
 
     private var isVibePlaying: Bool {
-        player.source == .vibe && player.state.isPlaying
+        player.source == .mood(Mood.liked.id) && player.state.isPlaying
     }
 
     private var content: some View {
@@ -39,7 +39,7 @@ struct VibePage: View {
             Button {
                 // While Vibe is the queue the button pauses and resumes it;
                 // otherwise it starts a fresh shuffle.
-                if player.source == .vibe, player.hasTrack {
+                if player.source == .mood(Mood.liked.id), player.hasTrack {
                     player.togglePlayPause()
                 } else {
                     player.playVibe()
