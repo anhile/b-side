@@ -4,7 +4,9 @@ import SwiftUI
 
 /// Turns its content round and round on the compositor, not in SwiftUI: a
 /// SwiftUI animation redraws the whole view graph every frame and cost a
-/// third of a CPU core. A Core Animation transform costs nothing measurable.
+/// third of a CPU core. The content is drawn once into an image on a layer
+/// of our own (AppKit manages a view's layer and moves it under us), and
+/// Core Animation rotates that layer for free.
 struct Spinning<Content: View>: NSViewRepresentable {
     let spinning: Bool
     /// Seconds per turn.
@@ -12,38 +14,70 @@ struct Spinning<Content: View>: NSViewRepresentable {
     @ViewBuilder let content: () -> Content
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var colorScheme
 
-    func makeNSView(context: Context) -> SpinningHostingView<Content> {
-        let view = SpinningHostingView(rootView: content())
-        view.wantsLayer = true
-        return view
+    func makeNSView(context: Context) -> SpinningView {
+        SpinningView()
     }
 
-    func updateNSView(_ view: SpinningHostingView<Content>, context: Context) {
-        view.rootView = content()
+    func updateNSView(_ view: SpinningView, context: Context) {
+        view.render = { size, scale in
+            let renderer = ImageRenderer(content: content()
+                .frame(width: size.width, height: size.height)
+                .environment(\.colorScheme, colorScheme))
+            renderer.scale = scale
+            return renderer.cgImage
+        }
+        view.scheme = colorScheme
         view.setSpinning(spinning && !reduceMotion, period: period)
     }
 }
 
-final class SpinningHostingView<Content: View>: NSHostingView<Content> {
-    private static var key: String { "spin" }
+final class SpinningView: NSView {
+    var render: ((CGSize, CGFloat) -> CGImage?)?
+    var scheme: ColorScheme = .light {
+        didSet { if scheme != oldValue { drawnFor = nil; needsLayout = true } }
+    }
+
+    private let disc = CALayer()
+    private var drawnFor: CGSize?
     private var isSpinning = false
+    private var restAngle: Double = 0
+    private static let key = "spin"
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+        disc.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        disc.contentsGravity = .resizeAspect
+        layer?.addSublayer(disc)
+    }
+
+    required init?(coder: NSCoder) { nil }
 
     override func layout() {
         super.layout()
-        // AppKit keeps a layer's anchor at the corner; turning needs the centre.
-        layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        layer?.position = CGPoint(x: frame.midX, y: frame.midY)
+        disc.bounds = bounds
+        disc.position = CGPoint(x: bounds.midX, y: bounds.midY)
+        if drawnFor != bounds.size, bounds.width > 0 {
+            drawnFor = bounds.size
+            let scale = window?.backingScaleFactor ?? 2
+            disc.contentsScale = scale
+            disc.contents = render?(bounds.size, scale)
+        }
     }
 
-    /// Where the record rests when it is not turning, in radians.
-    private var restAngle: Double = 0
+    override func viewDidChangeBackingProperties() {
+        super.viewDidChangeBackingProperties()
+        drawnFor = nil
+        needsLayout = true
+    }
 
     func setSpinning(_ spinning: Bool, period: Double) {
-        guard spinning != isSpinning, let layer else { return }
+        guard spinning != isSpinning else { return }
         isSpinning = spinning
-        let current = (layer.presentation()?.value(forKeyPath: "transform.rotation.z") as? Double) ?? restAngle
-        layer.removeAllAnimations()
+        let current = (disc.presentation()?.value(forKeyPath: "transform.rotation.z") as? Double) ?? restAngle
+        disc.removeAllAnimations()
         if spinning {
             // Picks up where it stopped. Clockwise, as a record turns.
             let turn = CABasicAnimation(keyPath: "transform.rotation.z")
@@ -51,8 +85,8 @@ final class SpinningHostingView<Content: View>: NSHostingView<Content> {
             turn.toValue = current - 2 * Double.pi
             turn.duration = period
             turn.repeatCount = .infinity
-            layer.add(turn, forKey: Self.key)
-            layer.setValue(current, forKeyPath: "transform.rotation.z")
+            disc.add(turn, forKey: Self.key)
+            disc.setValue(current, forKeyPath: "transform.rotation.z")
         } else {
             // Stops like a turntable: runs on a little, then rolls back.
             let overshoot = current - Theme.Motion.recordOvershoot
@@ -62,8 +96,8 @@ final class SpinningHostingView<Content: View>: NSHostingView<Content> {
             stop.keyTimes = [0, 0.45, 1]
             stop.timingFunctions = [CAMediaTimingFunction(name: .easeOut), CAMediaTimingFunction(name: .easeInEaseOut)]
             stop.duration = Theme.Motion.recordStop
-            layer.add(stop, forKey: Self.key)
-            layer.setValue(restAngle, forKeyPath: "transform.rotation.z")
+            disc.add(stop, forKey: Self.key)
+            disc.setValue(restAngle, forKeyPath: "transform.rotation.z")
         }
     }
 }
