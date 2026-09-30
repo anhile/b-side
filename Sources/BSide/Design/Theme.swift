@@ -45,6 +45,8 @@ enum Theme {
     }
 
     enum Radius {
+        /// The sleeve: near-square, as a real one.
+        static let sleeve: CGFloat = 3
         static let s: CGFloat = 6
         static let m: CGFloat = 12
     }
@@ -108,8 +110,14 @@ enum Theme {
         static let page: Double = 0.3
         /// Half a cycle of a skeleton's breathing.
         static let breathe: Double = 0.9
-        /// One turn of the record.
+        /// One turn of the record; how it stops: the time, how far it runs
+        /// on (radians), and how far it rolls back from there.
         static let recordTurn: Double = 4
+        static let recordStop: Double = 0.7
+        /// The record sliding into or out of the sleeve.
+        static let recordSlide: Double = 0.5
+        static let recordOvershoot: Double = 0.18
+        static let recordRollback: Double = 0.05
         /// The strip's title, when it does not fit: points per second, the
         /// pause before each pass, and the share of the width that fades at an edge.
         static let marqueeSpeed: Double = 24

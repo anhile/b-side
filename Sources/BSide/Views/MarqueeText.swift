@@ -1,60 +1,131 @@
+import AppKit
+import QuartzCore
 import SwiftUI
 
 /// CUSTOM: one line of text that scrolls sideways when it does not fit,
-/// pauses at the start of each pass, and simply truncates with Reduce
-/// Motion on. Driven by the clock, not by animation state, so it never
-/// gets stuck.
+/// pauses at the start of each pass, and fades at the edges. The movement
+/// is a Core Animation keyframe, so SwiftUI draws nothing while it runs;
+/// a SwiftUI-driven version cost a quarter of a CPU core. With Reduce
+/// Motion on, the text simply truncates.
 struct MarqueeText: View {
     let text: String
+    let font: Font
+    let color: Color
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var textWidth: CGFloat = 0
-    @State private var containerWidth: CGFloat = 0
-
-    private var overflows: Bool { textWidth > containerWidth + 1 }
 
     var body: some View {
-        Group {
-            if overflows, !reduceMotion {
-                TimelineView(.animation) { context in
-                    let travel = textWidth + Theme.Space.xl
-                    let cycle = Theme.Motion.marqueePause + travel / Theme.Motion.marqueeSpeed
-                    let phase = context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: cycle)
-                    let offset = max(0, phase - Theme.Motion.marqueePause) * Theme.Motion.marqueeSpeed
-                    HStack(spacing: Theme.Space.xl) {
-                        label
-                        label.accessibilityHidden(true) // the copy that follows the first around
-                    }
-                    .offset(x: -offset)
-                    .mask(fade(leading: offset > 0))
-                }
-            } else {
-                label.lineLimit(1)
-            }
+        if reduceMotion {
+            Text(text)
+                .font(font)
+                .foregroundStyle(color)
+                .lineLimit(1)
+        } else {
+            MarqueeHost(text: text, font: font, color: color)
+                .accessibilityLabel(text)
         }
-        // minWidth 0: the fixed-size text inside must not set the width of
-        // the strip; whatever does not fit is clipped and scrolls.
-        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading) // tokens-ok: 0 is "no minimum"
-        .clipped()
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { containerWidth = $0 }
-        .accessibilityLabel(text)
+    }
+}
+
+private struct MarqueeHost: NSViewRepresentable {
+    let text: String
+    let font: Font
+    let color: Color
+
+    func makeNSView(context: Context) -> MarqueeView {
+        MarqueeView()
     }
 
-    /// Text fades out at the right edge, and, once it moves, in at the left,
-    /// instead of being cut. While it rests at the start the left edge is
-    /// sharp so the first letters read.
-    private func fade(leading: Bool) -> some View {
-        LinearGradient(stops: [
-            .init(color: leading ? .clear : Theme.Colors.text, location: 0), // tokens-ok: a mask, not a colour
-            .init(color: Theme.Colors.text, location: leading ? Theme.Motion.marqueeFade : 0),
-            .init(color: Theme.Colors.text, location: 1 - Theme.Motion.marqueeFade),
-            .init(color: .clear, location: 1),
-        ], startPoint: .leading, endPoint: .trailing)
+    func updateNSView(_ view: MarqueeView, context: Context) {
+        view.set(text: text, font: font, color: color)
     }
 
-    private var label: some View {
-        Text(text)
-            .fixedSize()
-            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { textWidth = $0 }
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: MarqueeView, context: Context) -> CGSize? {
+        CGSize(width: proposal.width ?? nsView.textWidth, height: nsView.lineHeight)
+    }
+}
+
+final class MarqueeView: NSView {
+    private var text = ""
+    private var font: Font = .body
+    private var color: Color = .primary // tokens-ok: replaced before the first draw
+    private var label: NSHostingView<AnyView>?
+    private let mask = CAGradientLayer()
+    private var configured: (String, CGFloat)?
+
+    private(set) var textWidth: CGFloat = 0
+    private(set) var lineHeight: CGFloat = 0
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+        layer?.masksToBounds = true
+        mask.startPoint = CGPoint(x: 0, y: 0.5)
+        mask.endPoint = CGPoint(x: 1, y: 0.5)
+        mask.colors = [NSColor.clear.cgColor, NSColor.black.cgColor, NSColor.black.cgColor, NSColor.clear.cgColor] // tokens-ok: a mask
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    func set(text: String, font: Font, color: Color) {
+        guard text != self.text || configured == nil else { return }
+        self.text = text
+        self.font = font
+        self.color = color
+        let single = NSHostingView(rootView: AnyView(line(text)))
+        textWidth = single.fittingSize.width
+        lineHeight = single.fittingSize.height
+        configured = nil
+        needsLayout = true
+    }
+
+    private func line(_ text: String) -> some View {
+        Text(text).font(font).foregroundStyle(color).fixedSize()
+    }
+
+    override func layout() {
+        super.layout()
+        let width = bounds.width
+        if let configured, configured == (text, width) { return }
+        configured = (text, width)
+        label?.removeFromSuperview()
+        layer?.mask = nil
+
+        let overflows = textWidth > width + 1
+        let gap = Theme.Space.xl
+        let root: AnyView = overflows
+            ? AnyView(HStack(spacing: gap) { line(text); line(text) })
+            : AnyView(line(text))
+        let label = NSHostingView(rootView: root)
+        label.wantsLayer = true
+        label.frame = NSRect(x: 0, y: 0, width: overflows ? textWidth * 2 + gap : width, height: bounds.height)
+        addSubview(label)
+        self.label = label
+        guard overflows else { return }
+
+        // Rests, then travels one text length plus the gap, and repeats.
+        let travel = textWidth + gap
+        let pause = Theme.Motion.marqueePause
+        let cycle = pause + travel / Theme.Motion.marqueeSpeed
+        let move = CAKeyframeAnimation(keyPath: "position.x")
+        move.values = [0, 0, -travel]
+        move.keyTimes = [0, NSNumber(value: pause / cycle), 1]
+        move.isAdditive = true
+        move.duration = cycle
+        move.repeatCount = .infinity
+        label.layer?.add(move, forKey: "marquee")
+
+        // Fades at both edges while moving; only at the right while resting,
+        // so the first letters read.
+        let fade = Theme.Motion.marqueeFade
+        mask.frame = bounds
+        mask.locations = [0, 0, NSNumber(value: 1 - fade), 1]
+        let edges = CAKeyframeAnimation(keyPath: "locations")
+        edges.values = [[0, 0, 1 - fade, 1], [0, 0, 1 - fade, 1], [0, fade, 1 - fade, 1], [0, fade, 1 - fade, 1]]
+        edges.keyTimes = [0, NSNumber(value: pause / cycle), NSNumber(value: pause / cycle + 0.02), 1]
+        edges.duration = cycle
+        edges.repeatCount = .infinity
+        mask.add(edges, forKey: "edges")
+        layer?.mask = mask
     }
 }

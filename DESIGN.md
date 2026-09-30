@@ -140,6 +140,7 @@ Scale: 4, 8, 12, 16, 24, 32. No other values.
 
 | Token | Value | Use |
 |---|---|---|
+| `radius-sleeve` | 3 | The large artwork on Now Playing: a record sleeve is near-square |
 | `radius-s` | 6 | Row hover, small artwork |
 | `radius-m` | 12 | Large artwork, grouped areas |
 | `radius-full` | capsule or circle | Buttons, the page icons' capsule |
@@ -174,7 +175,12 @@ element has a fallback.
 - Feedback (press, hover): 150 ms.
 - Page change: 300 ms, and the page follows the finger during a swipe.
 - One easing: the system spring, no bounce.
-- One deliberate moment: pressing Play on Vibe. Everything else is plain.
+- One deliberate moment: the record. It turns while music plays (4 s a turn),
+  stops like a turntable on pause (runs on, rolls back) and slides into the
+  sleeve; on play it slides out and turns on from where it stopped.
+- Continuous motion (the record, the scrolling title) runs on Core Animation,
+  never as a SwiftUI animation: a SwiftUI animation redraws the view graph
+  every frame and cost a third of a core. Measured on 2026-09-30.
 - With Reduce Motion on, pages cross-fade and nothing slides.
 
 ## Icons

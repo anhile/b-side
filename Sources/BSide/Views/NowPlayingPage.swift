@@ -228,17 +228,21 @@ struct PressableStyle: ButtonStyle {
     }
 }
 
-/// Large artwork with the record showing from behind it on the right. The
-/// one shadow in the app sits under the artwork.
+/// Large artwork as the sleeve, with the record out of it on the right while
+/// music plays and inside it while paused. The one shadow in the app sits
+/// under the sleeve.
 struct ArtworkWithRecord: View {
     let url: URL?
     let spinning: Bool
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         ZStack(alignment: .leading) {
             Record(size: Theme.Size.artworkLarge, spinning: spinning)
-                .offset(x: Theme.Size.recordPeek)
-            Artwork(url: url, size: Theme.Size.artworkLarge, radius: Theme.Radius.m)
+                .offset(x: spinning ? Theme.Size.recordPeek : 0)
+                .animation(reduceMotion ? nil : .easeInOut(duration: Theme.Motion.recordSlide), value: spinning)
+            Artwork(url: url, size: Theme.Size.artworkLarge, radius: Theme.Radius.sleeve)
                 .shadow(color: Theme.Colors.shadow.opacity(Theme.Shadow.artworkOpacity),
                         radius: Theme.Shadow.artworkRadius, y: Theme.Shadow.artworkY)
         }
@@ -248,15 +252,21 @@ struct ArtworkWithRecord: View {
 }
 
 /// CUSTOM: the vinyl record, the app's one piece of custom drawing. Grooves
-/// in faint cream, an orange label with a hole, as on the icon.
+/// in faint cream, an orange label with a hole, as on the icon. The turning
+/// is done by `Spinning`, on the compositor.
 struct Record: View {
     let size: CGFloat
     let spinning: Bool
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var angle = Angle.zero
-
     var body: some View {
+        Spinning(spinning: spinning, period: Theme.Motion.recordTurn) {
+            disc
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+
+    private var disc: some View {
         ZStack {
             Circle()
                 .fill(Theme.Colors.record)
@@ -290,16 +300,5 @@ struct Record: View {
                 .frame(width: size * Theme.Size.recordHoleRatio, height: size * Theme.Size.recordHoleRatio)
         }
         .frame(width: size, height: size)
-        .rotationEffect(angle)
-        .onChange(of: spinning, initial: true) { _, isSpinning in
-            // The one deliberate moment: the record turns while music plays.
-            if isSpinning, !reduceMotion {
-                withAnimation(.linear(duration: Theme.Motion.recordTurn).repeatForever(autoreverses: false)) {
-                    angle = .degrees(360)
-                }
-            } else {
-                withAnimation(.easeOut(duration: Theme.Motion.page)) { angle = .zero }
-            }
-        }
     }
 }

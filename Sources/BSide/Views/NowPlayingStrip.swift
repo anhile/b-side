@@ -11,9 +11,7 @@ struct NowPlayingStrip: View {
             Button(action: open) {
                 HStack(spacing: Theme.Space.xs) {
                     Artwork(url: player.state.artworkURL, size: Theme.Size.artworkStrip)
-                    MarqueeText(text: line)
-                        .font(Theme.Text.caption)
-                        .foregroundStyle(Theme.Colors.text)
+                    MarqueeText(text: line, font: Theme.Text.caption, color: Theme.Colors.text)
                 }
                 .contentShape(Rectangle())
             }
