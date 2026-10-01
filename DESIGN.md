@@ -276,6 +276,7 @@ The closed set. A screen is composed from these and nothing else.
 | Component | Variants | Use |
 |---|---|---|
 | `PlayButton` | hero | The Vibe page. One per screen. Filled with `text`, never orange |
+| `LyricsView` | timed, plain | Now Playing, in the artwork's place. Timed: `title` lines, the current one in `text`, the others `text-muted`, kept a third of the way down; a click seeks. Plain: `body`, selectable |
 | `FilledButton` | standard, compact | Capsule filled with `text`. Compact (24 high, small glyph) goes in a page bar |
 | `Record` | vinyl, disc | Decoration behind or beside artwork. Custom drawing |
 | `TransportButton` | previous, play or pause, next | Now Playing area |

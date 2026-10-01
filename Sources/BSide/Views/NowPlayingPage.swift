@@ -11,7 +11,6 @@ struct NowPlayingPage: View {
     @State private var showsVolume = false
     @State private var tintBottom: CGFloat = 0
     @State private var hoveringArtwork = false
-    @State private var showsLyrics = false
     @Environment(\.previewArtworkHover) private var previewArtworkHover
 
     var body: some View {
@@ -53,14 +52,38 @@ struct NowPlayingPage: View {
     }
 
     /// The zone the artwork's colour fills: from the top of the page to half
-    /// way to the title. While the pointer is over it (or the lyrics are
-    /// open), a dark veil covers all of it, with Like and Lyrics in the middle.
+    /// way to the title. While the pointer is over it, a dark veil covers all
+    /// of it, with Like and Lyrics in the middle. Lyrics take the artwork's
+    /// place, in the same frame, so nothing else moves.
     private var artworkZone: some View {
         VStack(spacing: 0) {
             Spacer(minLength: Theme.Space.m)
             ArtworkWithRecord(url: player.state.artworkURL, spinning: player.state.isPlaying)
+                .opacity(showsLyrics ? 0 : 1)
             Spacer(minLength: Theme.Space.s)
         }
+        // The whole zone, so the lines scroll out under the title bar's edge
+        // rather than being cut in the middle of the colour.
+        .overlay {
+            if showsLyrics {
+                LyricsView()
+                    .padding(.horizontal, Theme.Space.m)
+                    .clipped() // at the title bar's edge
+                    .transition(.opacity)
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            if showsLyrics {
+                TransportButton(symbol: "quote.bubble.fill", label: "Hide Lyrics") {
+                    navigation.showsLyrics = false
+                }
+                .glass(in: Circle())
+                .padding(.top, Theme.Space.xs)
+                .padding(.trailing, Theme.Space.m)
+                .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: Theme.Motion.page), value: showsLyrics)
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named("window")).maxY } action: { tintBottom = $0 }
         .preference(key: TintBottomKey.self, value: tintBottom)
         .overlay {
@@ -79,8 +102,10 @@ struct NowPlayingPage: View {
     }
 
     private var showsArtworkActions: Bool {
-        hoveringArtwork || showsLyrics || previewArtworkHover
+        !showsLyrics && (hoveringArtwork || previewArtworkHover)
     }
+
+    private var showsLyrics: Bool { navigation.showsLyrics }
 
     private var artworkActions: some View {
         HStack(spacing: Theme.Space.s) {
@@ -93,12 +118,9 @@ struct NowPlayingPage: View {
             .disabled(player.state.isAd)
             TransportButton(symbol: "quote.bubble", label: "Lyrics",
                             glyph: Theme.Size.playGlyph, target: Theme.Size.artworkAction) {
-                showsLyrics = true
+                navigation.showsLyrics = true
             }
             .glass(in: Circle())
-            .popover(isPresented: $showsLyrics, arrowEdge: .bottom) {
-                LyricsPanel()
-            }
         }
     }
 
@@ -211,6 +233,9 @@ struct NowPlayingPage: View {
             }
             .keyboardShortcut("l", modifiers: .command)
             .disabled(player.state.isAd)
+            Button { navigation.showsLyrics.toggle() } label: {
+                Label(showsLyrics ? "Hide Lyrics" : "Show Lyrics", systemImage: "quote.bubble")
+            }
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: Theme.Size.transportGlyph, weight: .semibold))
@@ -451,65 +476,127 @@ struct RecordDisc: View {
 /// The current track's lyrics, in a popover from the Lyrics button. Plain
 /// text as YouTube Music's web client has it, with its source; fetched when
 /// opened, and again when the track changes while it is open.
-struct LyricsPanel: View {
+/// The lyrics in the artwork's place. Timed lines follow the playback: the
+/// current one in `text`, the others muted, the view keeping it in the
+/// upper third; a click on a line plays from there. Plain text otherwise.
+///
+/// Nothing runs between lines: one wait until the next line starts, begun
+/// again whenever the player reports (play, pause, seek, every 5 s).
+struct LyricsView: View {
     @EnvironmentObject private var player: PlayerController
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var current: Int?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Space.xs) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text(player.state.title.isEmpty ? "Lyrics" : player.state.title)
-                    .font(Theme.Text.label)
-                    .foregroundStyle(Theme.Colors.text)
-                    .lineLimit(1)
-                if !player.state.artist.isEmpty {
-                    Text(player.state.artist)
-                        .font(Theme.Text.caption)
-                        .foregroundStyle(Theme.Colors.textMuted)
-                        .lineLimit(1)
-                }
-            }
-            content
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        }
-        .padding(Theme.Space.m)
-        .frame(width: Theme.Size.editorWidth, height: Theme.Size.lyricsHeight)
-        .task(id: player.state.videoID) { player.loadLyrics() }
+        content
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .task(id: player.state.videoID) { player.loadLyrics() }
     }
 
     @ViewBuilder
     private var content: some View {
         if player.state.isAd {
             note("No lyrics during an ad.")
+        } else if let lyrics = player.lyrics, lyrics.videoID == player.state.videoID, player.lyricsState == .loaded {
+            if lyrics.isTimed {
+                timed(lyrics)
+            } else if !lyrics.text.isEmpty {
+                plain(lyrics)
+            } else {
+                note("No lyrics for this track.")
+            }
+        } else if case .failed(let reason) = player.lyricsState {
+            note(reason)
         } else {
-            switch player.lyricsState {
-            case .idle, .loading:
-                ProgressView()
-                    .controlSize(.small)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .failed(let reason):
-                note(reason)
-            case .loaded:
-                if let lyrics = player.lyrics, !lyrics.text.isEmpty {
-                    ScrollView {
-                        Text(lyrics.text)
-                            .font(Theme.Text.body)
-                            .foregroundStyle(Theme.Colors.text)
-                            .lineSpacing(Theme.Space.xxs)
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        if !lyrics.source.isEmpty {
-                            Text(lyrics.source)
-                                .font(Theme.Text.caption)
-                                .foregroundStyle(Theme.Colors.textMuted)
+            ProgressView()
+                .controlSize(.small)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private func timed(_ lyrics: Lyrics) -> some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.Space.s) {
+                    ForEach(lyrics.lines.indices, id: \.self) { index in
+                        Button { player.seek(to: lyrics.lines[index].start) } label: {
+                            Text(lyrics.lines[index].text.isEmpty ? "♪" : lyrics.lines[index].text)
+                                .font(Theme.Text.title)
+                                .foregroundStyle(index == current ? Theme.Colors.text : Theme.Colors.textMuted)
+                                .multilineTextAlignment(.leading)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.top, Theme.Space.s)
+                                .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
+                        .id(index)
                     }
-                    .scrollIndicators(.never)
-                } else {
-                    note("No lyrics for this track.")
+                    source(lyrics)
+                }
+                .padding(.top, Self.topRoom)
+                .padding(.bottom, Theme.Space.m)
+            }
+            .scrollIndicators(.never)
+            .onChange(of: current) {
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: Theme.Motion.page)) {
+                    proxy.scrollTo(current ?? 0, anchor: Self.readingLine)
                 }
             }
+            .onAppear {
+                current = lyrics.lines.index(at: player.position(at: Date()))
+                proxy.scrollTo(current ?? 0, anchor: Self.readingLine)
+            }
+        }
+        .task(id: Follow(state: player.state, lines: lyrics.lines.count)) { await follow(lyrics.lines) }
+    }
+
+    /// The current line sits here, a third of the way down.
+    private static let readingLine = UnitPoint(x: 0, y: 1.0 / 3)
+
+    private struct Follow: Equatable {
+        let state: PlayerState
+        let lines: Int
+    }
+
+    private func follow(_ lines: [LyricLine]) async {
+        while !Task.isCancelled {
+            let position = player.position(at: Date())
+            let index = lines.index(at: position)
+            if index != current { current = index }
+            guard player.state.isPlaying else { return }
+            let next = (index ?? -1) + 1
+            guard next < lines.count else { return }
+            try? await Task.sleep(for: .seconds(max(lines[next].start - position, Theme.Motion.feedback)))
+        }
+    }
+
+    private func plain(_ lyrics: Lyrics) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(lyrics.text)
+                    .font(Theme.Text.body)
+                    .foregroundStyle(Theme.Colors.text)
+                    .lineSpacing(Theme.Space.xxs)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                source(lyrics)
+            }
+            .padding(.top, Self.topRoom)
+            .padding(.bottom, Theme.Space.m)
+        }
+        .scrollIndicators(.never)
+    }
+
+    /// Clear of the Hide Lyrics button at the top, while scrolled to the start.
+    private static let topRoom = Theme.Space.xs + Theme.Size.transportTarget + Theme.Space.xs
+
+    @ViewBuilder
+    private func source(_ lyrics: Lyrics) -> some View {
+        if !lyrics.source.isEmpty {
+            Text(lyrics.source)
+                .font(Theme.Text.caption)
+                .foregroundStyle(Theme.Colors.textMuted)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, Theme.Space.s)
         }
     }
 

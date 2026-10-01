@@ -34,6 +34,8 @@ enum Page: String, CaseIterable, Identifiable {
 @MainActor
 final class Navigation: ObservableObject {
     @Published var page: Page? = .nowPlaying
+    /// Now Playing shows the lyrics in place of the artwork.
+    @Published var showsLyrics = false
 }
 
 @main

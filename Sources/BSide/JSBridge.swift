@@ -31,11 +31,35 @@ struct Playlist: Identifiable, Equatable {
 }
 
 /// A track's lyrics: plain text, and where they come from ("Source: Musixmatch").
-/// Empty text means the track has none.
+/// Empty text means the track has none. `lines` holds the timed lines when a
+/// source has them (see TimedLyrics); the text is shown otherwise.
 struct Lyrics: Equatable {
     let videoID: String
+    var text: String
+    var source: String
+    /// YouTube Music's lyrics page for the track (`MPLYt…`), empty without one.
+    var page = ""
+    var lines: [LyricLine] = []
+
+    var isTimed: Bool { !lines.isEmpty }
+}
+
+/// One timed line: when it starts, in seconds, and its words ("" for a break).
+struct LyricLine: Equatable {
+    let start: Double
     let text: String
-    let source: String
+}
+
+extension [LyricLine] {
+    /// The line being sung at `position`, or nil before the first one.
+    func index(at position: Double) -> Int? {
+        var low = 0, high = count
+        while low < high {
+            let middle = (low + high) / 2
+            if self[middle].start <= position { low = middle + 1 } else { high = middle }
+        }
+        return low == 0 ? nil : low - 1
+    }
 }
 
 /// One track in a playlist's list. A playlist can hold a track twice, so the
@@ -151,7 +175,8 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
         case "lyrics":
             onLyrics?(Lyrics(videoID: body["videoId"] as? String ?? "",
                              text: body["text"] as? String ?? "",
-                             source: body["source"] as? String ?? ""))
+                             source: body["source"] as? String ?? "",
+                             page: body["page"] as? String ?? ""))
         case "tracks":
             let items = body["items"] as? [[String: Any]] ?? []
             // Positions are filled in by the receiver, which knows the count so far.

@@ -65,7 +65,6 @@ enum Theme {
         static let tileWidth: CGFloat = (window.width - 2 * Space.m - Space.s) / 2
         static let tileHeight: CGFloat = 96
         static let editorWidth: CGFloat = 300
-        static let lyricsHeight: CGFloat = 360
         static let artworkSmall: CGFloat = 36
         /// The strip's artwork fills the panel, 4 in from its edges.
         static let artworkStrip: CGFloat = stripHeight - 2 * Space.xxs

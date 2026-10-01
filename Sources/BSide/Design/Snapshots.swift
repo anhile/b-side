@@ -31,6 +31,14 @@ enum Snapshots {
         }
     }
 
+    /// Made-up timed lyrics; the track in the fixture is 18 s in, on line 4.
+    private static let lyrics = Lyrics(
+        videoID: "x", text: "", source: "Source: Musixmatch",
+        lines: ["Placeholder words for the first line", "A second line that runs long enough to wrap",
+                "", "The line being sung right now", "What comes next", "And after that",
+                "A line further down", "The last line"]
+            .enumerated().map { LyricLine(start: Double($0.offset * 5 + 3), text: $0.element) })
+
     /// Name, page, and the situation to show.
     private static var cases: [(String, Page, PlayerController)] {
         var paused = track; paused.isPlaying = false
@@ -124,6 +132,15 @@ enum Snapshots {
         await renderPage(.nowPlaying, player: .fixture(state: pausedTrack, source: .mood(Mood.liked.id)),
                          name: "nowplaying-hover-paused", appearance: .darkAqua, into: folder,
                          artworkHover: true)
+        var singing = track; singing.position = 18
+        for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+            await renderPage(.nowPlaying, player: .fixture(state: singing, source: .mood(Mood.liked.id), lyrics: lyrics),
+                             name: "nowplaying-lyrics-\(suffix)", appearance: appearance, into: folder, showsLyrics: true)
+        }
+        var plain = lyrics; plain.lines = []
+        plain.text = "Plain lyrics, without timings,\nshown as text you can select.\n\nA second verse\nof made-up words."
+        await renderPage(.nowPlaying, player: .fixture(state: singing, source: .mood(Mood.liked.id), lyrics: plain),
+                         name: "nowplaying-lyrics-plain", appearance: .aqua, into: folder, showsLyrics: true)
         // Glass does not draw offscreen; these show the strip's panel shape.
         let many = (1...20).map { Playlist(id: "\($0)", title: "Playlist \($0)", subtitle: "\($0 * 3) tracks", artworkURL: nil) }
         await renderPage(.playlists, player: .fixture(state: track, source: .playlist("1"), playlists: many),
@@ -184,8 +201,10 @@ enum Snapshots {
     /// One page in one appearance, with the accessibility settings given.
     private static func renderPage(_ page: Page, player: PlayerController, name: String,
                                    appearance: NSAppearance.Name, into folder: URL,
-                                   reduceTransparency: Bool = false, artworkHover: Bool = false) async {
+                                   reduceTransparency: Bool = false, artworkHover: Bool = false,
+                                   showsLyrics: Bool = false) async {
         let navigation = Navigation()
+        navigation.showsLyrics = showsLyrics
         let window = NSWindow(
             contentRect: NSRect(origin: .zero, size: Theme.Size.window),
             styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],

@@ -37,6 +37,12 @@ enum Tuning {
     /// How long a track notification waits for its artwork before it goes
     /// without one.
     static let notificationArtworkWait: TimeInterval = 3
+
+    /// How long a timed-lyrics source may take before the next one is tried.
+    static let lyricsWait: TimeInterval = 5
+    /// LRCLIB's lyrics count only for a recording this close in length, in
+    /// seconds; a longer video or another edit would drift out of time.
+    static let lyricsLengthTolerance: Double = 2
 }
 
 /// A video, a playlist, or a video within a playlist.

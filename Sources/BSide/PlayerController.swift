@@ -132,7 +132,8 @@ final class PlayerController: NSObject, ObservableObject {
                         playlists: [Playlist] = [], playlistsState: Loadable = .loaded,
                         problem: String? = nil, volume: Double = 70,
                         moods: [Mood] = [.liked], isGuest: Bool = false, openPlaylist: Playlist? = nil,
-                        tracks: [Track] = [], tracksState: Loadable = .idle) -> PlayerController {
+                        tracks: [Track] = [], tracksState: Loadable = .idle,
+                        lyrics: Lyrics? = nil) -> PlayerController {
         let controller = PlayerController()
         controller.started = true
         controller.moods = moods
@@ -147,6 +148,9 @@ final class PlayerController: NSObject, ObservableObject {
         controller.openPlaylist = openPlaylist
         controller.tracks = tracks
         controller.tracksState = tracksState
+        controller.lyrics = lyrics
+        controller.lyricsState = lyrics == nil ? .idle : .loaded
+        if let lyrics { controller.lyricsCache[lyrics.videoID] = lyrics }
         controller.problem = problem
         controller.volume = volume
         return controller
@@ -166,11 +170,7 @@ final class PlayerController: NSObject, ObservableObject {
         bridge.onState = { [weak self] in self?.handle(state: $0) }
         bridge.onEvent = { [weak self] in self?.handle(event: $0, detail: $1) }
         bridge.onAccount = { [weak self] in self?.handle(account: $0) }
-        bridge.onLyrics = { [weak self] lyrics in
-            guard let self, lyrics.videoID == self.state.videoID else { return } // the track moved on
-            self.lyrics = lyrics
-            self.lyricsState = .loaded
-        }
+        bridge.onLyrics = { [weak self] in self?.receive(lyrics: $0) }
         bridge.onTracks = { [weak self] listID, items, append, more in
             self?.receive(tracks: items, of: listID, append: append, more: more)
         }
@@ -477,14 +477,52 @@ final class PlayerController: NSObject, ObservableObject {
     // MARK: - Lyrics
 
     /// Asks for the current track's lyrics, unless they are here already.
+    /// The page finds the text and the lyrics page; the timings come from
+    /// TimedLyrics. Loaded lyrics are kept for the session.
     func loadLyrics() {
         let video = state.videoID
         guard !video.isEmpty, !state.isAd, pageReady else { return }
         if lyrics?.videoID == video, lyricsState == .loaded { return }
+        if lyricsState == .loading, lyricsRequested == video { return }
+        if let known = lyricsCache[video] {
+            lyrics = known
+            lyricsState = .loaded
+            return
+        }
         lyrics = nil
         lyricsState = .loading
+        lyricsRequested = video
         bridge.call("lyrics", video)
     }
+
+    private var lyricsRequested = ""
+
+    private func receive(lyrics found: Lyrics) {
+        guard found.videoID == state.videoID else { return } // the track moved on
+        let title = state.title, artist = state.artist, duration = state.duration
+        Task {
+            var found = found
+            if let timed = await TimedLyrics.find(page: found.page, title: title, artist: artist, duration: duration) {
+                found.lines = timed.lines
+                if !timed.source.isEmpty { found.source = timed.source }
+                if found.text.isEmpty { found.text = timed.lines.map(\.text).joined(separator: "\n") }
+            }
+            lyricsCache[found.videoID] = found
+            if lyricsCache.count > Self.lyricsCacheSize, let oldest = lyricsOrder.first {
+                lyricsCache[oldest] = nil
+                lyricsOrder.removeFirst()
+            }
+            lyricsOrder.append(found.videoID)
+            guard found.videoID == state.videoID else { return }
+            lyrics = found
+            lyricsState = .loaded
+        }
+    }
+
+    private var lyricsCache: [String: Lyrics] = [:]
+    private var lyricsOrder: [String] = []
+    /// A few hours of listening; a track's lyrics are a few KB.
+    private static let lyricsCacheSize = 100
 
     // MARK: - A playlist's tracks
 
@@ -674,7 +712,7 @@ final class PlayerController: NSObject, ObservableObject {
         if !new.title.isEmpty, new.videoID != old.videoID || new.title != old.title {
             EventLog.write("track\t\(new.videoID)\t\(new.artist) - \(new.title)")
             TrackNotifier.shared.trackStarted(new)
-            if Settings.bool(Keys.lyrics), lyrics == nil { loadLyrics() }
+            if Settings.bool(Keys.lyrics), lyrics?.videoID != new.videoID { loadLyrics() }
         }
         if new.isAd, !old.isAd {
             EventLog.write("ad")

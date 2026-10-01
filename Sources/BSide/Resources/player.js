@@ -432,7 +432,8 @@
 
   // Plain lyrics, as the web client shows them: the track's /next response
   // names its lyrics page, and that page holds the text and its source.
-  // Only asked for when the lyrics are opened; nothing is timed.
+  // Only asked for when the lyrics are opened. The page's ID goes to the app,
+  // which asks for the same page with timings (TimedLyrics.swift).
   async function lyrics(videoId) {
     const next = await api(QUEUE_ENDPOINT, { videoId: videoId });
     const page = next.match(LYRICS_BROWSE);
@@ -445,7 +446,7 @@
         source = ((node.footer && node.footer.runs) || []).map(function (run) { return run.text; }).join('');
       });
     }
-    post({ type: 'lyrics', videoId: videoId, text: text, source: source });
+    post({ type: 'lyrics', videoId: videoId, text: text, source: source, page: page ? page[1] : '' });
     event('lyrics', videoId + ': ' + (text ? text.split('\n').length + ' lines' : 'none')
       + ' (' + Math.round(bytes / 1024) + ' KB)');
   }
