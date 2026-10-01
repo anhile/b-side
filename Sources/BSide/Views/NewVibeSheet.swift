@@ -30,9 +30,12 @@ struct VibeSpec: Equatable {
     /// Set when no language model was used: the YouTube Music moods the
     /// words were matched to.
     var matchedMoods: [String]?
+    /// Why the words were not read where the user asked, if so.
+    var note: String?
+    var byServer = false
 
     var reading: VibeMaker.Reading {
-        VibeMaker.Reading(name: name, tags: tags, artists: artists, vocals: vocals, matchedMoods: matchedMoods)
+        VibeMaker.Reading(name: name, tags: tags, artists: artists, vocals: vocals, matchedMoods: matchedMoods, byServer: byServer)
     }
 }
 
@@ -116,7 +119,7 @@ struct NewVibeSheet: View {
                 } else {
                     step = .preview(VibeSpec(name: reading.name, colour: colour, tags: reading.tags, artists: found.artists,
                                              vocals: reading.vocals, mix: mix, anchors: found.anchors,
-                                             matchedMoods: reading.matchedMoods))
+                                             matchedMoods: reading.matchedMoods, note: reading.note, byServer: reading.byServer))
                 }
             } catch is CancellationError {
             } catch {
@@ -182,7 +185,9 @@ struct NewVibeSheet: View {
                     case .failed(let reason):
                         Label(reason, systemImage: "exclamationmark.triangle")
                     default:
-                        Text(VibeMaker.hasModel
+                        Text(VibeServer.isOn
+                             ? "In any language. The B-Side server reads the words; they are not stored. B-Side finds songs that fit and keeps playing more like them."
+                             : VibeMaker.hasModel
                              ? "In any language. B-Side finds songs that fit and keeps playing more like them."
                              : "B-Side matches the words to YouTube Music\u{2019}s moods and searches for them. Turn on Apple Intelligence for a closer match.")
                     }
@@ -321,12 +326,17 @@ private struct Preview: View {
                 }
                 .disabled(spec.matchedMoods != nil) // without a model there are no artists to mix
             } footer: {
-                if spec.matchedMoods != nil {
-                    Label("Apple Intelligence is off, so the words were matched to YouTube Music\u{2019}s own moods.",
-                          systemImage: "info.circle")
-                        .font(Theme.Text.caption)
-                        .foregroundStyle(Theme.Colors.textMuted)
+                VStack(alignment: .leading, spacing: Theme.Space.xxs) {
+                    if let note = spec.note {
+                        Label(note, systemImage: "info.circle")
+                    }
+                    if spec.matchedMoods != nil {
+                        Label("Apple Intelligence is off, so the words were matched to YouTube Music\u{2019}s own moods.",
+                              systemImage: "info.circle")
+                    }
                 }
+                .font(Theme.Text.caption)
+                .foregroundStyle(Theme.Colors.textMuted)
             }
             if !spec.tags.isEmpty || !spec.artists.isEmpty || !(spec.matchedMoods ?? []).isEmpty {
                 Section {

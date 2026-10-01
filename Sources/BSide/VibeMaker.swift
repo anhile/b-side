@@ -17,6 +17,12 @@ enum VibeMaker {
         var vocals: VibeSpec.Vocals
         /// Set when no model read the words: the moods they matched.
         var matchedMoods: [String]?
+        /// Why it was not read where the user asked: the server's refusal,
+        /// or that it could not be reached.
+        var note: String?
+        /// Read by the B-Side server's larger model, whose artists can be
+        /// trusted more than the Mac's.
+        var byServer = false
     }
 
     /// The songs the stream starts from, and the artists search confirmed.
@@ -39,7 +45,29 @@ enum VibeMaker {
         return false
     }
 
+    /// The B-Side server when it is on, then Apple's model, then YouTube
+    /// Music's moods.
     static func read(_ prompt: String, mix: VibeSpec.Mix) async -> Reading {
+        var note: String?
+        if VibeServer.isOn {
+            do {
+                let reading = try await VibeServer.read(prompt, mix: mix)
+                EventLog.write("vibe\tserver: \(reading.tags) \(reading.artists) \(reading.vocals)")
+                return reading
+            } catch VibeServer.Failure.refused(let reason) {
+                EventLog.write("vibe\tserver refused: \(reason)")
+                note = reason
+            } catch {
+                EventLog.write("vibe\tserver failed: \(error)")
+                note = "The B-Side server could not be reached."
+            }
+        }
+        var reading = await readOnMac(prompt, mix: mix)
+        reading.note = note.map { $0 + " This Mac read the words instead." }
+        return reading
+    }
+
+    private static func readOnMac(_ prompt: String, mix: VibeSpec.Mix) async -> Reading {
         #if canImport(FoundationModels)
         if #available(macOS 26, *), hasModel {
             do {
@@ -181,7 +209,7 @@ enum VibeMaker {
         // where it knows the music least; YouTube Music reads any language.
         // Their songs go first then.
         let nonLatin = prompt.unicodeScalars.contains { $0.properties.isAlphabetic && !$0.isASCII && !("\u{00C0}"..."\u{024F}").contains($0) }
-        let ownWords = !reading.artists.isEmpty && (confirmed.count < 2 || nonLatin)
+        let ownWords = !reading.artists.isEmpty && (confirmed.count < 2 || (nonLatin && !reading.byServer))
         if ownWords && nonLatin {
             let fromArtists = anchors
             anchors = []

@@ -205,6 +205,24 @@ Built and tested on a preview:
 Left for the owner: the $20 monthly budget on AI Gateway in the Vercel
 dashboard, as the hard limit.
 
+## 5c. Step 3 result: the app (2026-10-02)
+
+Built and tested:
+- **Settings → Vibes.** "Read vibes on the B-Side server" (off by
+  default), the server address and its status from `/v1/health`.
+- **`VibeServer.swift`.** It sends the words, the mix and a random install
+  ID; the timeout is 10 s.
+- **`VibeMaker.read` tries in order:** the server, then Apple's model,
+  then YouTube Music's moods. A refusal or an unreachable server becomes a
+  note in the preview: "… This Mac read the words instead."
+- **Seeds.** The user's own words are searched first only when the Mac
+  read them. With the server's artists the first songs are theirs (Сплин,
+  Наутилус, ДДТ for Russian rock 90s, not whatever the words match).
+
+Tested with `-vibeServer http://localhost:3000 -makeVibe "<words>"`
+against `npm run dev` in `server/`, and against an unreachable address.
+Not tried by Claude: clicking through the Settings tab and the sheet.
+
 ## 6. What stays out
 
 - Accounts, payments, keys in the app.

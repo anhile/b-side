@@ -13,6 +13,9 @@ enum Keys {
     static let theme = "theme"                   // ThemeMode: system, light or dark
     static let uiSize = "uiSize"                 // UISize: compact or large
     static let repeatMode = "repeatMode"         // RepeatMode: off, all or one
+    static let vibeServer = "vibeServer"         // read vibe words on the B-Side server (off by default)
+    static let vibeServerAddress = "vibeServerAddress" // that server's address
+    static let vibeInstallID = "vibeInstallID"   // a random ID the server counts this Mac's vibes by
     // Launch arguments only, e.g. `open B-Side.app --args -play <id> -muted YES`
     static let play = "play"
     static let vibe = "vibe"                     // start Vibe (Liked Music, shuffled) at launch
@@ -24,6 +27,7 @@ enum Keys {
     static let url = "url"                       // debug: load this URL instead of the player page
     static let page = "page"                     // debug: open the window on this page (nowPlaying, vibe, playlists, explore)
     static let makeVibe = "makeVibe"             // debug: make a vibe from these words once the page is ready, and log it
+    static let vibeServerDebug = "vibeServer"    // debug: -vibeServer <url> turns the server on with that address
     static let snapshot = "snapshot"             // render the screens with sample data into this folder and quit
 }
 

@@ -5,7 +5,8 @@
   "description": "Reads the words of a B-Side vibe with a language model, for the app's New Vibe sheet.",
   "scripts": {
     "compare": "tsx --env-file-if-exists=.env.local scripts/compare.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env.development.local scripts/dev.ts"
   },
   "engines": {
     "node": ">=22"

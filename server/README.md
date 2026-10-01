@@ -41,6 +41,15 @@ All of them come from environment variables:
 2. `VIBE_MODEL` set to a Gateway model slug (see `.env.example`).
 3. In B-Side: Settings → Vibes → server address.
 
+## Running it locally
+
+`npm run dev` serves the API on http://localhost:3000. It needs
+`AI_GATEWAY_API_KEY` in `.env.local`, and the Upstash variables
+(`vercel env pull .env.development.local --environment preview`, then
+delete the `VIBE_*` lines: sensitive values come down as placeholders).
+Point B-Side at it in Settings → Vibes, or launch it with
+`-vibeServer http://localhost:3000`.
+
 ## Comparing models
 
 `npm run compare` reads 15 prompts in three languages with several models
