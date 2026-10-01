@@ -34,11 +34,20 @@ struct NowPlayingPage: View {
                     .foregroundStyle(Theme.Colors.text)
                     .lineLimit(1)
                     .help(title)
-                Text(subtitle)
-                    .font(Theme.Text.body)
-                    .foregroundStyle(Theme.Colors.textMuted)
-                    .lineLimit(1)
-                    .help(subtitle)
+                if player.state.artistID.isEmpty || player.state.isAd {
+                    Text(subtitle)
+                        .font(Theme.Text.body)
+                        .foregroundStyle(Theme.Colors.textMuted)
+                        .lineLimit(1)
+                        .help(subtitle)
+                } else {
+                    // The artist's page on Explore; Back there returns here.
+                    Button { navigation.open(.artist(id: player.state.artistID, name: subtitle)) } label: {
+                        LinkText(text: subtitle)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Show \(subtitle)")
+                }
             }
             .padding(.horizontal, Theme.Space.m)
             Spacer(minLength: Theme.Space.m)
@@ -84,6 +93,10 @@ struct NowPlayingPage: View {
             }
         }
         .animation(.easeInOut(duration: Theme.Motion.page), value: showsLyrics)
+        // The next track has none: back to the record.
+        .onChange(of: player.lyricsAvailable) {
+            if showsLyrics, player.lyricsAvailable == false { navigation.showsLyrics = false }
+        }
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named("window")).maxY } action: { tintBottom = $0 }
         .preference(key: TintBottomKey.self, value: tintBottom)
         .overlay {
@@ -116,9 +129,18 @@ struct NowPlayingPage: View {
             }
             .glass(in: Circle())
             .disabled(player.state.isAd)
-            TransportButton(symbol: "quote.bubble", label: "Lyrics",
-                            glyph: Theme.Size.playGlyph, target: Theme.Size.artworkAction) {
-                navigation.showsLyrics = true
+            if player.lyricsAvailable == true {
+                TransportButton(symbol: "quote.bubble", label: "Lyrics",
+                                glyph: Theme.Size.playGlyph, target: Theme.Size.artworkAction) {
+                    navigation.showsLyrics = true
+                }
+                .glass(in: Circle())
+            }
+            // Off, All, One in turn; orange while on.
+            TransportButton(symbol: player.repeatMode.symbol, label: "Repeat: \(player.repeatMode.title)",
+                            glyph: Theme.Size.playGlyph, target: Theme.Size.artworkAction,
+                            color: player.repeatMode == .off ? Theme.Colors.text : Theme.Colors.accent) {
+                player.repeatMode = player.repeatMode.next
             }
             .glass(in: Circle())
         }
@@ -236,6 +258,22 @@ struct NowPlayingPage: View {
             Button { navigation.showsLyrics.toggle() } label: {
                 Label(showsLyrics ? "Hide Lyrics" : "Show Lyrics", systemImage: "quote.bubble")
             }
+            .disabled(!showsLyrics && player.lyricsAvailable != true)
+            Picker(selection: $player.repeatMode) {
+                ForEach(RepeatMode.allCases) { Text($0.title).tag($0) }
+            } label: {
+                Label("Repeat", systemImage: player.repeatMode.symbol)
+            }
+            .pickerStyle(.menu)
+            Divider()
+            Button { navigation.open(.artist(id: player.state.artistID, name: player.state.artist)) } label: {
+                Label("Go to Artist", systemImage: "person")
+            }
+            .disabled(player.state.artistID.isEmpty || player.state.isAd)
+            Button { navigation.open(.collection(id: player.state.albumID, title: "Album")) } label: {
+                Label("Go to Album", systemImage: "square.stack")
+            }
+            .disabled(player.state.albumID.isEmpty || player.state.isAd)
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: Theme.Size.transportGlyph, weight: .semibold))
@@ -478,7 +516,7 @@ struct RecordDisc: View {
 /// opened, and again when the track changes while it is open.
 /// The lyrics in the artwork's place. Timed lines follow the playback: the
 /// current one in `text`, the others muted, the view keeping it in the
-/// upper third; a click on a line plays from there. Plain text otherwise.
+/// middle; a click on a line plays from there. Plain text otherwise.
 ///
 /// Nothing runs between lines: one wait until the next line starts, begun
 /// again whenever the player reports (play, pause, seek, every 5 s).
@@ -486,18 +524,25 @@ struct LyricsView: View {
     @EnvironmentObject private var player: PlayerController
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var current: Int?
+    @State private var height: CGFloat = 0
 
     var body: some View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .task(id: player.state.videoID) { player.loadLyrics() }
+            // The text first (usually here already), then the timings once
+            // the text is in.
+            .task(id: "\(player.state.videoID) \(player.lyrics?.videoID ?? "")") {
+                player.loadLyrics()
+                player.loadTimedLyrics()
+            }
     }
 
     @ViewBuilder
     private var content: some View {
         if player.state.isAd {
             note("No lyrics during an ad.")
-        } else if let lyrics = player.lyrics, lyrics.videoID == player.state.videoID, player.lyricsState == .loaded {
+        } else if let lyrics = player.lyrics, lyrics.videoID == player.state.videoID, player.lyricsState == .loaded,
+                  lyrics.isTimed || lyrics.timedTried {
             if lyrics.isTimed {
                 timed(lyrics)
             } else if !lyrics.text.isEmpty {
@@ -532,10 +577,13 @@ struct LyricsView: View {
                     }
                     source(lyrics)
                 }
-                .padding(.top, Self.topRoom)
-                .padding(.bottom, Theme.Space.m)
+                // Half the height above and below, so the first and the last
+                // line can come to the middle too.
+                .padding(.top, max(Self.topRoom, height / 2))
+                .padding(.bottom, height / 2)
             }
             .scrollIndicators(.never)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
             .onChange(of: current) {
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: Theme.Motion.page)) {
                     proxy.scrollTo(current ?? 0, anchor: Self.readingLine)
@@ -549,8 +597,8 @@ struct LyricsView: View {
         .task(id: Follow(state: player.state, lines: lyrics.lines.count)) { await follow(lyrics.lines) }
     }
 
-    /// The current line sits here, a third of the way down.
-    private static let readingLine = UnitPoint(x: 0, y: 1.0 / 3)
+    /// The current line sits in the middle.
+    private static let readingLine = UnitPoint(x: 0, y: 0.5)
 
     private struct Follow: Equatable {
         let state: PlayerState
@@ -587,7 +635,7 @@ struct LyricsView: View {
     }
 
     /// Clear of the Hide Lyrics button at the top, while scrolled to the start.
-    private static let topRoom = Theme.Space.xs + Theme.Size.transportTarget + Theme.Space.xs
+    private static var topRoom: CGFloat { Theme.Space.xs + Theme.Size.transportTarget + Theme.Space.xs }
 
     @ViewBuilder
     private func source(_ lyrics: Lyrics) -> some View {
@@ -605,5 +653,29 @@ struct LyricsView: View {
             .font(Theme.Text.caption)
             .foregroundStyle(Theme.Colors.textMuted)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// Text that opens a page: muted like the text around it, underlined and in
+/// `text` under the pointer, with the pointing hand.
+struct LinkText: View {
+    let text: String
+    var font = Theme.Text.body
+    @State private var hovering = false
+
+    var body: some View {
+        Text(text)
+            .font(font)
+            .underline(hovering)
+            .foregroundStyle(hovering ? Theme.Colors.text : Theme.Colors.textMuted)
+            .lineLimit(1)
+            .contentShape(Rectangle())
+            .onHover { inside in
+                guard inside != hovering else { return }
+                hovering = inside
+                inside ? NSCursor.pointingHand.push() : NSCursor.pop()
+            }
+            // Gone from under the pointer, e.g. when the track changes.
+            .onDisappear { if hovering { NSCursor.pop() } }
     }
 }

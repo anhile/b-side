@@ -51,11 +51,14 @@ struct PlayTarget: Equatable {
     var listID: String?
     /// Ask the server for the playlist in random order.
     var shuffle = false
+    /// Start the playlist at this track (0-based).
+    var startIndex = 0
 
-    init(videoID: String?, listID: String?, shuffle: Bool = false) {
+    init(videoID: String?, listID: String?, shuffle: Bool = false, startIndex: Int = 0) {
         self.videoID = videoID
         self.listID = listID
         self.shuffle = shuffle
+        self.startIndex = startIndex
     }
 
     /// Accepts a bare video ID (11 characters), a bare playlist ID, or a full

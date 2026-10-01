@@ -53,6 +53,12 @@ final class PlayerController: NSObject, ObservableObject {
     @Published private(set) var tracksState = Loadable.idle
     /// The current track's lyrics, fetched when the lyrics are opened. Only
     /// the last track's are kept.
+    /// The Explore page's search: what was asked, and what came back.
+    @Published private(set) var searchResults: [MusicItem] = []
+    @Published private(set) var searchState = Loadable.idle
+    private var searchAsked: (query: String, kind: SearchKind)?
+    /// The last search, so the page shows it again when it is built again.
+    var lastSearch: (query: String, kind: SearchKind)? { searchAsked }
     @Published private(set) var lyrics: Lyrics?
     @Published private(set) var lyricsState = Loadable.idle
     private var tracksHaveMore = false
@@ -68,9 +74,6 @@ final class PlayerController: NSObject, ObservableObject {
     @Published private(set) var playlistsState = Loadable.idle
     /// The last thing that went wrong while loading or playing, for the user.
     @Published private(set) var problem: String?
-    /// The last thing that happened, for Diagnostics.
-    @Published private(set) var status = "Starting"
-    @Published private(set) var isWebViewVisible = false
     @Published private(set) var processes: [ProcessInfoRow] = []
     /// Snapshots only: rows to show instead of the live ones.
     var processesForSnapshot: [ProcessInfoRow] = [] {
@@ -84,6 +87,16 @@ final class PlayerController: NSObject, ObservableObject {
             bridge.call("volume", volume)
         }
     }
+    /// Kept across launches, as YouTube Music keeps it.
+    @Published var repeatMode = RepeatMode(rawValue: Settings.defaults.string(forKey: Keys.repeatMode) ?? "") ?? .off {
+        didSet {
+            guard repeatMode != oldValue else { return }
+            Settings.defaults.set(repeatMode.rawValue, forKey: Keys.repeatMode)
+            bridge.call("repeat", repeatMode.rawValue)
+            EventLog.write("repeat\t\(repeatMode.rawValue)")
+        }
+    }
+
     /// Where the volume was before it was muted with the speaker button.
     private var volumeBeforeMute: Double = 100
 
@@ -133,7 +146,9 @@ final class PlayerController: NSObject, ObservableObject {
                         problem: String? = nil, volume: Double = 70,
                         moods: [Mood] = [.liked], isGuest: Bool = false, openPlaylist: Playlist? = nil,
                         tracks: [Track] = [], tracksState: Loadable = .idle,
-                        lyrics: Lyrics? = nil) -> PlayerController {
+                        lyrics: Lyrics? = nil, search: (String, [MusicItem])? = nil,
+                        searchState: Loadable = .idle, artist: ArtistPage? = nil,
+                        collection: CollectionPage? = nil) -> PlayerController {
         let controller = PlayerController()
         controller.started = true
         controller.moods = moods
@@ -149,6 +164,13 @@ final class PlayerController: NSObject, ObservableObject {
         controller.tracks = tracks
         controller.tracksState = tracksState
         controller.lyrics = lyrics
+        if let search {
+            controller.searchAsked = (search.0, .songs)
+            controller.searchResults = search.1
+        }
+        controller.searchState = searchState
+        if let artist { controller.artistPages[artist.id] = artist }
+        if let collection { controller.collectionPages[collection.id] = collection }
         controller.lyricsState = lyrics == nil ? .idle : .loaded
         if let lyrics { controller.lyricsCache[lyrics.videoID] = lyrics }
         controller.problem = problem
@@ -171,6 +193,13 @@ final class PlayerController: NSObject, ObservableObject {
         bridge.onEvent = { [weak self] in self?.handle(event: $0, detail: $1) }
         bridge.onAccount = { [weak self] in self?.handle(account: $0) }
         bridge.onLyrics = { [weak self] in self?.receive(lyrics: $0) }
+        bridge.onArtist = { [weak self] in self?.receive(artist: $0, page: $1) }
+        bridge.onCollection = { [weak self] in self?.receive(collection: $0, page: $1) }
+        bridge.onSearch = { [weak self] query, kind, items in
+            guard let self, let asked = searchAsked, asked.query == query, asked.kind == kind else { return }
+            searchResults = items
+            searchState = .loaded
+        }
         bridge.onTracks = { [weak self] listID, items, append, more in
             self?.receive(tracks: items, of: listID, append: append, more: more)
         }
@@ -274,7 +303,6 @@ final class PlayerController: NSObject, ObservableObject {
         do {
             contentController.add(try await ContentRules.compile())
         } catch {
-            status = "Content rules failed to compile: \(error.localizedDescription)"
             EventLog.write("error\trules: \(error.localizedDescription)")
         }
     }
@@ -356,15 +384,6 @@ final class PlayerController: NSObject, ObservableObject {
 
     func play(_ playlist: Playlist) {
         load(PlayTarget(videoID: nil, listID: playlist.id), from: .playlist(playlist.id), startAt: nil)
-    }
-
-    /// Diagnostics: a video ID, a playlist ID, or a URL.
-    func load(_ input: String) {
-        guard let target = PlayTarget(input) else {
-            problem = "Enter a video ID, a playlist ID, or a YouTube Music URL."
-            return
-        }
-        load(target, from: .other, startAt: nil)
     }
 
     func play() {
@@ -476,9 +495,18 @@ final class PlayerController: NSObject, ObservableObject {
 
     // MARK: - Lyrics
 
-    /// Asks for the current track's lyrics, unless they are here already.
-    /// The page finds the text and the lyrics page; the timings come from
-    /// TimedLyrics. Loaded lyrics are kept for the session.
+    /// Whether the current track has lyrics: nil until known. Known soon
+    /// after each track starts, since the text is asked for then (about 30 KB,
+    /// against 3 to 4 MB of audio); the timings only when the lyrics are shown.
+    var lyricsAvailable: Bool? {
+        if case .failed = lyricsState { return false }
+        guard let lyrics, lyrics.videoID == state.videoID, lyricsState == .loaded else { return nil }
+        return !lyrics.isEmpty
+    }
+
+    /// Asks for the current track's lyrics text, unless it is here already.
+    /// The page finds the text and the lyrics page; a track YouTube Music
+    /// has no text for is looked up on LRCLIB. Kept for the session.
     func loadLyrics() {
         let video = state.videoID
         guard !video.isEmpty, !state.isAd, pageReady else { return }
@@ -495,34 +523,145 @@ final class PlayerController: NSObject, ObservableObject {
         bridge.call("lyrics", video)
     }
 
+    /// The timings for the lyrics on screen. YouTube Music times only what it
+    /// has text for, so without text it is not asked.
+    func loadTimedLyrics() {
+        guard var current = lyrics, current.videoID == state.videoID, lyricsState == .loaded,
+              !current.timedTried, !current.text.isEmpty, timedRequested != current.videoID else { return }
+        timedRequested = current.videoID
+        let title = state.title, artist = state.artist, duration = state.duration
+        Task {
+            if let timed = await TimedLyrics.find(page: current.page, title: title, artist: artist, duration: duration) {
+                current.lines = timed.lines
+                if !timed.source.isEmpty { current.source = timed.source }
+            }
+            current.timedTried = true
+            timedRequested = ""
+            keep(current)
+        }
+    }
+
     private var lyricsRequested = ""
+    private var timedRequested = ""
 
     private func receive(lyrics found: Lyrics) {
         guard found.videoID == state.videoID else { return } // the track moved on
+        guard found.text.isEmpty else { return keep(found) }
         let title = state.title, artist = state.artist, duration = state.duration
         Task {
             var found = found
-            if let timed = await TimedLyrics.find(page: found.page, title: title, artist: artist, duration: duration) {
+            if let timed = await TimedLyrics.lrclib(title: title, artist: artist, duration: duration) {
                 found.lines = timed.lines
-                if !timed.source.isEmpty { found.source = timed.source }
-                if found.text.isEmpty { found.text = timed.lines.map(\.text).joined(separator: "\n") }
+                found.source = timed.source
+                found.text = timed.lines.map(\.text).joined(separator: "\n")
             }
-            lyricsCache[found.videoID] = found
-            if lyricsCache.count > Self.lyricsCacheSize, let oldest = lyricsOrder.first {
-                lyricsCache[oldest] = nil
-                lyricsOrder.removeFirst()
-            }
-            lyricsOrder.append(found.videoID)
-            guard found.videoID == state.videoID else { return }
-            lyrics = found
-            lyricsState = .loaded
+            found.timedTried = true
+            keep(found)
         }
+    }
+
+    /// Into the session's cache, and on screen if the track still plays.
+    private func keep(_ found: Lyrics) {
+        if lyricsCache[found.videoID] == nil {
+            lyricsOrder.append(found.videoID)
+            if lyricsOrder.count > Self.lyricsCacheSize {
+                lyricsCache[lyricsOrder.removeFirst()] = nil
+            }
+        }
+        lyricsCache[found.videoID] = found
+        guard found.videoID == state.videoID else { return }
+        lyrics = found
+        lyricsState = .loaded
     }
 
     private var lyricsCache: [String: Lyrics] = [:]
     private var lyricsOrder: [String] = []
     /// A few hours of listening; a track's lyrics are a few KB.
     private static let lyricsCacheSize = 100
+
+    // MARK: - Search
+
+    /// Searches YouTube Music; an empty query clears the results. Wakes the
+    /// player page if it sleeps, and asks once it is ready.
+    func search(_ query: String, kind: SearchKind) {
+        let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else {
+            searchAsked = nil
+            searchResults = []
+            searchState = .idle
+            return
+        }
+        if let asked = searchAsked, asked.query == query, asked.kind == kind,
+           searchState == .loading || searchState == .loaded { return }
+        searchAsked = (query, kind)
+        searchState = .loading
+        if pageReady { bridge.call("search", query, kind.rawValue) } else { wake() } // "ready" asks
+    }
+
+    func retrySearch() {
+        guard let asked = searchAsked else { return }
+        searchAsked = nil
+        search(asked.query, kind: asked.kind)
+    }
+
+    /// A song plays with its radio after it, as in YouTube Music; an album
+    /// or playlist plays from its first track.
+    func play(_ item: MusicItem) {
+        if !item.videoID.isEmpty {
+            load(PlayTarget(videoID: item.videoID, listID: nil), from: .other, startAt: nil)
+        } else if !item.playlistID.isEmpty {
+            load(PlayTarget(videoID: nil, listID: item.playlistID), from: .playlist(item.playlistID), startAt: nil)
+        }
+    }
+
+    /// An album or playlist from one of its tracks on.
+    func play(_ collection: CollectionPage, from index: Int = 0) {
+        play(list: collection.playlistID, from: index)
+    }
+
+    /// A playlist from one of its tracks on: an album, or all of an artist's
+    /// songs, which their top songs are the start of.
+    func play(list id: String, from index: Int) {
+        guard !id.isEmpty else { return }
+        load(PlayTarget(videoID: nil, listID: id, startIndex: index), from: .playlist(id), startAt: nil)
+    }
+
+    // MARK: - Artist and album pages
+
+    /// Loaded pages stay for the session, so going back shows them at once.
+    @Published private(set) var artistPages: [String: ArtistPage] = [:]
+    @Published private(set) var collectionPages: [String: CollectionPage] = [:]
+    @Published private(set) var exploreFailures: Set<String> = []
+    private var exploreAsked: Set<String> = []
+
+    func loadArtist(_ id: String) {
+        guard artistPages[id] == nil, !exploreAsked.contains(id) else { return }
+        exploreAsked.insert(id)
+        exploreFailures.remove(id)
+        if pageReady { bridge.call("artist", id) } else { wake() } // "ready" asks
+    }
+
+    func loadCollection(_ id: String) {
+        guard collectionPages[id] == nil, !exploreAsked.contains(id) else { return }
+        exploreAsked.insert(id)
+        exploreFailures.remove(id)
+        if pageReady { bridge.call("collection", id) } else { wake() }
+    }
+
+    func retryExplorePage(_ id: String) {
+        exploreAsked.remove(id)
+        id.hasPrefix("UC") ? loadArtist(id) : loadCollection(id)
+    }
+
+    private func receive(artist id: String, page: ArtistPage?) {
+        exploreAsked.remove(id)
+        if let page { artistPages[id] = page } else { exploreFailures.insert(id) }
+    }
+
+    private func receive(collection id: String, page: CollectionPage?) {
+        exploreAsked.remove(id)
+        if let page { collectionPages[id] = page } else { exploreFailures.insert(id) }
+    }
 
     // MARK: - A playlist's tracks
 
@@ -598,7 +737,6 @@ final class PlayerController: NSObject, ObservableObject {
         source = newSource
         currentListID = target.listID
         EventLog.write("load\t\(target.videoID ?? "-")\t\(target.listID ?? "-")\(target.shuffle ? "\tshuffle" : "")")
-        status = "Loading"
         if pageReady {
             sendToPage(target, startAt: position)
         } else {
@@ -612,7 +750,7 @@ final class PlayerController: NSObject, ObservableObject {
         if let video = target.videoID, position != nil || target.listID == nil {
             bridge.call("load", "video", video, position ?? 0)
         } else if let list = target.listID {
-            bridge.call("load", "playlist", list, 0, ["shuffle": target.shuffle])
+            bridge.call("load", "playlist", list, 0, ["shuffle": target.shuffle, "startIndex": target.startIndex])
         }
     }
 
@@ -674,16 +812,14 @@ final class PlayerController: NSObject, ObservableObject {
         }
     }
 
-    /// Diagnostics: look at the player page.
+    /// The player's window, shown for Google's sign-in page.
     func showWebView() {
         window.makeKeyAndOrderFront(nil)
-        isWebViewVisible = true
     }
 
     func hideWebView() {
         window.orderOut(nil)
         window.title = "B-Side Player Page"
-        isWebViewVisible = false
         // Coming back from the sign-in flow: return to the player page.
         if signingIn || (webView.url?.host != Tuning.musicHome.host && unloaded == nil) {
             signingIn = false
@@ -712,7 +848,7 @@ final class PlayerController: NSObject, ObservableObject {
         if !new.title.isEmpty, new.videoID != old.videoID || new.title != old.title {
             EventLog.write("track\t\(new.videoID)\t\(new.artist) - \(new.title)")
             TrackNotifier.shared.trackStarted(new)
-            if Settings.bool(Keys.lyrics), lyrics?.videoID != new.videoID { loadLyrics() }
+            if !new.isAd { loadLyrics() } // so Lyrics shows only for a track that has them
         }
         if new.isAd, !old.isAd {
             EventLog.write("ad")
@@ -756,12 +892,14 @@ final class PlayerController: NSObject, ObservableObject {
     private func handle(event kind: String, detail: String) {
         switch kind {
         case "ready":
-            status = "Player ready"
             phase = .ready
             pageReady = true
             bridge.call("volume", volume)
+            bridge.call("repeat", repeatMode.rawValue)
             if account.isSignedIn { loadPlaylists() }
             if let openPlaylist, tracksState == .loading { bridge.call("tracks", openPlaylist.id) }
+            if let asked = searchAsked, searchState == .loading { bridge.call("search", asked.query, asked.kind.rawValue) }
+            for id in exploreAsked { bridge.call(id.hasPrefix("UC") ? "artist" : "collection", id) }
             if openPlaylist == nil, let id = Settings.defaults.string(forKey: Keys.listTracks) {
                 open(Playlist(id: id, title: id))
             }
@@ -770,11 +908,12 @@ final class PlayerController: NSObject, ObservableObject {
                 sendToPage(pending.target, startAt: pending.position)
             }
         case "error":
-            status = "Error: \(detail)"
             EventLog.write("error\t\(detail)")
             // player.js starts every error with the step that failed.
             if detail.hasPrefix("boot") {
                 phase = .failed("YouTube Music could not be loaded. Check the connection and try again.")
+            } else if detail.hasPrefix("search") {
+                searchState = .failed("The search did not go through. Check the connection and try again.")
             } else if detail.hasPrefix("lyrics") {
                 lyricsState = .failed("The lyrics could not be loaded.")
             } else if detail.hasPrefix("tracks") {
@@ -790,14 +929,12 @@ final class PlayerController: NSObject, ObservableObject {
                 problem = "The like could not be saved."
             }
         default:
-            status = "\(kind): \(detail)"
             EventLog.write("\(kind)\t\(detail)")
         }
     }
 
     private func playingChanged(_ isPlaying: Bool) {
         EventLog.write(isPlaying ? "playing" : "paused\t\(Int(state.position))s")
-        status = isPlaying ? "Playing" : "Paused"
         if isPlaying { problem = nil }
 
         // Keep App Nap away from this process while music plays.
@@ -825,7 +962,6 @@ final class PlayerController: NSObject, ObservableObject {
         guard !state.isPlaying, hasTrack else { return }
         unloaded = (PlayTarget(videoID: state.videoID, listID: currentListID), state.position)
         EventLog.write("unloaded after \(minutes) min paused")
-        status = "Page unloaded after \(minutes) min paused. Play reloads it."
         webView.load(URLRequest(url: URL(string: "about:blank")!))
     }
 
@@ -871,7 +1007,6 @@ extension PlayerController: WKNavigationDelegate, WKUIDelegate, NSWindowDelegate
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
         EventLog.write("crash\tWebContent process terminated")
-        status = "WebContent process terminated, reloading"
         rememberTrack(at: state.position)
         state.isPlaying = false
         nowPlaying.update(state)
@@ -894,7 +1029,6 @@ extension PlayerController: WKNavigationDelegate, WKUIDelegate, NSWindowDelegate
 
     private func report(navigationError error: Error) {
         guard (error as NSError).code != NSURLErrorCancelled else { return }
-        status = "Load failed: \(error.localizedDescription)"
         EventLog.write("error\tnavigation: \(error.localizedDescription)")
     }
 }

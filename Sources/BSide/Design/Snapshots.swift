@@ -137,10 +137,75 @@ enum Snapshots {
             await renderPage(.nowPlaying, player: .fixture(state: singing, source: .mood(Mood.liked.id), lyrics: lyrics),
                              name: "nowplaying-lyrics-\(suffix)", appearance: appearance, into: folder, showsLyrics: true)
         }
-        var plain = lyrics; plain.lines = []
+        var plain = lyrics; plain.lines = []; plain.timedTried = true
         plain.text = "Plain lyrics, without timings,\nshown as text you can select.\n\nA second verse\nof made-up words."
         await renderPage(.nowPlaying, player: .fixture(state: singing, source: .mood(Mood.liked.id), lyrics: plain),
                          name: "nowplaying-lyrics-plain", appearance: .aqua, into: folder, showsLyrics: true)
+        let found = [("Вокруг шум", "Каста • Быль в глаза • 3:36"), ("Plug Walk", "Rich The Kid • Plug Walk • 2:55"),
+                     ("A result with a title long enough to be cut", "Someone feat. Someone Else • An album • 4:07"),
+                     ("Ды-ды-дым", "Каста • Быль в глаза • 4:07")]
+            .enumerated().map { index, item in
+                MusicItem(id: index, videoID: index == 1 ? track.videoID : "s\(index)", title: item.0,
+                          subtitle: item.1, artworkURL: index % 2 == 0 ? artwork : nil)
+            }
+        for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+            await renderPage(.explore, player: .fixture(state: track, source: .other), name: "explore-empty-\(suffix)",
+                             appearance: appearance, into: folder)
+            await renderPage(.explore, player: .fixture(state: track, source: .other, search: ("каста", found),
+                                                        searchState: .loaded),
+                             name: "explore-results-\(suffix)", appearance: appearance, into: folder)
+        }
+        let albums = (1...4).map {
+            MusicItem(id: $0, kind: .album, playlistID: "OLAK\($0)", browseID: "MPREb\($0)",
+                      title: $0 == 1 ? "Быль в глаза" : "An album with a longer name \($0)",
+                      subtitle: "\(2000 + $0 * 4)", artworkURL: $0 % 2 == 1 ? artwork : nil)
+        }
+        let related = (1...4).map {
+            MusicItem(id: $0, kind: .artist, browseID: "UC\($0)", title: ["25/17", "Баста", "Someone", "Other"][$0 - 1])
+        }
+        let artistPage = ArtistPage(id: "UCkasta", name: "Каста", artworkURL: artwork, songsPlaylistID: "OLAKall",
+                                    songs: Array(found.prefix(3)),
+                                    shelves: [.init(id: 0, title: "Albums", items: albums),
+                                              .init(id: 1, title: "Fans might also like", items: related)])
+        let albumTracks = ["В супермаркете", "Встреча", "Нормально всё", "Вокруг шум", "Ды-ды-дым"].enumerated().map {
+            MusicItem(id: $0.offset, videoID: $0.offset == 3 ? track.videoID : "a\($0.offset)", title: $0.element,
+                      subtitle: "Каста", detail: "3:\(10 + $0.offset * 7)", artistID: "UCkasta")
+        }
+        let album = CollectionPage(id: "MPREbalbum", isAlbum: true, title: "Быль в глаза", subtitle: "Album • 2008",
+                                   artist: "Каста", artistID: "UCkasta", artworkURL: artwork, playlistID: "OLAKalbum",
+                                   tracks: albumTracks)
+        for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+            await renderPage(.explore, player: .fixture(state: track, source: .other, artist: artistPage),
+                             name: "explore-artist-\(suffix)", appearance: appearance, into: folder,
+                             explorePath: [.artist(id: "UCkasta", name: "Каста")])
+            await renderPage(.explore, player: .fixture(state: track, source: .other, collection: album),
+                             name: "explore-album-\(suffix)", appearance: appearance, into: folder,
+                             explorePath: [.collection(id: "MPREbalbum", title: "Быль в глаза")])
+        }
+        var shelvesOnly = artistPage; shelvesOnly.songs = []
+        await renderPage(.explore, player: .fixture(state: track, source: .other, artist: shelvesOnly),
+                         name: "explore-artist-rows", appearance: .aqua, into: folder,
+                         explorePath: [.artist(id: "UCkasta", name: "Каста")])
+        await renderPage(.explore, player: .fixture(search: ("каста", []), searchState: .loading),
+                         name: "explore-loading", appearance: .aqua, into: folder)
+        await renderPage(.explore, player: .fixture(search: ("zzqx", []), searchState: .loaded),
+                         name: "explore-nothing", appearance: .aqua, into: folder)
+        await renderPage(.explore, player: .fixture(state: track, source: .other, search: ("каста", found),
+                                                    searchState: .loaded),
+                         name: "explore-reduce-transparency", appearance: .aqua, into: folder, reduceTransparency: true)
+        // The Large size, 30% bigger.
+        Theme.scale = UISize.large.scale
+        let largeLists = [Playlist(id: "1", title: "Focus", subtitle: "12 tracks", artworkURL: artwork),
+                          Playlist(id: "2", title: "Night drive", subtitle: "87 tracks")]
+        await renderPage(.nowPlaying, player: .fixture(state: track, source: .mood(Mood.liked.id)),
+                         name: "large-nowplaying", appearance: .aqua, into: folder, reduceTransparency: true)
+        await renderPage(.nowPlaying, player: .fixture(state: singing, source: .mood(Mood.liked.id), lyrics: lyrics),
+                         name: "large-lyrics", appearance: .darkAqua, into: folder, showsLyrics: true)
+        await renderPage(.vibe, player: .fixture(state: track, source: .mood("focus"), moods: moods),
+                         name: "large-vibe", appearance: .aqua, into: folder, reduceTransparency: true)
+        await renderPage(.playlists, player: .fixture(state: track, source: .playlist("1"), playlists: largeLists),
+                         name: "large-playlists", appearance: .darkAqua, into: folder, reduceTransparency: true)
+        Theme.scale = UISize.compact.scale
         // Glass does not draw offscreen; these show the strip's panel shape.
         let many = (1...20).map { Playlist(id: "\($0)", title: "Playlist \($0)", subtitle: "\($0 * 3) tracks", artworkURL: nil) }
         await renderPage(.playlists, player: .fixture(state: track, source: .playlist("1"), playlists: many),
@@ -202,9 +267,10 @@ enum Snapshots {
     private static func renderPage(_ page: Page, player: PlayerController, name: String,
                                    appearance: NSAppearance.Name, into folder: URL,
                                    reduceTransparency: Bool = false, artworkHover: Bool = false,
-                                   showsLyrics: Bool = false) async {
+                                   showsLyrics: Bool = false, explorePath: [ExploreRoute] = []) async {
         let navigation = Navigation()
         navigation.showsLyrics = showsLyrics
+        navigation.setExplorePath(explorePath)
         let window = NSWindow(
             contentRect: NSRect(origin: .zero, size: Theme.Size.window),
             styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],

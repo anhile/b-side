@@ -76,7 +76,7 @@ enum TimedLyrics {
     /// LRCLIB asks clients to say who they are.
     private static let agent = "B-Side (open-source YouTube Music player for macOS)"
 
-    private static func lrclib(title: String, artist: String, duration: Double) async -> Result? {
+    static func lrclib(title: String, artist: String, duration: Double) async -> Result? {
         let seconds = Int(duration.rounded())
         let attempts: [(String, [URLQueryItem])] = [
             ("get", [.init(name: "track_name", value: title), .init(name: "artist_name", value: artist),

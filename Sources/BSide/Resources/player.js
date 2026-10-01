@@ -43,6 +43,27 @@
   const PLAYLIST_BROWSE_PREFIX = 'VL';  // a playlist's browse ID is 'VL' + its playlist ID
   const LYRICS_BROWSE = /"browseId":"(MPLYt[^"]*)"/; // in a track's /next response: its lyrics page
   const LYRICS_SHELF = 'musicDescriptionShelfRenderer'; // the lyrics text and its source on that page
+  const SEARCH_ENDPOINT = '/youtubei/v1/search?prettyPrint=false';
+  const SEARCH_ITEM = 'musicResponsiveListItemRenderer'; // one result row
+  // `params` that limit a search to one kind, as the YouTube Music UI's chips
+  // do. Playlists: YouTube Music's own first, the community's when it has none.
+  const SEARCH_FILTERS = {
+    songs: ['EgWKAQIIAWoMEA4QChADEAQQCRAF'],
+    albums: ['EgWKAQIYAWoMEA4QChADEAQQCRAF'],
+    playlists: ['EgeKAQQoADgBagwQDhAKEAMQBBAJEAU=', 'EgeKAQQoAEABagwQDhAKEAMQBBAJEAU='],
+    artists: ['EgWKAQIgAWoMEA4QChADEAQQCRAF'],
+  };
+  // Pages behind an artist's or an album's name: browse IDs start with these.
+  const ARTIST_PREFIX = 'UC';
+  const ALBUM_PREFIX = 'MPREb';
+  const PAGE_TYPE = 'pageType';         // in a navigation endpoint: MUSIC_PAGE_TYPE_ARTIST, _ALBUM, _PLAYLIST
+  const ARTIST_HEADERS = ['musicImmersiveHeaderRenderer', 'musicVisualHeaderRenderer'];
+  const ARTIST_SONGS = 'musicShelfRenderer';          // "Top songs" on an artist's page
+  const ARTIST_SHELF = 'musicCarouselShelfRenderer';  // albums, singles, playlists, related artists
+  const SHELF_ITEM = 'musicTwoRowItemRenderer';
+  const COLLECTION_HEADERS = ['musicResponsiveHeaderRenderer', 'musicDetailHeaderRenderer'];
+  const ALBUM_PLAYLIST = /"(OLAK5uy_[^"]+)"/;         // the playlist that plays an album
+  const ARTIST_PHOTO_MIN_WIDTH = 192;
   const ACCOUNT_ENDPOINT = '/youtubei/v1/account/account_menu?prettyPrint=false';
   const LIKE_ENDPOINT = '/youtubei/v1/like/like?prettyPrint=false';
   const UNLIKE_ENDPOINT = '/youtubei/v1/like/removelike?prettyPrint=false';
@@ -71,6 +92,7 @@
   let queueContinuation = null;
   let refilling = false;
   let volume = 100;      // 0 to 100, set by the app
+  let repeat = 'off';    // 'off', 'all' (the queue again from the top) or 'one' (this track again), set by the app
 
   function post(message) {
     try { window.webkit.messageHandlers.bside.postMessage(message); } catch (e) {}
@@ -107,8 +129,11 @@
       videoId: data.video_id || '',
       queueIndex: queueIndex,
       queueCount: queue.length,
-      queueHasMore: !!queueContinuation,
+      // With repeat all, the first track follows the last, so there is always a next.
+      queueHasMore: !!queueContinuation || (repeat === 'all' && queue.length > 0),
       like: known.like || '',
+      artistId: known.artistId || '',
+      albumId: known.albumId || '',
       position: player.getCurrentTime() || 0,
       duration: isFinite(duration) ? duration : 0,
       playing: state === PLAYING || state === BUFFERING,
@@ -135,7 +160,7 @@
         if (config.muted) player.mute();
         player.setVolume(volume);
         player.addEventListener('onError', function (code) { event('error', 'player error ' + code); });
-        player.addEventListener('onStateChange', function (state) { if (state === ENDED) playAt(queueIndex + 1); });
+        player.addEventListener('onStateChange', function (state) { if (state === ENDED) advance(); });
         event('ready', 'player');
       } else if (Date.now() - started > BOOT_TIMEOUT_MS) {
         clearInterval(timer);
@@ -307,7 +332,24 @@
       artwork: thumbnail(chosen.thumbnail),
       thumb: thumbnail(chosen.thumbnail, ROW_ARTWORK_MIN_WIDTH),
       like: find(chosen, LIKE_KEY) || '', // '' when the item does not say
+      artistId: linked(chosen.longBylineText, ARTIST_PREFIX),
+      albumId: linked(chosen.longBylineText, ALBUM_PREFIX),
     };
+  }
+
+  // The browse ID behind a name in a line of text ("Artist • Album • 2008"),
+  // the first that starts with `prefix`.
+  function linked(text, prefix) {
+    const runs = (text && text.runs) || [];
+    for (const run of runs) {
+      const id = find(run.navigationEndpoint, 'browseId');
+      if (id && id.indexOf(prefix) === 0) return id;
+    }
+    return '';
+  }
+
+  function joined(text) {
+    return ((text && text.runs) || []).map(function (run) { return run.text; }).join('');
   }
 
   // The smallest thumbnail that is wide enough, or the largest there is.
@@ -349,6 +391,13 @@
     }
   }
 
+  // At the end of a track: the same one again, the next, or the first after
+  // the last.
+  function advance() {
+    if (repeat === 'one') return playAt(queueIndex, 0);
+    if (!playAt(queueIndex + 1) && repeat === 'all') playAt(0, 0);
+  }
+
   function playAt(index, startSeconds) {
     if (!player || index < 0 || index >= queue.length) return false;
     queueIndex = index;
@@ -370,7 +419,8 @@
       const page = await fetchQueue(body);
       if (!page.tracks.length) return event('error', 'load: playlist ' + id + ' is empty or not accessible');
       setQueue(page, shuffle ? 'shuffled playlist' : 'playlist');
-      playAt(Math.min(config.startIndex || 0, queue.length - 1), 0);
+      const start = (options && options.startIndex) || config.startIndex || 0;
+      playAt(Math.min(start, queue.length - 1), 0);
       return;
     }
     // Like YouTube Music with autoplay on: the track, then its radio. The
@@ -451,6 +501,139 @@
       + ' (' + Math.round(bytes / 1024) + ' KB)');
   }
 
+  // One row of a list on YouTube Music (a search result, an artist's top
+  // song, an album's or playlist's track): what it is, its IDs, and its text.
+  function listItem(node) {
+    const columns = (node.flexColumns || []).map(function (column) {
+      return joined(find(column, 'text'));
+    });
+    const videoId = find(node.playlistItemData, 'videoId') || '';
+    const browseId = find(node.navigationEndpoint, 'browseId') || '';
+    const pageType = find(node.navigationEndpoint, PAGE_TYPE) || '';
+    const playlistId = videoId ? '' : (find(node.overlay, 'playlistId') || '');
+    const byline = node.flexColumns && node.flexColumns[1] && find(node.flexColumns[1], 'text');
+    const length = node.fixedColumns && joined(find(node.fixedColumns[0], 'text'));
+    if (!columns[0] || (!videoId && !playlistId && !browseId)) return null;
+    return {
+      kind: videoId ? 'song' : kindOf(pageType, browseId),
+      videoId: videoId,
+      playlistId: playlistId,
+      browseId: browseId,
+      title: columns[0],
+      subtitle: columns[1] || '',
+      detail: length || '',
+      artistId: linked(byline, ARTIST_PREFIX),
+      albumId: linked(byline, ALBUM_PREFIX),
+      artwork: thumbnail(node.thumbnail, ROW_ARTWORK_MIN_WIDTH),
+    };
+  }
+
+  // A tile in a row of albums, singles, playlists or artists.
+  function shelfItem(node) {
+    const browseId = find(node.navigationEndpoint, 'browseId') || '';
+    const title = joined(node.title);
+    if (!title || !browseId) return null; // videos: nothing to open
+    return {
+      kind: kindOf(find(node.navigationEndpoint, PAGE_TYPE) || '', browseId),
+      videoId: '',
+      playlistId: find(node.thumbnailOverlay, 'playlistId') || '',
+      browseId: browseId,
+      title: title,
+      subtitle: joined(node.subtitle),
+      detail: '',
+      artistId: linked(node.subtitle, ARTIST_PREFIX),
+      albumId: '',
+      artwork: thumbnail(node.thumbnailRenderer, ARTIST_PHOTO_MIN_WIDTH),
+    };
+  }
+
+  function kindOf(pageType, browseId) {
+    if (/ARTIST/.test(pageType) || browseId.indexOf(ARTIST_PREFIX) === 0) return 'artist';
+    if (/ALBUM/.test(pageType) || browseId.indexOf(ALBUM_PREFIX) === 0) return 'album';
+    return 'playlist';
+  }
+
+  // One kind of result for a search, for the Explore page.
+  async function search(query, kind) {
+    const filters = SEARCH_FILTERS[kind] || SEARCH_FILTERS.songs;
+    let items = [], bytes = 0;
+    for (const params of filters) {
+      const text = await api(SEARCH_ENDPOINT, { query: query, params: params });
+      bytes += text.length;
+      cut(text, [SEARCH_ITEM], function (key, node) {
+        const item = listItem(node);
+        if (item) items.push(item);
+      });
+      if (items.length) break;
+    }
+    post({ type: 'search', query: query, kind: kind, items: items });
+    event('search', kind + ': ' + items.length + ' results (' + Math.round(bytes / 1024) + ' KB)');
+  }
+
+  // An artist's page: name, photo, top songs and the playlist of all their
+  // songs, then rows of albums, singles, playlists and related artists.
+  async function artist(id) {
+    try {
+      const text = await api(BROWSE_ENDPOINT, { browseId: id });
+      const page = { type: 'artist', id: id, name: '', artwork: '', songsPlaylistId: '', songs: [], shelves: [] };
+      cut(text, ARTIST_HEADERS.concat([ARTIST_SONGS, ARTIST_SHELF]), function (key, node) {
+        if (ARTIST_HEADERS.indexOf(key) !== -1) {
+          page.name = joined(node.title);
+          page.artwork = thumbnail(node.thumbnail, ARTIST_PHOTO_MIN_WIDTH);
+        } else if (key === ARTIST_SONGS) {
+          (node.contents || []).forEach(function (entry) {
+            const item = entry[SEARCH_ITEM] && listItem(entry[SEARCH_ITEM]);
+            if (item) page.songs.push(item);
+          });
+          const all = find(node.bottomEndpoint, 'browseId') || '';
+          page.songsPlaylistId = all.indexOf(PLAYLIST_BROWSE_PREFIX) === 0 ? all.slice(PLAYLIST_BROWSE_PREFIX.length) : '';
+        } else {
+          const items = (node.contents || []).map(function (entry) {
+            return entry[SHELF_ITEM] && shelfItem(entry[SHELF_ITEM]);
+          }).filter(Boolean);
+          if (items.length) page.shelves.push({ title: joined(find(node.header, 'title')), items: items });
+        }
+      });
+      post(page);
+      event('artist', page.songs.length + ' songs, ' + page.shelves.length + ' rows (' + Math.round(text.length / 1024) + ' KB)');
+    } catch (e) {
+      post({ type: 'artist', id: id, failed: true });
+      event('error', 'artist: ' + e);
+    }
+  }
+
+  // An album's or a playlist's page: its header and its tracks, and the
+  // playlist ID that plays it.
+  async function collection(id) {
+    try {
+      const text = await api(BROWSE_ENDPOINT, { browseId: id });
+      const album = id.indexOf(ALBUM_PREFIX) === 0;
+      const playlist = album ? text.match(ALBUM_PLAYLIST) : null;
+      const page = {
+        type: 'collection', id: id, album: album, title: '', subtitle: '', artist: '', artistId: '', artwork: '',
+        playlistId: album ? (playlist ? playlist[1] : '') : id.replace(/^VL/, ''), tracks: [],
+      };
+      cut(text, COLLECTION_HEADERS.concat([SEARCH_ITEM]), function (key, node) {
+        if (key === SEARCH_ITEM) {
+          const item = listItem(node);
+          if (item && item.videoId) page.tracks.push(item);
+          return;
+        }
+        page.title = joined(node.title);
+        page.subtitle = joined(node.subtitle);
+        page.artist = joined(node.straplineTextOne);
+        page.artistId = linked(node.straplineTextOne, ARTIST_PREFIX) || linked(node.subtitle, ARTIST_PREFIX);
+        page.artwork = thumbnail(node.thumbnail, ARTIST_PHOTO_MIN_WIDTH);
+      });
+      post(page);
+      event('collection', (album ? 'album, ' : 'playlist, ') + page.tracks.length + ' tracks ('
+        + Math.round(text.length / 1024) + ' KB)');
+    } catch (e) {
+      post({ type: 'collection', id: id, failed: true });
+      event('error', 'collection: ' + e);
+    }
+  }
+
   // The signed-in user's playlists, for the picker in the app window.
   async function playlists() {
     const text = await api(BROWSE_ENDPOINT, { browseId: LIBRARY_PLAYLISTS });
@@ -481,7 +664,11 @@
       if (!player) return;
       player.getPlayerState() === PLAYING ? player.pauseVideo() : player.playVideo();
     },
-    next() { if (!playAt(queueIndex + 1)) event('error', 'next: end of queue'); },
+    next() {
+      if (playAt(queueIndex + 1)) return;
+      if (repeat === 'all' && playAt(0, 0)) return;
+      event('error', 'next: end of queue');
+    },
     previous() {
       if (!player) return;
       if (player.getCurrentTime() > RESTART_THRESHOLD_S || !playAt(queueIndex - 1)) player.seekTo(0, true);
@@ -490,6 +677,10 @@
     volume(level) {
       volume = Math.max(0, Math.min(100, Number(level) || 0));
       if (player) player.setVolume(volume);
+    },
+    repeat(mode) {
+      repeat = ['off', 'all', 'one'].indexOf(mode) !== -1 ? mode : 'off';
+      report();
     },
     playlists() {
       playlists().catch(function (e) { event('error', 'playlists: ' + e); });
@@ -501,6 +692,11 @@
       moreTracks().catch(function (e) { event('error', 'tracks: ' + e); });
     },
     playListing: playListing,
+    search(query, kind) {
+      search(query, kind).catch(function (e) { event('error', 'search: ' + e); });
+    },
+    artist: artist,
+    collection: collection,
     lyrics(videoId) {
       lyrics(videoId).catch(function (e) { event('error', 'lyrics: ' + e); });
     },

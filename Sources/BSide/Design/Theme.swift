@@ -2,7 +2,14 @@ import SwiftUI
 
 /// The tokens from DESIGN.md. Screens take colours, type, spacing, radii and
 /// sizes from here and nowhere else; scripts/check-design.sh enforces it.
+///
+/// Type, spacing, radii and sizes are multiplied by `scale`: 1 for the
+/// Compact size, 1.3 for Large (Settings, Appearance). Colours, opacities,
+/// ratios and timings are not.
 enum Theme {
+    /// Set from Settings before the window is built again; see UISize.
+    static var scale: CGFloat = UISize.current.scale
+
     /// Semantic colours. Light and dark values live in the asset catalog
     /// (Assets.xcassets/Colors) and follow the system appearance.
     enum Colors {
@@ -26,82 +33,89 @@ enum Theme {
         static let success = Color.green
     }
 
-    /// Type roles. System text styles, so the user's settings apply.
+    /// Type roles. The macOS text styles' sizes (26, 15, 13, 12, 11), so
+    /// Compact looks exactly like the system styles.
     enum Text {
-        static let display: Font = .largeTitle.weight(.bold)
-        static let title: Font = .title3.weight(.semibold)
-        static let body: Font = .body
-        static let label: Font = .callout.weight(.medium)
-        static let caption: Font = .subheadline
+        static var display: Font { .system(size: 26 * scale, weight: .bold) }
+        static var title: Font { .system(size: 15 * scale, weight: .semibold) }
+        static var body: Font { .system(size: 13 * scale) }
+        static var label: Font { .system(size: 12 * scale, weight: .medium) }
+        static var caption: Font { .system(size: 11 * scale) }
     }
 
     enum Space {
-        static let xxs: CGFloat = 4
-        static let xs: CGFloat = 8
-        static let s: CGFloat = 12
-        static let m: CGFloat = 16
-        static let l: CGFloat = 24
-        static let xl: CGFloat = 32
+        static var xxs: CGFloat { (4) * scale }
+        static var xs: CGFloat { (8) * scale }
+        static var s: CGFloat { (12) * scale }
+        static var m: CGFloat { (16) * scale }
+        static var l: CGFloat { (24) * scale }
+        static var xl: CGFloat { (32) * scale }
     }
 
     enum Radius {
         /// The sleeve: near-square, as a real one.
-        static let sleeve: CGFloat = 3
-        static let s: CGFloat = 6
-        static let m: CGFloat = 12
+        static var sleeve: CGFloat { (3) * scale }
+        static var s: CGFloat { (6) * scale }
+        static var m: CGFloat { (12) * scale }
         /// Inside a radius-m panel, 4 in: the corners stay concentric.
-        static let nested: CGFloat = m - Space.xxs
+        static var nested: CGFloat { m - Space.xxs }
     }
 
     enum Size {
-        static let window = CGSize(width: 320, height: 440)
+        static var window: CGSize { CGSize(width: 320 * scale, height: 440 * scale) }
+        /// The system's title bar; the bar with the page tabs grows with the
+        /// size, the system's does not.
         static let titleBar: CGFloat = 28
-        static let pageDotTarget: CGFloat = 24
-        static let pageTabTarget: CGFloat = 28
+        static var tabBar: CGFloat { titleBar * scale }
+        static var pageDotTarget: CGFloat { (24) * scale }
+        static var pageTabTarget: CGFloat { (28) * scale }
         /// The Playlists page's bar under the title bar: one line, the
         /// compact filled button with 6 above and below.
-        static let pageBar: CGFloat = 36
+        static var pageBar: CGFloat { (36) * scale }
         /// Two columns inside the window padding, with one gutter.
-        static let tileWidth: CGFloat = (window.width - 2 * Space.m - Space.s) / 2
-        static let tileHeight: CGFloat = 96
-        static let editorWidth: CGFloat = 300
-        static let artworkSmall: CGFloat = 36
+        static var tileWidth: CGFloat { (window.width - 2 * Space.m - Space.s) / 2 }
+        static var tileHeight: CGFloat { (96) * scale }
+        static var editorWidth: CGFloat { (300) * scale }
+        static var artworkSmall: CGFloat { (36) * scale }
         /// The strip's artwork fills the panel, 4 in from its edges.
-        static let artworkStrip: CGFloat = stripHeight - 2 * Space.xxs
-        static let artworkLarge: CGFloat = 160
+        static var artworkStrip: CGFloat { stripHeight - 2 * Space.xxs }
+        static var artworkLarge: CGFloat { (160) * scale }
+        /// Explore: an album's or artist's picture on its page, and the
+        /// tiles in an artist's rows.
+        static var cover: CGFloat { (96) * scale }
         /// How far the record shows from behind the large artwork.
-        static let recordPeek: CGFloat = 48
+        static var recordPeek: CGFloat { (48) * scale }
         static let recordInSleeve: CGFloat = 0.97   // a 12-inch record in its 12 3/8-inch sleeve
         /// Parts of the record as a share of its diameter, so it draws the
         /// same at 36 and at 160.
         static let recordLabelRatio: CGFloat = 0.35
         static let recordHoleRatio: CGFloat = 0.04
         static let recordGrooveStep: CGFloat = 0.045
-        static let rowHeight: CGFloat = 44
-        static let stripHeight: CGFloat = 44
-        static let transportTarget: CGFloat = 32
-        static let transportGlyph: CGFloat = 15
-        static let playGlyph: CGFloat = 22
+        static var rowHeight: CGFloat { (44) * scale }
+        static var stripHeight: CGFloat { (44) * scale }
+        static var transportTarget: CGFloat { (32) * scale }
+        static var transportGlyph: CGFloat { (15) * scale }
+        static var playGlyph: CGFloat { (22) * scale }
         /// Pause at 15 has 60% of the ink of Next at 15; at 18 they weigh alike.
-        static let stripPlayGlyph: CGFloat = 18
+        static var stripPlayGlyph: CGFloat { (18) * scale }
         /// Every element of the transport row: the capsule and the circles.
-        static let transportBar: CGFloat = 40
+        static var transportBar: CGFloat { (40) * scale }
         /// Like and Lyrics over the album cover.
-        static let artworkAction: CGFloat = 48
+        static var artworkAction: CGFloat { (48) * scale }
         /// The hover shape stops this short of the button's edge.
-        static let hoverInset: CGFloat = 2
-        static let volumeGlyph: CGFloat = 20
-        static let volumeSlider: CGFloat = 120
+        static var hoverInset: CGFloat { (2) * scale }
+        static var volumeGlyph: CGFloat { (20) * scale }
+        static var volumeSlider: CGFloat { (120) * scale }
         static let settingsWidth: CGFloat = 460
-        static let menuWidth: CGFloat = 260
+        static var menuWidth: CGFloat { (260) * scale }
         static let logHeight: CGFloat = 200
         static let avatar: CGFloat = 40
         /// Symbol sizes for the largest and smallest glyphs. Everything else
         /// takes its size from the text style next to it.
-        static let emptyGlyph: CGFloat = 28
-        static let skeletonLine: CGFloat = 10
-        static let skeletonTitle: CGFloat = 160
-        static let skeletonCaption: CGFloat = 72
+        static var emptyGlyph: CGFloat { (28) * scale }
+        static var skeletonLine: CGFloat { (10) * scale }
+        static var skeletonTitle: CGFloat { (160) * scale }
+        static var skeletonCaption: CGFloat { (72) * scale }
     }
 
     /// The artwork colour behind Now Playing: how much of it shows over
@@ -115,8 +129,8 @@ enum Theme {
 
     enum Shadow {
         /// The only shadow in the app, under large artwork.
-        static let artworkRadius: CGFloat = 12
-        static let artworkY: CGFloat = 6
+        static var artworkRadius: CGFloat { 12 * scale }
+        static var artworkY: CGFloat { 6 * scale }
         static let artworkOpacity: Double = 0.25
     }
 

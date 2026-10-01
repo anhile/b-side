@@ -12,6 +12,7 @@ becomes a customisable set of mood tiles in two columns, each tile a playlist,
 Liked Music shuffled, or a track's radio; the player has its own Now Playing
 page, the third dot; Vibe and Playlists carry a one-line strip with the
 current track while music plays; starting music does not switch the page.
+On 2026-10-01 a fourth page, Explore, was added: search, with the same strip.
 No iPod wheel.
 
 Mockups are made in SwiftUI, not Figma: `-snapshot` renders every page in its
@@ -70,7 +71,8 @@ corner radii, phone layouts. Those read as web or iOS, not as a Mac app.
 ## Colour
 
 Taken from the app icon: the orange field, the cream sleeve, the black vinyl.
-Two themes, named after them. The theme follows the system appearance.
+Two themes, named after them. The theme follows the system appearance,
+unless Settings, Appearance sets Light or Dark for the whole app.
 
 | Token | Sleeve (light) | Vinyl (dark) | Use |
 |---|---|---|---|
@@ -118,8 +120,9 @@ Rules:
 
 ## Typography
 
-SF Pro through system text styles only, so Dynamic Type and the user's
-settings work. No custom fonts, no fixed point sizes.
+SF Pro at the sizes of the macOS text styles. No custom fonts. The sizes
+are written out, not taken from the text styles, so the Large size can
+multiply them (see Size below); at Compact they equal the text styles.
 
 | Role | Text style | Size on macOS | Weight | Use |
 |---|---|---|---|---|
@@ -141,6 +144,16 @@ Scale: 4, 8, 12, 16, 24, 32. No other values.
 - Inside a group: 4 or 8. Between groups: 16 or 24. Space inside a group is
   always smaller than the space around it.
 - List row height: 44, with 8 between artwork and text.
+
+## Size
+
+Settings, Appearance offers two sizes: **Compact** (the values in this
+document) and **Large**, for reading at a distance or with low vision.
+Large multiplies every type size, spacing, radius and component size by
+1.3, and the window with them (416 by 572). Colours, opacities, ratios and
+timings stay. `Theme.scale` carries the factor; nothing else changes, so
+every screen works at both sizes without its own layout. The system's own
+parts (title bar, traffic lights, Settings, menus) keep the system's size.
 
 ## Shape and depth
 
@@ -204,12 +217,13 @@ not an icon.
 
 **Main window: a compact player, not a document window.**
 
-- Size 320 by 440 points. Not resizable in the first version.
+- Size 320 by 440 points at Compact, 416 by 572 at Large. Not resizable by
+  dragging.
 - Hidden title bar. The traffic lights stay. The window drags by the empty
   strip at the top.
-- Three pages, Vibe, Playlists and Now Playing, side by side. No sidebar, no
-  `NavigationSplitView`, no toolbar: the window is too small for them, and
-  three destinations do not need a sidebar.
+- Four pages, Now Playing, Vibe, Playlists and Explore, side by side. No
+  sidebar, no `NavigationSplitView`, no toolbar: the window is too small for
+  them, and four destinations do not need a sidebar.
 - Closing the window does not stop the music. The Dock icon reopens it.
 - The window remembers its position.
 
@@ -242,10 +256,12 @@ and toolbar belongs there. It is out of scope now.
 
 ## macOS rules
 
-- Every action is in the menu bar with a shortcut: Space for play and pause,
-  Command-Right and Command-Left for next and previous.
+- Every action is in the menu bar with a shortcut: Command-Right and
+  Command-Left for next and previous. Space plays and pauses while the main
+  window is in front and no text field has focus; it is not a menu shortcut,
+  because a menu shortcut would take Space from every text field.
 - Media keys and the system Now Playing widget always work.
-- Light and dark follow the system. There is no in-app theme switch.
+- Light and dark follow the system, unless Settings, Appearance sets one.
 - Respect Reduce Motion, Reduce Transparency and Increase Contrast.
 - System controls in Settings keep the user's system accent colour. B-Side's
   orange is used only in the main window.
@@ -263,6 +279,7 @@ Short descriptions for scope. Each gets a full spec before it is built.
 | Vibe | Start music for a mood with one click | Play the chosen mood tile. Liked Music, shuffled, is one of the tiles |
 | Playlists | Pick one of my playlists | Play the chosen playlist |
 | Now Playing | See and control what plays | Play or pause |
+| Explore | Find something on YouTube Music and play it | Type in the search field; click a result to play it |
 | Settings | Account, playback options, diagnostics | None |
 
 Vibe is a grid of tiles in two columns, and the set of tiles is the user's
@@ -276,7 +293,7 @@ The closed set. A screen is composed from these and nothing else.
 | Component | Variants | Use |
 |---|---|---|
 | `PlayButton` | hero | The Vibe page. One per screen. Filled with `text`, never orange |
-| `LyricsView` | timed, plain | Now Playing, in the artwork's place. Timed: `title` lines, the current one in `text`, the others `text-muted`, kept a third of the way down; a click seeks. Plain: `body`, selectable |
+| `LyricsView` | timed, plain | Now Playing, in the artwork's place. Timed: `title` lines, the current one in `text`, the others `text-muted`, kept in the middle; a click seeks. Plain: `body`, selectable |
 | `FilledButton` | standard, compact | Capsule filled with `text`. Compact (24 high, small glyph) goes in a page bar |
 | `Record` | vinyl, disc | Decoration behind or beside artwork. Custom drawing |
 | `TransportButton` | previous, play or pause, next | Now Playing area |

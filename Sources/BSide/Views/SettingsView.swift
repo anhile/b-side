@@ -6,23 +6,29 @@ import SwiftUI
 /// the copy are B-Side's.
 struct SettingsView: View {
     enum Tab: String, CaseIterable {
-        case account, playback, diagnostics
+        case general, appearance, playback, account, diagnostics
     }
 
     @State private var tab: Tab
 
-    init(tab: Tab = .account) {
+    init(tab: Tab = .general) {
         _tab = State(initialValue: tab)
     }
 
     var body: some View {
         TabView(selection: $tab) {
-            AccountSettings()
-                .tabItem { Label("Account", systemImage: "person.crop.circle") }
-                .tag(Tab.account)
+            GeneralSettings()
+                .tabItem { Label("General", systemImage: "gearshape") }
+                .tag(Tab.general)
+            AppearanceSettings()
+                .tabItem { Label("Appearance", systemImage: "paintpalette") }
+                .tag(Tab.appearance)
             PlaybackSettings()
                 .tabItem { Label("Playback", systemImage: "play.circle") }
                 .tag(Tab.playback)
+            AccountSettings()
+                .tabItem { Label("Account", systemImage: "person.crop.circle") }
+                .tag(Tab.account)
             DiagnosticsSettings()
                 .tabItem { Label("Diagnostics", systemImage: "gauge.with.dots.needle.33percent") }
                 .tag(Tab.diagnostics)
@@ -92,8 +98,6 @@ private struct PlaybackSettings: View {
 
     var body: some View {
         Form {
-            OpenAtLogin()
-            TrackNotifications()
             Section {
                 Toggle("Audio only", isOn: $audioOnly)
                     .onChange(of: audioOnly) { player.applyPageSettings() }
@@ -116,6 +120,68 @@ private struct PlaybackSettings: View {
                     .disabled(!reloadWhenPaused)
             } footer: {
                 Text("Frees most of the memory. The next Play loads the player again at the same position.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+    }
+}
+
+/// How B-Side starts and what it tells you.
+private struct GeneralSettings: View {
+    var body: some View {
+        Form {
+            OpenAtLogin()
+            TrackNotifications()
+        }
+        .formStyle(.grouped)
+    }
+}
+
+/// Light or dark, and the size of everything in the window.
+private struct AppearanceSettings: View {
+    @AppStorage(Keys.theme) private var theme = ThemeMode.system.rawValue
+    @AppStorage(Keys.uiSize) private var size = UISize.compact.rawValue
+
+    private var themeMode: Binding<ThemeMode> {
+        Binding {
+            ThemeMode(rawValue: theme) ?? .system
+        } set: { mode in
+            theme = mode.rawValue
+            ThemeMode.apply(mode)
+        }
+    }
+
+    /// Theme's scale changes first, so the window is built again at the new size.
+    private var uiSize: Binding<UISize> {
+        Binding {
+            UISize(rawValue: size) ?? .compact
+        } set: { new in
+            Theme.scale = new.scale
+            size = new.rawValue
+        }
+    }
+
+    var body: some View {
+        Form {
+            Section {
+                Picker("Appearance", selection: themeMode) {
+                    ForEach(ThemeMode.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+            } footer: {
+                Text("Automatic follows the system's light and dark setting.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            Section {
+                Picker("Size", selection: uiSize) {
+                    ForEach(UISize.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+            } footer: {
+                Text("Large makes the window, its text and its buttons 30% bigger, for reading at a distance or with low vision.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -209,7 +275,6 @@ private struct TrackNotifications: View {
 
 private struct DiagnosticsSettings: View {
     @EnvironmentObject private var player: PlayerController
-    @State private var input = ""
     @State private var log: [String] = []
 
     var body: some View {
@@ -219,20 +284,6 @@ private struct DiagnosticsSettings: View {
                     LabeledContent("\(process.name) (\(String(process.pid)))") {
                         Text("\(process.megabytes, specifier: "%.0f") MB").monospacedDigit()
                     }
-                }
-            }
-            Section("Player") {
-                LabeledContent("Status") {
-                    Text(player.status).lineLimit(2).multilineTextAlignment(.trailing)
-                }
-                HStack {
-                    TextField("Play", text: $input, prompt: Text("Video ID, playlist ID, or link"))
-                        .onSubmit { player.load(input) }
-                    Button("Play") { player.load(input) }
-                        .disabled(input.isEmpty)
-                }
-                Button(player.isWebViewVisible ? "Hide Player Page" : "Show Player Page") {
-                    player.isWebViewVisible ? player.hideWebView() : player.showWebView()
                 }
             }
             Section("Event log") {

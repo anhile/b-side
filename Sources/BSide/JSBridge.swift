@@ -16,6 +16,9 @@ struct PlayerState: Equatable {
     var queueHasMore = false
     /// "LIKE", "INDIFFERENT", or "" when unknown.
     var like = ""
+    /// The pages behind the artist's and the album's names, "" when unknown.
+    var artistID = ""
+    var albumID = ""
 
     var isLiked: Bool { like == "LIKE" }
 
@@ -40,8 +43,11 @@ struct Lyrics: Equatable {
     /// YouTube Music's lyrics page for the track (`MPLYt…`), empty without one.
     var page = ""
     var lines: [LyricLine] = []
+    /// The timings were looked for (they are only when the lyrics are shown).
+    var timedTried = false
 
     var isTimed: Bool { !lines.isEmpty }
+    var isEmpty: Bool { text.isEmpty && lines.isEmpty }
 }
 
 /// One timed line: when it starts, in seconds, and its words ("" for a break).
@@ -60,6 +66,97 @@ extension [LyricLine] {
         }
         return low == 0 ? nil : low - 1
     }
+}
+
+/// What a search on the Explore page looks for.
+enum SearchKind: String, CaseIterable, Identifiable {
+    case songs, albums, artists, playlists
+
+    var id: String { rawValue }
+    var title: String { rawValue.capitalized }
+}
+
+/// One thing on YouTube Music, as a row or a tile on the Explore page: a
+/// song (a video ID, played with its radio after it), an album or playlist
+/// (opened by its browse ID, played by its playlist ID), or an artist. The
+/// identity is the position in its list.
+struct MusicItem: Identifiable, Equatable {
+    enum Kind: String { case song, album, playlist, artist }
+
+    let id: Int
+    var kind = Kind.song
+    var videoID = ""
+    var playlistID = ""
+    var browseID = ""
+    let title: String
+    var subtitle = ""
+    /// A track's length, "3:41", where the list shows it.
+    var detail = ""
+    var artworkURL: URL?
+    /// The pages behind the artist's and the album's names, when known.
+    var artistID = ""
+    var albumID = ""
+
+    init(id: Int, kind: Kind = .song, videoID: String = "", playlistID: String = "", browseID: String = "",
+         title: String, subtitle: String = "", detail: String = "", artworkURL: URL? = nil,
+         artistID: String = "", albumID: String = "") {
+        self.id = id
+        self.kind = kind
+        self.videoID = videoID
+        self.playlistID = playlistID
+        self.browseID = browseID
+        self.title = title
+        self.subtitle = subtitle
+        self.detail = detail
+        self.artworkURL = artworkURL
+        self.artistID = artistID
+        self.albumID = albumID
+    }
+
+    init?(_ body: [String: Any], id: Int) {
+        guard let title = body["title"] as? String else { return nil }
+        self.init(id: id, kind: Kind(rawValue: body["kind"] as? String ?? "") ?? .song,
+                  videoID: body["videoId"] as? String ?? "", playlistID: body["playlistId"] as? String ?? "",
+                  browseID: body["browseId"] as? String ?? "", title: title,
+                  subtitle: body["subtitle"] as? String ?? "", detail: body["detail"] as? String ?? "",
+                  artworkURL: (body["artwork"] as? String).flatMap { $0.isEmpty ? nil : URL(string: $0) },
+                  artistID: body["artistId"] as? String ?? "", albumID: body["albumId"] as? String ?? "")
+    }
+
+    static func list(_ value: Any?) -> [MusicItem] {
+        ((value as? [[String: Any]]) ?? []).enumerated().compactMap { MusicItem($1, id: $0) }
+    }
+}
+
+/// An artist's page: top songs, the playlist of all their songs, and rows
+/// of albums, singles, playlists and related artists, titled by YouTube Music.
+struct ArtistPage: Equatable {
+    struct Shelf: Equatable, Identifiable {
+        let id: Int
+        let title: String
+        let items: [MusicItem]
+    }
+
+    let id: String
+    let name: String
+    var artworkURL: URL?
+    var songsPlaylistID = ""
+    var songs: [MusicItem] = []
+    var shelves: [Shelf] = []
+}
+
+/// An album's or a playlist's page: its header, its tracks, and the
+/// playlist ID that plays it.
+struct CollectionPage: Equatable {
+    let id: String
+    var isAlbum = false
+    let title: String
+    var subtitle = ""
+    var artist = ""
+    var artistID = ""
+    var artworkURL: URL?
+    var playlistID = ""
+    var tracks: [MusicItem] = []
 }
 
 /// One track in a playlist's list. A playlist can hold a track twice, so the
@@ -92,6 +189,12 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
     /// A page of a playlist's tracks: new items, whether they follow the
     /// ones before, and whether there are more.
     var onTracks: ((_ listID: String, _ items: [Track], _ append: Bool, _ more: Bool) -> Void)?
+    /// Results for one search: the query and kind they answer, so a late
+    /// answer to an older query can be dropped.
+    var onSearch: ((_ query: String, _ kind: SearchKind, _ items: [MusicItem]) -> Void)?
+    /// An artist's or a collection's page, or nil with its ID when it failed.
+    var onArtist: ((_ id: String, _ page: ArtistPage?) -> Void)?
+    var onCollection: ((_ id: String, _ page: CollectionPage?) -> Void)?
     var onLyrics: ((Lyrics) -> Void)?
 
     static let script = "player"
@@ -165,6 +268,8 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
             state.queueCount = (body["queueCount"] as? NSNumber)?.intValue ?? 0
             state.queueHasMore = body["queueHasMore"] as? Bool ?? false
             state.like = body["like"] as? String ?? ""
+            state.artistID = body["artistId"] as? String ?? ""
+            state.albumID = body["albumId"] as? String ?? ""
             onState?(state)
         case "account":
             let signedIn = body["signedIn"] as? Bool ?? false
@@ -187,6 +292,30 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
                              artist: item["artist"] as? String ?? "",
                              artworkURL: (item["artwork"] as? String).flatMap { $0.isEmpty ? nil : URL(string: $0) })
             }, body["append"] as? Bool ?? false, body["more"] as? Bool ?? false)
+        case "search":
+            onSearch?(body["query"] as? String ?? "", SearchKind(rawValue: body["kind"] as? String ?? "") ?? .songs,
+                      MusicItem.list(body["items"]))
+        case "artist":
+            let id = body["id"] as? String ?? ""
+            guard body["failed"] as? Bool != true else { return onArtist?(id, nil) ?? () }
+            let shelves = ((body["shelves"] as? [[String: Any]]) ?? []).enumerated().map { index, shelf in
+                ArtistPage.Shelf(id: index, title: shelf["title"] as? String ?? "", items: MusicItem.list(shelf["items"]))
+            }
+            onArtist?(id, ArtistPage(id: id, name: body["name"] as? String ?? "",
+                                     artworkURL: (body["artwork"] as? String).flatMap { $0.isEmpty ? nil : URL(string: $0) },
+                                     songsPlaylistID: body["songsPlaylistId"] as? String ?? "",
+                                     songs: MusicItem.list(body["songs"]), shelves: shelves))
+        case "collection":
+            let id = body["id"] as? String ?? ""
+            guard body["failed"] as? Bool != true else { return onCollection?(id, nil) ?? () }
+            onCollection?(id, CollectionPage(id: id, isAlbum: body["album"] as? Bool ?? false,
+                                             title: body["title"] as? String ?? "",
+                                             subtitle: body["subtitle"] as? String ?? "",
+                                             artist: body["artist"] as? String ?? "",
+                                             artistID: body["artistId"] as? String ?? "",
+                                             artworkURL: (body["artwork"] as? String).flatMap { $0.isEmpty ? nil : URL(string: $0) },
+                                             playlistID: body["playlistId"] as? String ?? "",
+                                             tracks: MusicItem.list(body["tracks"])))
         case "remote":
             onRemote?(body["action"] as? String ?? "", (body["seconds"] as? NSNumber)?.doubleValue)
         case "event":

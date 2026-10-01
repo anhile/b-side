@@ -42,26 +42,28 @@ failed (`boot:`, `load:`, `playlists:`, `queue refill:`).
 
 ## The app
 
-A 320 by 440 window with three pages, designed as in [DESIGN.md](DESIGN.md).
+A 320 by 440 window with four pages, designed as in [DESIGN.md](DESIGN.md).
 
 | Where | What it does |
 |---|---|
 | **Vibes** page | Your mood tiles in two columns. A tile plays a playlist (in order or shuffled), Liked Music shuffled, or the radio of a track. The plus tile adds one; right-click edits or removes |
 | **Playlists** page | Your playlists, private ones included. Click one to see its tracks and play from any of them; the button at the end of a row plays it at once |
-| **Now Playing** page | Artwork with the record behind it, title, artist, position, volume, Previous, Play or Pause, Next. Over the artwork: Like and Lyrics. Lyrics take the artwork's place and follow the song line by line (click a line to play from there); timings come from YouTube Music, or LRCLIB when it has none, and plain text is shown when neither has them. Fetched only when opened |
+| **Now Playing** page | Artwork with the record behind it, title, artist, position, volume, Previous, Play or Pause, Next. Over the artwork: Like, Lyrics and Repeat (off, all, one). The menu at the end of the controls also goes to the track's artist or album on Explore. Lyrics take the artwork's place and follow the song line by line (click a line to play from there); timings come from YouTube Music, or LRCLIB when it has none, and plain text is shown when neither has them. Fetched only when opened |
+| **Explore** page | Search YouTube Music: songs, albums, artists or playlists. A song plays with its radio after it. An album or playlist opens its tracks (play from any of them, or the whole); an artist opens their page: top songs (a click plays on through the artist's songs, as in YouTube Music, not into a radio), albums, singles, playlists and related artists. Rows of albums scroll with the arrows by their title, a drag, or a two-finger swipe. Right-click a song to go to its artist or album. Back returns along the way, and to the page you came from (the artist's name on Now Playing opens their page). Works without an account |
 | Strip under Vibe and Playlists | The current track (scrolls when long), Pause and Next; click it to open Now Playing |
-| Icons at the top right | Now Playing, Vibe, Playlists |
-| Menu bar record or Command-comma | Settings: Account, Playback, Diagnostics |
+| Icons at the top right | Now Playing, Vibes, Playlists, Explore |
+| Menu bar record or Command-comma | Settings: General, Appearance, Playback, Account, Diagnostics |
 
 Move between the pages with a two-finger swipe, the icons at the top right,
-or Command-1 (Now Playing), Command-2 (Vibes) and Command-3 (Playlists). With Reduce Motion on, pages cross-fade
+or Command-1 (Now Playing), Command-2 (Vibes), Command-3 (Playlists) and Command-4 (Explore). With Reduce Motion on, pages cross-fade
 and the swipe is off.
 
 | Shortcut | Action |
 |---|---|
-| Space | Play or pause. With nothing loaded it starts Vibe |
+| Space | Play or pause, while the window is in front. With nothing loaded it starts Vibe |
 | Command-Right, Command-Left | Next, previous |
 | Command-L | Like the track, or take the like back |
+| Command-R | Repeat: off, all, one in turn |
 | Shift-Command-V | Play Vibe |
 | Command-Up, Command-Down | Volume up, down |
 | Option-Command-Down | Mute, unmute |
@@ -75,7 +77,7 @@ The window is dragged by the empty strip at the top.
 **Without an account:** Continue as Guest on the sign-in screen. Tiles that
 play a track's radio work; Liked Music and your playlists ask you to sign in.
 
-**Open at login** (Settings, Playback; off by default) starts B-Side in the
+**Open at login** (Settings, General; off by default) starts B-Side in the
 menu bar, without its window or Dock icon. The Play key and AirPods then
 start B-Side instead of Apple Music: the system sends Play only to a running
 app, and with none it opens Music. Show B-Side in the menu, or opening the app
@@ -84,10 +86,14 @@ again, brings the window back. Until then the player page is not loaded
 which takes a few seconds behind a welcome screen. Why and how this was measured:
 [docs/research/default-player.md](docs/research/default-player.md).
 
-**Notify when a track starts** (Settings, Playback; off by default) shows the
+**Notify when a track starts** (Settings, General; off by default) shows the
 track's name and artwork when the next one starts, while B-Side is in the
 background. macOS asks for permission the first time. Clicking the
 notification opens Now Playing.
+
+**Appearance** (Settings, Appearance): light, dark, or following the system;
+and the size, Compact or Large. Large makes the window, its text and its
+buttons 30% bigger, for reading at a distance or with low vision.
 
 ## Build
 
@@ -123,7 +129,6 @@ Launch arguments, for scripted runs:
 | `-muted YES` | Mutes the player; decoding still runs, so memory is comparable |
 | `-startIndex 48` | Starts a playlist at this track, counting from 0 |
 | `-listTracks LM` | Debug: opens this playlist's track list at launch |
-| `-lyrics YES` | Debug: fetches the first track's lyrics, as opening them does |
 | `-playTrack 3` | Debug: with `-listTracks`, plays the list from this track, counting from 0 |
 | `-forceAudioOnly NO` | Plays videos at normal quality, for comparison |
 | `-url <url>` | Debug: loads this URL instead of the player page (`about:blank` measures the floor) |
@@ -150,8 +155,7 @@ Then read the event log for stops and crashes:
 grep -e STALLED -e crash -e error "$HOME/Library/Application Support/B-Side/events.log"
 ```
 
-Do not open the player page (Settings, Diagnostics) or attach Web Inspector
-during a run.
+Do not attach Web Inspector during a run.
 
 ## What gets measured
 

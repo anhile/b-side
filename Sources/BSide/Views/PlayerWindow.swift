@@ -27,7 +27,7 @@ struct PlayerWindow: View {
                         .opacity(player.showsWelcome ? 0 : 1)
                         .allowsHitTesting(!player.showsWelcome)
                 }
-                .frame(height: topInset)
+                .frame(height: barHeight)
                 .glass(in: Rectangle())
             ZStack {
                 if player.showsWelcome {
@@ -57,6 +57,7 @@ struct PlayerWindow: View {
             StatusMenu.shared.install(player: player) {
                 if !MainWindow.show() { openWindow(id: "main") }
             }
+            SpaceKey.install { player.togglePlayPause() }
             TrackNotifier.shared.onOpen = {
                 if !MainWindow.show() { openWindow(id: "main") }
                 navigation.page = .nowPlaying
@@ -67,13 +68,17 @@ struct PlayerWindow: View {
         }
     }
 
+    /// The glass bar with the page tabs: the system's title bar, or taller at
+    /// the Large size, where the tabs grow and the traffic lights do not.
+    private var barHeight: CGFloat { max(topInset, Theme.Size.tabBar) }
+
     /// Part of the Now Playing page, so it leaves with the page instead of
     /// fading out over the next one. The page starts under the title bar,
     /// whose glass keeps the plain background.
     private var tintLayer: some View {
         (tint ?? Theme.Colors.bg)
             .opacity(tint != nil ? Theme.Tint.opacity : 0)
-            .frame(height: max(tintBottom - topInset, 0))
+            .frame(height: max(tintBottom - barHeight, 0))
             .animation(.easeInOut(duration: Theme.Motion.tintChange), value: tint)
     }
 
@@ -116,6 +121,7 @@ struct PlayerWindow: View {
         Group {
             switch page {
             case .vibe: VibePage()
+            case .explore: ExplorePage()
             case .playlists: PlaylistsPage()
             case .nowPlaying: NowPlayingPage()
             }
