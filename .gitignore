@@ -3,3 +3,8 @@ build/
 *.xcodeproj
 xcuserdata/
 measurements/*.csv
+
+# The vibe server
+server/node_modules/
+server/.env*.local
+server/.vercel/

@@ -1,6 +1,7 @@
 # Plan: the B-Side vibe server
 
-Draft 2026-10-01, for the owner's decisions (section 8). Nothing is built.
+Draft 2026-10-01; the owner's decisions are in section 8. Step 1 is in
+progress.
 Background: [docs/research/vibe-from-prompt.md](../research/vibe-from-prompt.md).
 
 ## 1. Goal
@@ -81,9 +82,9 @@ does with Apple's model today. So the server only replaces
 | Limit | Where | Starting value |
 |---|---|---|
 | Per IP | Vercel Firewall rate limit rule, or Upstash ratelimit | 10 per 10 minutes |
-| Per install | Upstash, keyed by a random install ID the app makes once | 20 per day |
-| Global per day | Upstash counter of spent cents | $2 |
-| Global per month | AI Gateway budget, hard limit | $30 |
+| Per install | Upstash, keyed by a random install ID the app makes once | 10 per month |
+| Global per day | Upstash counter of spent cents | $1, so one bad day cannot spend the month |
+| Global per month | AI Gateway budget, hard limit | $20 |
 
 The install ID is not a secret and can be faked. It keeps honest users
 fair, and the IP and budget limits catch the rest. Stronger checks for a
@@ -157,6 +158,36 @@ Gateway key as an environment variable, and Upstash). Claude cannot
 create accounts or enter keys; the owner does those, and Claude writes
 the code and the commands.
 
+## 5a. Step 1 result: the model (2026-10-02)
+
+15 prompts in English, Russian and Spanish, one run each. Every answer is
+in [server/results/compare-2026-10-01.md](../../server/results/compare-2026-10-01.md).
+
+| Model | Artists confirmed by search | Median time | Cost per vibe |
+|---|---|---|---|
+| Claude Haiku 4.5 | 95% | 2.7 s | $0.0012 |
+| Gemini 3.8 Flash | 99% | 5.6 s | $0.0020 |
+| GPT-6 Luna | 94% | 4.0 s | $0.00017 |
+| DeepSeek V4 Flash | 99%, one failed answer | 11.6 s | $0.00032 |
+| Claude Sonnet 5.5 (reference) | 97% | 3.1 s | $0.0034 |
+
+Every model knows far more than Apple's on-device model. Russian rock 90s
+gets Кино, ДДТ, Сплин, Наутилус from all of them. The difference is taste:
+- **Gemini and Luna** are the most specific: Молчат Дома and
+  Электрофорез for a night walk in Petersburg, phonk for leg day.
+- **Luna** reads a Russian request as a wish for Russian music more often
+  (a Monday morning gets Звери and Little Big).
+- **Haiku** sometimes answers a Russian request with Western names.
+- Gemini costs more than its list price suggests: it thinks before
+  answering.
+
+Decision: **`openai/gpt-6-luna`**, with `anthropic/claude-haiku-4.5` as the
+Gateway fallback model when it fails.
+- $20 a month buys about 100,000 vibes on Luna.
+- The 6% of artists search cannot confirm are dropped by the app, as
+  today.
+- DeepSeek is out: slow, and it failed once.
+
 ## 6. What stays out
 
 - Accounts, payments, keys in the app.
@@ -174,13 +205,24 @@ the code and the commands.
 | Words with personal data | Not stored; said in Settings; the cache key is a hash |
 | The model names artists that do not exist | The app checks every artist against YouTube Music search, as today |
 
-## 8. Decisions for the owner
+## 8. Decisions (owner, 2026-10-01)
 
-1. Is the server **on by default** or **off until turned on**? It is free,
-   and on gives everyone better vibes. But it sends the words out of the
-   Mac, and Settings would have to say so up front.
-2. **Model:** Sonnet 5.5 (about 2× the cost, knows more music) or Haiku
-   4.5 (cheaper).
-3. **Limits:** the numbers in section 3, above all the monthly budget.
-4. **Domain:** a subdomain of anhile.com, or the `*.vercel.app` address
-   for a start.
+1. **Off by default.** The user turns it on in Settings, which says the
+   words leave the Mac.
+2. **Model: the cheapest that knows music well,** chosen by a comparison
+   on the same prompts (step 1). It is an environment variable, so it can
+   change without an app release.
+3. **Limits:**
+   - $20 a month for everyone: the Gateway budget, as a hard limit.
+   - 10 vibes a month per install.
+   - Only model calls count: cache hits are free, and a change of the
+     artists' mix is a new call.
+   - The IP limit stays as in section 3.
+4. **Domain:** `b-side.anhile.com`.
+5. **The server is open source,** in `server/` in this repo, under the
+   app's licence.
+   - Its safety rests on limits and the budget, not on hidden code.
+   - Settings promises the words are not stored, and open code lets
+     anyone check that.
+   - Self-hosting needs the code.
+   - Secrets and the limits' numbers live in environment variables.
