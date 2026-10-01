@@ -39,6 +39,10 @@ export const maxWords = 200;
 
 export interface ReadResult {
   reading: Reading;
+  /// The model that was asked.
+  model: string;
+  /// What the Gateway charged, when it says.
+  dollars?: number;
   inputTokens: number;
   outputTokens: number;
   milliseconds: number;
@@ -61,6 +65,8 @@ export async function read(words: string, mix: Mix, model: string, signal?: Abor
   });
   return {
     reading: tidy(result.output),
+    model: result.response.modelId || model,
+    dollars: gatewayCost(result.providerMetadata),
     inputTokens: result.usage.inputTokens ?? 0,
     outputTokens: result.usage.outputTokens ?? 0,
     milliseconds: Date.now() - start,
@@ -80,4 +86,9 @@ function tidy(reading: Reading): Reading {
     tags: reading.tags.map((tag) => tag.trim()).filter(Boolean).slice(0, 4),
     artists: artists.slice(0, 8),
   };
+}
+
+function gatewayCost(metadata: unknown): number | undefined {
+  const value = Number((metadata as { gateway?: { cost?: unknown } } | undefined)?.gateway?.cost);
+  return Number.isFinite(value) && value > 0 ? value : undefined;
 }

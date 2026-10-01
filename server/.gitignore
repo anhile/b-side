@@ -1,3 +1,7 @@
 node_modules/
 .env*.local
 .vercel/
+# Agent skills the Vercel CLI installs with integrations
+.agents/
+.claude/
+skills-lock.json

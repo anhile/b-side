@@ -11,6 +11,8 @@
     "node": ">=22"
   },
   "dependencies": {
+    "@upstash/ratelimit": "^2.2.0",
+    "@upstash/redis": "^1.39.0",
     "@vercel/functions": "^3.9.9",
     "ai": "^7.0.126",
     "zod": "^4.6.5"

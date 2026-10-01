@@ -116,7 +116,7 @@ size; check the current limits before launch.
   - "Make vibes with the B-Side server" (on or off, section 8), with one
     line: "Your words go to the B-Side server and to Anthropic to be
     read. They are not stored."
-  - Server address, default `https://<owner's domain>`. A self-hosted
+  - Server address, default `https://api.b-side.anhile.com`. A self-hosted
     copy or `http://localhost:3000` works too: anyone can run `server/`
     with their own Gateway key.
 - **`VibeMaker.read` tries in order:**
@@ -188,6 +188,23 @@ Gateway fallback model when it fails.
   today.
 - DeepSeek is out: slow, and it failed once.
 
+## 5b. Step 2 result: limits and cache (2026-10-02)
+
+Built and tested on a preview:
+- Upstash Redis `b-side-limits`, connected to the Vercel project
+  `b-side-server`.
+- **Cache.** Same words with different case and spacing are answered
+  from it.
+- **Address limit.** The 11th request in 10 minutes gets 429.
+- **Install limit.** 10 a month, the 11th is refused; a failed read gives
+  its vibe back.
+- **Spend.** It is counted from the cost the Gateway reports for each
+  request.
+- **Production stays closed** until `VIBE_OPEN=1`.
+
+Left for the owner: the $20 monthly budget on AI Gateway in the Vercel
+dashboard, as the hard limit.
+
 ## 6. What stays out
 
 - Accounts, payments, keys in the app.
@@ -218,7 +235,8 @@ Gateway fallback model when it fails.
    - Only model calls count: cache hits are free, and a change of the
      artists' mix is a new call.
    - The IP limit stays as in section 3.
-4. **Domain:** `b-side.anhile.com`.
+4. **Domain:** `api.b-side.anhile.com`. `b-side.anhile.com` is the
+   landing page.
 5. **The server is open source,** in `server/` in this repo, under the
    app's licence.
    - Its safety rests on limits and the budget, not on hidden code.

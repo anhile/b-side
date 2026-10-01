@@ -1,5 +1,9 @@
-/// Whether vibes can be made now, so the app can say so in Settings.
-export function GET(): Response {
-  const open = process.env.VERCEL_ENV !== "production" || Boolean(process.env.VIBE_LIMITS_READY);
-  return Response.json({ vibes: open }, { headers: { "Cache-Control": "no-store" } });
+import { budgetLeft, installMonthly } from "../../lib/limits.js";
+import { open } from "./vibe.js";
+
+/// Whether vibes can be made now, and how many a Mac gets a month, so the
+/// app can say so in Settings.
+export async function GET(): Promise<Response> {
+  const vibes = open() && (await budgetLeft().catch(() => false));
+  return Response.json({ vibes, perMonth: installMonthly }, { headers: { "Cache-Control": "no-store" } });
 }
