@@ -4,6 +4,7 @@ import SwiftUI
 /// the playlist's tracks; its play button plays it straight away.
 struct PlaylistsPage: View {
     @EnvironmentObject private var player: PlayerController
+    @EnvironmentObject private var navigation: Navigation
     @Environment(\.footerRoom) private var footerRoom
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -57,7 +58,7 @@ struct PlaylistsPage: View {
         }
         .frame(height: Theme.Size.pageBar)
         .frame(maxWidth: .infinity)
-        .glass(in: Rectangle())
+        .barGlass(joined: .top)
     }
 
     /// Quiet: the tabs already say which page this is. The count is the one
@@ -68,6 +69,11 @@ struct PlaylistsPage: View {
                 .font(Theme.Text.label)
                 .foregroundStyle(Theme.Colors.textMuted)
             Spacer()
+            IconButton(symbol: "plus", label: "New Playlist") {
+                navigation.newPlaylist = NewPlaylistRequest()
+            }
+            .disabled(!player.account.isSignedIn || player.phase != .ready)
+            .frame(width: Theme.Size.pageTabTarget)
             IconButton(symbol: "arrow.clockwise", label: "Refresh playlists") {
                 player.loadPlaylists()
             }
@@ -132,15 +138,15 @@ struct PlaylistsPage: View {
             LazyVStack(spacing: 0) {
                 ForEach(rows) { playlist in
                     let isCurrent = player.source == .playlist(playlist.id) && player.hasTrack
-                    Button {
-                        player.open(playlist)
-                    } label: {
-                        PlaylistRow(playlist: playlist, isCurrent: isCurrent, subtitle: player.subtitle(of: playlist))
-                    }
-                    .buttonStyle(RowButtonStyle())
-                    .help("Show the tracks")
-                    // Over the row, so the row's hover spans it.
-                    .overlay(alignment: .trailing) {
+                    HoverReveal(pinned: isCurrent) {
+                        Button {
+                            player.open(playlist)
+                        } label: {
+                            PlaylistRow(playlist: playlist, isCurrent: isCurrent, subtitle: player.subtitle(of: playlist))
+                        }
+                        .buttonStyle(RowButtonStyle())
+                        .help("Show the tracks")
+                    } control: {
                         playButton(for: playlist, isCurrent: isCurrent)
                             .padding(.trailing, Theme.Space.xxs)
                     }
@@ -209,6 +215,28 @@ struct PlaylistRow: View {
     }
 }
 
+/// A row with a control at its end, over the row so the row's hover spans
+/// it, shown only under the pointer, or always while `pinned` (the playing
+/// one keeps its pause button).
+struct HoverReveal<Content: View, Control: View>: View {
+    var pinned = false
+    @ViewBuilder let content: Content
+    @ViewBuilder let control: Control
+
+    @State private var hovering = false
+
+    var body: some View {
+        content
+            .overlay(alignment: .trailing) {
+                control
+                    .opacity(hovering || pinned ? 1 : 0)
+                    .allowsHitTesting(hovering || pinned)
+            }
+            .onHover { hovering = $0 }
+            .animation(.easeOut(duration: Theme.Motion.feedback), value: hovering)
+    }
+}
+
 /// A list row that is a button: `surface` under the pointer and while
 /// pressed, nothing otherwise. No separators; the 44 rhythm groups them.
 struct RowButtonStyle: ButtonStyle {
@@ -216,6 +244,7 @@ struct RowButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
+            .pointingHand()
             .background(
                 RoundedRectangle(cornerRadius: Theme.Radius.s)
                     .fill(Theme.Colors.surface)
@@ -229,6 +258,8 @@ struct RowButtonStyle: ButtonStyle {
 /// Rows while the list loads: shapes in `surface` where artwork and text will
 /// be, breathing slowly. Still with Reduce Motion.
 struct SkeletonList: View {
+    /// Round artwork, for a list of artists.
+    var round = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var dimmed = false
 
@@ -236,15 +267,16 @@ struct SkeletonList: View {
         VStack(spacing: 0) {
             ForEach(0..<6) { index in
                 HStack(spacing: Theme.Space.xs) {
-                    RoundedRectangle(cornerRadius: Theme.Radius.s)
+                    RoundedRectangle(cornerRadius: round ? Theme.Size.artworkSmall / 2 : Theme.Radius.s)
                         .fill(Theme.Colors.surface)
                         .frame(width: Theme.Size.artworkSmall, height: Theme.Size.artworkSmall)
-                    VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                    VStack(alignment: .leading, spacing: Theme.Size.skeletonGap) {
                         Capsule().fill(Theme.Colors.surface)
                             .frame(width: Theme.Size.skeletonTitle - CGFloat(index % 3) * Theme.Space.l,
                                    height: Theme.Size.skeletonLine)
                         Capsule().fill(Theme.Colors.surface)
-                            .frame(width: Theme.Size.skeletonCaption, height: Theme.Size.skeletonLine)
+                            .frame(width: Theme.Size.skeletonCaption - CGFloat(index % 2) * Theme.Space.l,
+                                   height: Theme.Size.skeletonCaptionLine)
                     }
                     Spacer()
                 }
@@ -336,6 +368,16 @@ struct PlaylistTracks: View {
                     }
                     .buttonStyle(RowButtonStyle())
                     .help(track.title)
+                    .contextMenu {
+                        AddToPlaylistMenu(videoID: track.videoID)
+                        if track.removable || player.canEditOpenPlaylist, !track.setVideoID.isEmpty,
+                           let playlist = player.openPlaylist {
+                            Divider()
+                            Button(role: .destructive) { player.remove(track, from: playlist) } label: {
+                                Label("Remove from Playlist", systemImage: "minus.circle")
+                            }
+                        }
+                    }
                     .onAppear {
                         if track.index >= player.tracks.count - Self.loadMoreAhead { player.loadMoreTracks() }
                     }

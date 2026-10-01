@@ -13,6 +13,12 @@ struct PlayerWindow: View {
     /// shows: from the title bar down to just above the track's name.
     @State private var tint: Color?
     @State private var tintBottom: CGFloat = 0
+    /// The page the pager shows; follows `navigation.page` by a jump, and
+    /// leads it on a swipe.
+    @State private var shownPage: Page? = .nowPlaying
+    @State private var pageDipped = false
+    /// Not hidden, minimised or covered by other windows.
+    @State private var windowVisible = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openWindow) private var openWindow
 
@@ -28,7 +34,8 @@ struct PlayerWindow: View {
                         .allowsHitTesting(!player.showsWelcome)
                 }
                 .frame(height: barHeight)
-                .glass(in: Rectangle())
+                // Playlists and Explore put their own bar right under it.
+                .barGlass(joined: Page.withBar.contains(navigation.page) ? .bottom : [])
             ZStack {
                 if player.showsWelcome {
                     WelcomeScreen()
@@ -40,9 +47,20 @@ struct PlayerWindow: View {
             }
             .animation(.easeInOut(duration: Theme.Motion.page), value: player.showsWelcome)
                 .overlay(alignment: .bottom) {
-                    footer
-                        .padding(.bottom, Theme.Space.xs)
-                        .animation(.easeInOut(duration: Theme.Motion.feedback), value: showsFooter)
+                    VStack(spacing: Theme.Space.xs) {
+                        if let notice = player.notice {
+                            NoticeView(text: notice)
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                        }
+                        footer
+                    }
+                    .padding(.bottom, Theme.Space.xs)
+                    .animation(.easeInOut(duration: Theme.Motion.feedback), value: showsFooter)
+                    .animation(.snappy(duration: Theme.Motion.page), value: player.notice)
+                }
+                .sheet(item: $navigation.newPlaylist) { request in
+                    NewPlaylistSheet(request: request)
+                        .environmentObject(player)
                 }
         }
         .background(Theme.Colors.bg)
@@ -52,7 +70,12 @@ struct PlayerWindow: View {
         .frame(width: Theme.Size.window.width, height: Theme.Size.window.height - topInset)
         .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.top } action: { topInset = $0 }
         .background(WindowSetup())
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didChangeOcclusionStateNotification)) { note in
+            guard let window = note.object as? NSWindow, window === MainWindow.window else { return }
+            windowVisible = window.occlusionState.contains(.visible)
+        }
         .task {
+            guard !Settings.isSnapshot else { return }
             player.start()
             StatusMenu.shared.install(player: player) {
                 if !MainWindow.show() { openWindow(id: "main") }
@@ -99,7 +122,9 @@ struct PlayerWindow: View {
     }
 
     /// A paging scroll view gives the two-finger swipe, and the page follows
-    /// the finger, with no custom gesture code.
+    /// the finger, with no custom gesture code. A tab, a shortcut or a link
+    /// does not scroll through the pages between: the page dips out, the
+    /// pager jumps, and the new page comes in.
     private var pager: some View {
         ScrollView(.horizontal) {
             HStack(spacing: 0) {
@@ -112,9 +137,34 @@ struct PlayerWindow: View {
             .scrollTargetLayout()
         }
         .scrollTargetBehavior(.paging)
-        .scrollPosition(id: $navigation.page)
+        .scrollPosition(id: $shownPage)
         .scrollIndicators(.never)
-        .animation(.spring(duration: Theme.Motion.page, bounce: 0), value: navigation.page)
+        .opacity(pageDipped ? 0 : 1)
+        .onAppear { shownPage = navigation.page }
+        // A swipe: the pager moved, the tabs follow.
+        .onChange(of: shownPage) { _, shown in
+            if let shown, shown != navigation.page { navigation.page = shown }
+        }
+        // Anything else: jump there.
+        .onChange(of: navigation.page) { _, target in
+            guard target != shownPage else { return }
+            jump(to: target)
+        }
+    }
+
+    /// At once, unseen, then the page fades in: no waiting on a fade out,
+    /// nothing in between slides past.
+    private func jump(to target: Page?) {
+        var instant = Transaction()
+        instant.disablesAnimations = true
+        withTransaction(instant) {
+            pageDipped = true
+            shownPage = target
+        }
+        // On the next turn, so the hidden frame is drawn first.
+        DispatchQueue.main.async {
+            withAnimation(.easeOut(duration: Theme.Motion.pageFadeIn)) { pageDipped = false }
+        }
     }
 
     private func page(_ page: Page) -> some View {
@@ -129,6 +179,7 @@ struct PlayerWindow: View {
         // Vibe and Playlists let their lists run under the glass strip and
         // keep the room as scroll margin; Now Playing is pushed up instead.
         .environment(\.footerRoom, footerRoom(on: page))
+        .environment(\.pageShown, windowVisible && navigation.page == page)
         .padding(.bottom, page == .nowPlaying ? footerRoom(on: page) : 0)
         .background(alignment: .top) {
             if page == .nowPlaying { tintLayer }
@@ -415,6 +466,7 @@ struct OutlineButtonStyle: ButtonStyle {
             .padding(.vertical, Theme.Space.xs)
             .background(Capsule().strokeBorder(Theme.Colors.controlBorder))
             .contentShape(Capsule())
+            .pointingHand(isEnabled)
             .opacity(configuration.isPressed ? Theme.Opacity.pressed : isEnabled ? 1 : Theme.Opacity.disabled)
     }
 }
@@ -435,6 +487,7 @@ struct FilledButtonStyle: ButtonStyle {
             .frame(height: compact ? Theme.Size.pageDotTarget : nil)
             .background(Theme.Colors.text, in: Capsule())
             .contentShape(Capsule())
+            .pointingHand(isEnabled)
             .opacity(configuration.isPressed ? Theme.Opacity.pressed : isEnabled ? 1 : Theme.Opacity.disabled)
     }
 }
@@ -464,6 +517,19 @@ func blockingState(for player: PlayerController) -> EmptyState? {
 /// How much of a page's bottom the glass strip covers. Pages with a list
 /// use it as scroll margin, so the list runs under the glass and its last
 /// row can still scroll clear of it; other states keep out of it.
+/// Whether a page is the one on screen in a visible window. Endless
+/// animations (the record, a playing tile's speaker) run only then.
+private struct PageShownKey: EnvironmentKey {
+    static let defaultValue = true
+}
+
+extension EnvironmentValues {
+    var pageShown: Bool {
+        get { self[PageShownKey.self] }
+        set { self[PageShownKey.self] = newValue }
+    }
+}
+
 private struct FooterRoomKey: EnvironmentKey {
     static let defaultValue: CGFloat = 0
 }
@@ -494,6 +560,7 @@ struct QuietButtonStyle: ButtonStyle {
                 .contentShape(Rectangle())
                 .opacity(configuration.isPressed ? Theme.Opacity.pressed : 1)
                 .onHover { hovering = $0 }
+                .pointingHand()
                 .animation(.easeOut(duration: Theme.Motion.feedback), value: hovering)
         }
     }

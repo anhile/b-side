@@ -11,9 +11,8 @@ enum ArtworkTint {
     static func color(for url: URL?) async -> Color? {
         guard let url else { return nil }
         if let cached = cache[url] { return cached }
-        guard let (data, _) = try? await URLSession.shared.data(from: url),
-              let image = NSImage(data: data),
-              let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil),
+        // The same download as the sleeve's.
+        guard let cgImage = await ArtworkLoader.image(for: url),
               let averaged = average(cgImage) else { return nil }
         let color = Color(nsColor: tamed(averaged))
         cache[url] = color

@@ -112,11 +112,23 @@ Rules:
   (fainter the lower the volume, from 30% opacity at mute to full at 100%),
   the label of the record graphic.
 - The accent is never a button fill, a row background or a window area.
-- No gradients. No second accent colour.
+- No gradients, except the Vibe tiles (below). No second accent colour.
 - One exception, decided 2026-09-30: while Now Playing shows, the window's
   background carries the artwork's own colour at 38% over `bg` (saturation-
   weighted mean, kept between 40% and 80% brightness so text stays readable).
   It fades out when the page changes. Content colour, not a design colour.
+- Third exception, decided 2026-10-01: each Vibe tile is a gradient of its
+  own colour from `VibePalette` (eight, picked in the tile's editor, or
+  from the tile's id), light corner top right, deep corner bottom left
+  under white text (4.5:1 or more), with a glass edge and a soft shadow
+  of its own colour. The tiles are the page's content, so they may be loud.
+  The strip names the playing vibe under the track in the same colour (the
+  deep one on light glass, the light one on dark); a playlist or album is
+  named in `accent-text`.
+- Second exception, decided 2026-10-01: Explore's search kinds (Songs,
+  Albums, Artists, Playlists) mark the chosen one with an `accent` capsule
+  and white semibold text (the owner's choice over `accent-on`, knowing it
+  is 3.0:1), and the search field's focus ring is `accent`, 2 pt.
 
 ## Typography
 
@@ -183,6 +195,17 @@ element has a fallback.
 | Floating controls | `glassEffect`, `.buttonStyle(.glass)` | `.regularMaterial` in the same shape |
 | Primary button | `.glassProminent` tinted `text` | `text` fill, glyph in `bg` |
 | System controls | Adopt glass on their own | System look |
+| Bars from edge to edge (the top bar, a page's bar under it) | `barGlass(joined:)`: `glassEffect` in a `Rectangle` | `.regularMaterial` |
+
+Bars from edge to edge meet each other, and glass lights every edge: two
+rims where they meet read as a one-pixel gap. Where two bars meet, each
+bar's glass runs on past that edge and is cut at the bar's frame, so
+neither rim shows (the top bar does this only over Playlists and Explore).
+Two other fixes are ruled out:
+- The material: under the title bar it washes out the page icons.
+- One `GlassEffectContainer` around the window with `glassEffectUnion`: on
+  macOS 27 SwiftUI then loops forever gathering key views when the search
+  field takes focus, and the window hangs (2026-10-01).
 
 - Glass is for the control layer: page icons, transport controls, the speaker
   button. Content is never glass.
@@ -263,11 +286,16 @@ and toolbar belongs there. It is out of scope now.
 - Media keys and the system Now Playing widget always work.
 - Light and dark follow the system, unless Settings, Appearance sets one.
 - Respect Reduce Motion, Reduce Transparency and Increase Contrast.
-- System controls in Settings keep the user's system accent colour. B-Side's
-  orange is used only in the main window.
+- B-Side's orange is the app's accent colour (decided 2026-10-01): system
+  controls in Settings and sheets take it while the system accent is
+  Multicolor; a chosen system accent still wins. Each setting has a small
+  icon on a VibePalette gradient. The Settings window is titled "B-Side
+  Settings" on every tab; General ends with About and the version.
 - Full keyboard access: every control is reachable with Tab and has a visible
   focus ring.
-- Hover shows what is clickable. Nothing depends on hover alone.
+- Hover shows what is clickable, and everything clickable in the main
+  window shows the pointing hand. A row's play button appears under the
+  pointer (always on the playing row); the row itself still opens or plays.
 - Errors say what happened and what to do, in the place where it happened.
 
 ## Screens
@@ -301,12 +329,15 @@ The closed set. A screen is composed from these and nothing else.
 | `PageTabs` | | Top right of the main window |
 | `MarqueeText` | | The strip's title when it does not fit. Custom |
 | `PlaylistRow` | default, playing | Playlists page |
-| `Artwork` | small 36, large 160 | Rows, Now Playing |
-| `MoodTile` | default, playing | Vibe grid |
+| `Artwork` | small 36, large 160 | Rows, Now Playing. One download per picture, shared with the background colour; when it fails after a retry, the placeholder shows, never the previous track's picture |
+| `MoodTile` | default, playing | Vibe grid. Its own gradient; rises under the pointer; the playing one has a ring in its own colour, just outside it |
 | `NowPlaying` | page | The Now Playing page |
-| `ProgressBar` | | Now Playing area |
-| `EmptyState` | signed out, no playlists, error | Any page |
+| `ProgressBar` | | Now Playing area. Custom: a light accent fill, full accent under the pointer, a thin tick where a click would go and its time above it |
+| `EmptyState` | signed out, no playlists, error, search | Any page. The search one has faint notes rising behind it in lanes that never cross, clear of the text (`text` at 12%, still with Reduce Motion) |
+| `SegmentPicker` | | Explore's search kinds. Equal widths, always shown; one pill slides between them |
 | `Skeleton` | row | Playlists while loading |
+| `Chip` | example, part | New Vibe. Custom: a capsule outline in `controlBorder`, caption text. An example fills the words; a part (tag, artist, mood) carries its symbol and an x that leaves it out |
+| `FlowLayout` | | Chips in rows that wrap, as words. Custom layout |
 
 ## Do and don't
 

@@ -22,11 +22,31 @@ enum Keys {
     static let listTracks = "listTracks"         // debug: open this playlist's track list at launch
     static let playTrack = "playTrack"           // debug: with listTracks, play from this track (0-based)
     static let url = "url"                       // debug: load this URL instead of the player page
+    static let page = "page"                     // debug: open the window on this page (nowPlaying, vibe, playlists, explore)
+    static let makeVibe = "makeVibe"             // debug: make a vibe from these words once the page is ready, and log it
     static let snapshot = "snapshot"             // render the screens with sample data into this folder and quit
 }
 
 enum Settings {
-    static let defaults = UserDefaults.standard
+    /// Rendering design snapshots: a second copy of B-Side, next to the
+    /// user's own, that must not touch the player, the menu bar or the
+    /// user's settings.
+    static let isSnapshot = UserDefaults.standard.string(forKey: Keys.snapshot) != nil
+    /// The sample data a snapshot sets (volume, Vibe tiles) goes to a scratch
+    /// domain, emptied before and after, instead of the user's settings.
+    static let defaults: UserDefaults = isSnapshot ? scratch : .standard
+
+    private static let scratchName = "\(Bundle.main.bundleIdentifier ?? "B-Side").snapshot"
+    private static let scratch: UserDefaults = {
+        let scratch = UserDefaults(suiteName: scratchName) ?? .standard
+        scratch.removePersistentDomain(forName: scratchName)
+        return scratch
+    }()
+
+    static func clearScratch() {
+        guard isSnapshot else { return }
+        defaults.removePersistentDomain(forName: scratchName)
+    }
 
     static func register() {
         defaults.register(defaults: [

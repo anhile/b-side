@@ -14,6 +14,8 @@ struct ExplorePage: View {
     @State private var query = ""
     @State private var kind = SearchKind.songs
     @State private var barHeight: CGFloat = 0
+    /// Counts the arrivals on the search, each of which puts the typing there.
+    @State private var focusRequest = 0
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -32,6 +34,16 @@ struct ExplorePage: View {
             bar
         }
         .animation(.easeInOut(duration: Theme.Motion.page), value: navigation.explorePath.count)
+        // Arriving on the search, by a tab, a shortcut or Back: type at once.
+        .onChange(of: navigation.page) {
+            if showsSearch { focusRequest += 1 }
+            // Leaving: give the keyboard back, so Space plays and pauses again.
+            if navigation.page != .explore, let window = MainWindow.window, window.firstResponder is NSText {
+                window.makeFirstResponder(nil)
+            }
+        }
+        .onChange(of: navigation.explorePath.isEmpty) { if showsSearch { focusRequest += 1 } }
+        .onAppear { if showsSearch { focusRequest += 1 } }
         .onAppear {
             if query.isEmpty, let last = player.lastSearch {
                 query = last.query
@@ -55,6 +67,8 @@ struct ExplorePage: View {
 
     private var hasQuery: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
 
+    private var showsSearch: Bool { navigation.page == .explore && navigation.explorePath.isEmpty }
+
     // MARK: - Bar
 
     /// The same glass line as on Playlists, right under the title bar. Over
@@ -70,16 +84,15 @@ struct ExplorePage: View {
                 // The kinds stay while the field is empty, so nothing moves
                 // when typing starts.
                 VStack(spacing: Theme.Space.xs) {
-                    SearchField(text: $query, prompt: "Songs, albums, artists, playlists")
-                    EqualSegments(selection: $kind, options: SearchKind.allCases.map { ($0, $0.title) },
-                                  label: "Kind")
+                    SearchField(text: $query, prompt: "What do you want to hear?", focusRequest: focusRequest)
+                    SegmentPicker(selection: $kind, options: SearchKind.allCases.map { ($0, $0.title) })
                 }
                 .padding(Theme.Space.xs)
             }
         }
         .frame(maxWidth: .infinity)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { barHeight = $0 }
-        .glass(in: Rectangle())
+        .barGlass(joined: .top)
     }
 
     private func routeBar(_ route: ExploreRoute) -> some View {
@@ -131,7 +144,7 @@ struct ExplorePage: View {
         case .artist(let id, _):
             guard let page = player.artistPages[id] else { return }
             if !page.songsPlaylistID.isEmpty {
-                player.play(MusicItem(id: 0, kind: .playlist, playlistID: page.songsPlaylistID, title: page.name))
+                player.play(artist: page)
             } else if let first = page.songs.first {
                 player.play(first)
             }
@@ -157,11 +170,14 @@ struct ExplorePage: View {
                 blocked
             } else if !hasQuery {
                 EmptyState(symbol: "magnifyingglass", title: "Search YouTube Music",
-                           message: "Find a song to play with its radio, an album or a playlist, or an artist.")
+                           message: "Start typing to find something to play.")
+                    .background { FloatingNotes(running: navigation.page == .explore) }
             } else {
                 switch player.searchState {
                 case .idle, .loading:
-                    SkeletonList()
+                    // Where the results' rows will be: the list's own top room.
+                    SkeletonList(round: kind == .artists)
+                        .padding(.top, Theme.Space.xxs)
                         .frame(maxHeight: .infinity, alignment: .top)
                 case .failed(let reason):
                     EmptyState(symbol: "exclamationmark.triangle", title: "Search failed",
@@ -243,13 +259,14 @@ private struct ItemRowButton: View {
     @EnvironmentObject private var navigation: Navigation
 
     var body: some View {
-        Button(action: primary) {
-            ItemRow(item: item, isCurrent: isCurrent, isPlaying: player.state.isPlaying,
-                    number: number, roomForPlay: showsPlay)
-        }
-        .buttonStyle(RowButtonStyle())
-        .help(help)
-        .overlay(alignment: .trailing) {
+        HoverReveal(pinned: isCurrent) {
+            Button(action: primary) {
+                ItemRow(item: item, isCurrent: isCurrent, isPlaying: player.state.isPlaying,
+                        number: number, roomForPlay: showsPlay)
+            }
+            .buttonStyle(RowButtonStyle())
+            .help(help)
+        } control: {
             if showsPlay {
                 TransportButton(symbol: isCurrent && player.state.isPlaying ? "pause.fill" : "play.fill",
                                 label: "Play \(item.title)", target: Theme.Size.artworkSmall,
@@ -260,6 +277,10 @@ private struct ItemRowButton: View {
             }
         }
         .contextMenu {
+            if item.kind == .song, !item.videoID.isEmpty {
+                AddToPlaylistMenu(videoID: item.videoID)
+                Divider()
+            }
             if !item.artistID.isEmpty {
                 Button("Go to Artist") {
                     navigation.open(.artist(id: item.artistID, name: artistName))
@@ -420,7 +441,7 @@ private struct ArtistView: View {
                         VStack(spacing: 0) {
                             ForEach(page.songs) { song in
                                 ItemRowButton(item: song, playFromHere: page.songsPlaylistID.isEmpty ? nil : {
-                                    player.play(list: page.songsPlaylistID, from: song.id)
+                                    player.play(list: page.songsPlaylistID, from: song.id, title: page.name, kind: .artist)
                                 })
                             }
                         }
@@ -487,6 +508,7 @@ private struct ShelfRow: View {
                             Tile(item: item)
                         }
                         .buttonStyle(.plain)
+                        .pointingHand()
                         .help(item.title)
                     }
                 }
@@ -614,6 +636,7 @@ private struct CollectionView: View {
                             LinkText(text: page.artist)
                         }
                         .buttonStyle(.plain)
+                        .pointingHand()
                         .help("Show \(page.artist)")
                     }
                 }
@@ -635,79 +658,241 @@ private struct CollectionView: View {
 
 /// AppKit's search field: the magnifier, the clear button and Escape to
 /// clear, as everywhere on the Mac. SwiftUI has one only for toolbars.
-struct SearchField: NSViewRepresentable {
+/// The system's focus ring takes the system accent; this one draws its own
+/// in B-Side's orange instead.
+struct SearchField: View {
     @Binding var text: String
     let prompt: String
+    /// Takes the keyboard each time this changes.
+    var focusRequest = 0
 
-    func makeNSView(context: Context) -> NSSearchField {
-        let field = NSSearchField()
-        field.placeholderString = prompt
-        field.delegate = context.coordinator
-        field.target = context.coordinator
-        field.action = #selector(Coordinator.changed(_:)) // also the clear button and Escape
-        field.sendsSearchStringImmediately = true
-        field.controlSize = Theme.scale > 1 ? .large : .regular
-        field.font = .systemFont(ofSize: NSFont.systemFontSize * Theme.scale)
-        field.focusRingType = .default
-        return field
+    @State private var focused = false
+
+    var body: some View {
+        Field(text: $text, prompt: prompt, focused: $focused, focusRequest: focusRequest)
+            .overlay {
+                Capsule()
+                    .stroke(Theme.Colors.accent, lineWidth: Theme.Size.focusRing)
+                    .padding(-Theme.Size.focusRing / 2)
+                    .opacity(focused ? 1 : 0)
+                    .allowsHitTesting(false)
+            }
+            .animation(.easeOut(duration: Theme.Motion.feedback), value: focused)
     }
 
-    func updateNSView(_ field: NSSearchField, context: Context) {
-        context.coordinator.parent = self
-        if field.stringValue != text { field.stringValue = text }
-    }
+    private struct Field: NSViewRepresentable {
+        @Binding var text: String
+        let prompt: String
+        @Binding var focused: Bool
+        let focusRequest: Int
 
-    func makeCoordinator() -> Coordinator { Coordinator(self) }
-
-    final class Coordinator: NSObject, NSSearchFieldDelegate {
-        var parent: SearchField
-        init(_ parent: SearchField) { self.parent = parent }
-
-        func controlTextDidChange(_ notification: Notification) {
-            guard let field = notification.object as? NSSearchField else { return }
-            parent.text = field.stringValue
+        func makeNSView(context: Context) -> NSSearchField {
+            let field = FocusField()
+            field.onFocus = { [weak coordinator = context.coordinator] in coordinator?.parent.focused = $0 }
+            field.placeholderString = prompt
+            field.delegate = context.coordinator
+            field.target = context.coordinator
+            field.action = #selector(Coordinator.changed(_:)) // also the clear button and Escape
+            field.sendsSearchStringImmediately = true
+            field.controlSize = Theme.scale > 1 ? .large : .regular
+            field.font = .systemFont(ofSize: NSFont.systemFontSize * Theme.scale)
+            field.focusRingType = .none // drawn by SearchField, in orange
+            return field
         }
 
-        @objc func changed(_ field: NSSearchField) {
-            if parent.text != field.stringValue { parent.text = field.stringValue }
+        func updateNSView(_ field: NSSearchField, context: Context) {
+            context.coordinator.parent = self
+            if field.stringValue != text { field.stringValue = text }
+            if context.coordinator.handledRequest != focusRequest {
+                context.coordinator.handledRequest = focusRequest
+                // After this update: the field may not be in its window yet.
+                DispatchQueue.main.async {
+                    guard let window = field.window, window.firstResponder !== field.currentEditor() else { return }
+                    window.makeFirstResponder(field)
+                }
+            }
+        }
+
+        func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+        final class Coordinator: NSObject, NSSearchFieldDelegate {
+            var parent: Field
+            var handledRequest = 0
+            init(_ parent: Field) { self.parent = parent }
+
+            func controlTextDidChange(_ notification: Notification) {
+                guard let field = notification.object as? NSSearchField else { return }
+                parent.text = field.stringValue
+            }
+
+            @objc func changed(_ field: NSSearchField) {
+                if parent.text != field.stringValue { parent.text = field.stringValue }
+            }
+        }
+    }
+
+    /// Says when it takes and loses the keyboard. AppKit's "began editing"
+    /// comes only with the first key typed, too late for the ring; the
+    /// window's first responder changes the moment the field is focused.
+    private final class FocusField: NSSearchField {
+        var onFocus: ((Bool) -> Void)?
+        private var watch: NSKeyValueObservation?
+        private var isFocused = false
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            watch = window?.observe(\.firstResponder, options: [.initial, .new]) { [weak self] window, _ in
+                MainActor.assumeIsolated { self?.update(window.firstResponder) }
+            }
+        }
+
+        private func update(_ responder: NSResponder?) {
+            let focused = responder === self || (responder as? NSText)?.delegate === self
+            guard focused != isFocused else { return }
+            isFocused = focused
+            onFocus?(focused)
         }
     }
 }
 
-/// AppKit's segmented control with every segment as wide as the others, the
-/// row as wide as it is given. SwiftUI's sizes each segment to its title,
-/// and the selected title is bolder, so the segments shifted on each click.
-struct EqualSegments<Value: Hashable>: NSViewRepresentable {
+/// CUSTOM: the kinds of search, as segments of equal width. The current one
+/// is an orange pill that slides to the next with a light spring; no track
+/// under them, the titles stand on the page. The titles
+/// are drawn twice, muted and white, the white ones cut to the pill's shape,
+/// so a title turns white exactly where the pill passes under it. No hover
+/// background, which would clash with the pill: a hovered title darkens.
+/// Every title keeps its weight, so nothing changes width on a click.
+struct SegmentPicker<Value: Hashable>: View {
     @Binding var selection: Value
     let options: [(Value, String)]
-    let label: String
 
-    func makeNSView(context: Context) -> NSSegmentedControl {
-        let control = NSSegmentedControl(labels: options.map(\.1), trackingMode: .selectOne,
-                                         target: context.coordinator, action: #selector(Coordinator.changed(_:)))
-        control.segmentDistribution = .fillEqually
-        control.controlSize = Theme.scale > 1 ? .large : .regular
-        control.setAccessibilityLabel(label)
-        control.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        return control
+    @State private var hovered: Int?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var currentIndex: Int { options.firstIndex { $0.0 == selection } ?? 0 }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(options.indices, id: \.self) { index in
+                let isCurrent = index == currentIndex
+                Button { selection = options[index].0 } label: {
+                    title(index, color: hovered == index && !isCurrent ? Theme.Colors.text : Theme.Colors.textMuted)
+                }
+                .buttonStyle(SegmentStyle())
+                .onHover { hovered = $0 ? index : (hovered == index ? nil : hovered) }
+                .accessibilityAddTraits(isCurrent ? .isSelected : [])
+            }
+        }
+        .background { pill.foregroundStyle(Theme.Colors.accent) }
+        .overlay {
+            HStack(spacing: 0) {
+                ForEach(options.indices, id: \.self) { title($0, color: Theme.Colors.accentOnWhite) }
+            }
+            .mask { pill }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+        }
+        .animation(reduceMotion ? nil : .snappy(duration: Theme.Motion.page), value: currentIndex)
+        .animation(.easeOut(duration: Theme.Motion.feedback), value: hovered)
     }
 
-    func updateNSView(_ control: NSSegmentedControl, context: Context) {
-        context.coordinator.parent = self
-        if let index = options.firstIndex(where: { $0.0 == selection }), control.selectedSegment != index {
-            control.selectedSegment = index
+    private func title(_ index: Int, color: Color) -> some View {
+        Text(options[index].1)
+            .font(Theme.Text.label.weight(.semibold))
+            .foregroundStyle(color)
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, minHeight: Theme.Size.pageDotTarget)
+            .contentShape(Capsule())
+    }
+
+    /// One segment wide, under the current one.
+    private var pill: some View {
+        GeometryReader { proxy in
+            let width = proxy.size.width / CGFloat(max(options.count, 1))
+            Capsule()
+                .frame(width: width, height: proxy.size.height)
+                .offset(x: width * CGFloat(currentIndex))
         }
     }
 
-    func makeCoordinator() -> Coordinator { Coordinator(self) }
-
-    final class Coordinator: NSObject {
-        var parent: EqualSegments
-        init(_ parent: EqualSegments) { self.parent = parent }
-
-        @objc func changed(_ control: NSSegmentedControl) {
-            guard parent.options.indices.contains(control.selectedSegment) else { return }
-            parent.selection = parent.options[control.selectedSegment].0
+    /// Dims while pressed; nothing else.
+    private struct SegmentStyle: ButtonStyle {
+        func makeBody(configuration: Configuration) -> some View {
+            configuration.label
+                .opacity(configuration.isPressed ? Theme.Opacity.pressed : 1)
+                .pointingHand()
+                .animation(.easeOut(duration: Theme.Motion.feedback), value: configuration.isPressed)
         }
+    }
+}
+
+/// Music notes drifting up behind an empty Explore, barely visible: some
+/// life on a page that has nothing yet. Drawn in one Canvas, 30 frames a
+/// second, and only while the page shows; still with Reduce Motion.
+///
+/// The notes keep to lanes, a cover's width apart, two to a lane at an even
+/// distance, so they never meet: each lane rises at its own steady pace, and
+/// a note sways and tilts within its lane, never into the next.
+private struct FloatingNotes: View {
+    let running: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// The glyph and its size against `emptyGlyph`.
+    private static let variants: [(String, Double)] = [("music.note", 1), ("music.quarternote.3", 0.8),
+                                                        ("music.note", 0.7), ("music.note.list", 0.8)]
+    private static let perLane = 2
+    /// One sway, there and back, in seconds; and the tilt at its widest, in degrees.
+    private static let swayPeriod = 9.0
+    private static let tilt = 10.0
+    /// The clear oval around the empty state's text, against the width and
+    /// a cover's height; notes start fading at this share of the way in.
+    private static let clearWidth = 0.42
+    private static let clearHeight = 0.8
+    private static let clearStart = 0.6
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1 / Theme.Motion.notesFrameRate, paused: !running || reduceMotion)) { timeline in
+            let time = reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate
+            Canvas { context, size in
+                let lanes = max(3, Int(size.width / Theme.Size.cover) + 1)
+                let span = size.height + Theme.Size.cover
+                for lane in 0..<lanes {
+                    // Steady per lane, a little different between lanes; the
+                    // golden ratio spreads the starts so no two lanes line up.
+                    let golden = (Double(lane) * 0.618).truncatingRemainder(dividingBy: 1)
+                    let speed = Theme.Motion.notesRise * (0.85 + 0.3 * golden)
+                    let laneX = size.width * (Double(lane) + 0.5) / Double(lanes)
+                    for slot in 0..<Self.perLane {
+                        let id = (lane + slot * 2) % Self.variants.count
+                        guard let note = context.resolveSymbol(id: id) else { continue }
+                        let start = (golden + Double(slot) / Double(Self.perLane)) * span
+                        let rise = (time * speed + start).truncatingRemainder(dividingBy: span)
+                        let phase = 2 * .pi * (time / Self.swayPeriod + golden + Double(slot) * 0.5)
+                        let point = CGPoint(x: laneX + sin(phase) * Theme.Motion.notesSway,
+                                            y: size.height + Theme.Size.cover / 2 - rise)
+                        // Fade in from the bottom and out at the top, and give
+                        // way to the text in the middle.
+                        let edge = min(rise, span - rise) / Theme.Size.cover
+                        let fromText = hypot((point.x - size.width / 2) / (size.width * Self.clearWidth),
+                                             (point.y - size.height / 2) / (Theme.Size.cover * Self.clearHeight))
+                        let clear = (fromText - Self.clearStart) / (1 - Self.clearStart)
+                        var layer = context
+                        layer.opacity = Theme.Opacity.decoration * min(1, max(0, edge)) * min(1, max(0, clear))
+                        layer.translateBy(x: point.x, y: point.y)
+                        layer.rotate(by: .degrees(cos(phase) * Self.tilt))
+                        layer.draw(note, at: .zero)
+                    }
+                }
+            } symbols: {
+                ForEach(Self.variants.indices, id: \.self) { index in
+                    Image(systemName: Self.variants[index].0)
+                        .font(.system(size: Theme.Size.emptyGlyph * Self.variants[index].1))
+                        .foregroundStyle(Theme.Colors.text)
+                        .tag(index)
+                }
+            }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }

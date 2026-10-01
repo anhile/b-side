@@ -38,6 +38,21 @@ enum PlaySource: Equatable {
     case other
 }
 
+/// What the strip says plays under the track: a vibe in its colour, or a
+/// playlist or album in the accent.
+struct SourceLabel: Hashable {
+    enum Kind: Hashable {
+        case vibe(colour: Int)
+        case playlist
+        case album
+        case artist
+    }
+
+    let kind: Kind
+    let name: String
+    let symbol: String
+}
+
 /// Owns the hidden WKWebView, its host window, and everything around playback.
 @MainActor
 final class PlayerController: NSObject, ObservableObject {
@@ -72,6 +87,12 @@ final class PlayerController: NSObject, ObservableObject {
     }
     @Published private(set) var playlists: [Playlist] = []
     @Published private(set) var playlistsState = Loadable.idle
+    /// Names of lists played from Explore, which are not in the library.
+    private var listTitles: [String: (title: String, kind: SourceLabel.Kind)] = [:]
+    /// A short word that something was done, such as "Added to Road trip";
+    /// gone after a moment.
+    @Published private(set) var notice: String?
+    private var noticeTask: Task<Void, Never>?
     /// The last thing that went wrong while loading or playing, for the user.
     @Published private(set) var problem: String?
     @Published private(set) var processes: [ProcessInfoRow] = []
@@ -117,7 +138,8 @@ final class PlayerController: NSObject, ObservableObject {
 
     private var currentListID: String?
     /// When `state` arrived, to run the position forward between reports.
-    private var stateDate = Date()
+    /// Where playback is between the page's reports; see PlaybackClock.
+    @Published private(set) var clock = PlaybackClock()
     /// What Play or Pause just asked for, and until when the page's reports
     /// may still say otherwise. The button and the record follow the click,
     /// not the round trip.
@@ -153,7 +175,7 @@ final class PlayerController: NSObject, ObservableObject {
         controller.started = true
         controller.moods = moods
         controller.state = state
-        controller.stateDate = Date()
+        controller.clock = PlaybackClock(state, at: Date())
         controller.account = account
         controller.phase = phase
         controller.source = source
@@ -201,6 +223,7 @@ final class PlayerController: NSObject, ObservableObject {
             searchState = .loaded
         }
         bridge.onTracks = { [weak self] listID, items, append, more in
+            if items.contains(where: \.removable) { self?.ownedPlaylistIDs.insert(listID) }
             self?.receive(tracks: items, of: listID, append: append, more: more)
         }
         bridge.onRemote = { [weak self] action, seconds in
@@ -214,6 +237,7 @@ final class PlayerController: NSObject, ObservableObject {
             }
             if let command { self?.receive(command, via: "page") }
         }
+        bridge.onPlaylistEdit = { [weak self] in self?.playlistEdited($0, id: $1, title: $2, videoID: $3) }
         bridge.onPlaylists = { [weak self] in
             self?.playlists = $0
             self?.playlistsState = .loaded
@@ -413,8 +437,11 @@ final class PlayerController: NSObject, ObservableObject {
         guard hasTrack else { return }
         expected = (playing, Date().addingTimeInterval(Self.expectationWindow))
         guard state.isPlaying != playing else { return }
+        // From where the clock has got to, not the last report's position.
+        let now = Date()
+        state.position = clock.position(at: now)
         state.isPlaying = playing
-        stateDate = Date()
+        clock = PlaybackClock(state, at: now)
         nowPlaying.update(state)
         playingChanged(playing)
     }
@@ -425,7 +452,7 @@ final class PlayerController: NSObject, ObservableObject {
         bridge.call("seek", seconds)
         // Shown at once; the page confirms with its next report.
         state.position = seconds
-        stateDate = Date()
+        clock = PlaybackClock(state, at: Date())
         nowPlaying.update(state)
     }
 
@@ -457,9 +484,7 @@ final class PlayerController: NSObject, ObservableObject {
 
     /// The page reports its position every few seconds; in between, time runs.
     func position(at date: Date) -> Double {
-        guard state.isPlaying else { return state.position }
-        let running = state.position + date.timeIntervalSince(stateDate)
-        return state.duration > 0 ? min(running, state.duration) : running
+        clock.position(at: date)
     }
 
     /// Asks the page for the signed-in user's playlists.
@@ -475,6 +500,96 @@ final class PlayerController: NSObject, ObservableObject {
     }
 
     private static let subtitleSeparator = " • "
+
+    /// What plays, for the strip: the vibe, or the playlist or album, by
+    /// name. Nil for a track's radio, an ad, or a list whose name is unknown.
+    var sourceLabel: SourceLabel? {
+        guard hasTrack, !state.isAd else { return nil }
+        switch source {
+        case .mood(let id):
+            guard let mood = moods.first(where: { $0.id == id }) else { return nil }
+            return SourceLabel(kind: .vibe(colour: VibePalette.index(for: mood)), name: mood.name, symbol: mood.symbol)
+        case .playlist(let id):
+            if id == Tuning.likedMusicID {
+                return SourceLabel(kind: .playlist, name: "Liked Music", symbol: "heart.fill")
+            }
+            if let playlist = playlists.first(where: { $0.id == id }) {
+                return SourceLabel(kind: .playlist, name: playlist.title, symbol: "music.note.list")
+            }
+            guard let known = listTitles[id] else { return nil }
+            let symbol = switch known.kind {
+            case .album: "square.stack"
+            case .artist: "music.mic"
+            default: "music.note.list"
+            }
+            return SourceLabel(kind: known.kind, name: known.title, symbol: symbol)
+        case .other, nil:
+            return nil
+        }
+    }
+
+    /// The playlists a track can be added to: the user's own, not Liked
+    /// Music (that is a like) and not the ones saved from others.
+    var ownPlaylists: [Playlist] {
+        playlists.filter { playlist in
+            guard playlist.id != Tuning.likedMusicID else { return false }
+            if playlist.isOwn || ownedPlaylistIDs.contains(playlist.id) { return true }
+            let author = playlist.subtitle.components(separatedBy: Self.subtitleSeparator).first ?? ""
+            return isOwnName(author)
+        }
+    }
+
+    // MARK: - Editing playlists
+
+    /// A new private playlist, with the track in it when one is given.
+    func createPlaylist(title: String, adding videoID: String? = nil) {
+        let title = title.trimmingCharacters(in: .whitespaces)
+        guard pageReady, account.isSignedIn, !title.isEmpty else { return }
+        bridge.call("createPlaylist", title, videoID ?? "")
+    }
+
+    func add(_ videoID: String, to playlist: Playlist) {
+        guard pageReady, account.isSignedIn, !videoID.isEmpty else { return }
+        bridge.call("addToPlaylist", playlist.id, videoID)
+    }
+
+    /// Playlists whose tracks YouTube Music offered to remove: the user's,
+    /// whatever their subtitles say.
+    private var ownedPlaylistIDs: Set<String> = []
+
+    /// Whether the open playlist's tracks can be taken out of it.
+    var canEditOpenPlaylist: Bool {
+        guard let id = openPlaylist?.id else { return false }
+        return ownPlaylists.contains { $0.id == id }
+    }
+
+    func remove(_ track: Track, from playlist: Playlist) {
+        guard pageReady, account.isSignedIn, !track.setVideoID.isEmpty else { return }
+        let video = track.heldVideoID.isEmpty ? track.videoID : track.heldVideoID
+        bridge.call("removeFromPlaylist", playlist.id, video, track.setVideoID)
+    }
+
+    private func playlistEdited(_ action: String, id: String, title: String, videoID: String) {
+        let name = playlists.first { $0.id == id }?.title ?? title
+        switch action {
+        case "created": show(notice: videoID.isEmpty ? "Created “\(name)”" : "Added to new “\(name)”")
+        case "added": show(notice: "Added to “\(name)”")
+        case "removed": show(notice: "Removed from “\(name)”")
+        default: show(notice: "Already in “\(name)”")
+        }
+        // A removal sends the list itself; an addition goes at the end.
+        if openPlaylist?.id == id, action != "removed" { bridge.call("tracks", id) }
+    }
+
+    func show(notice text: String) {
+        notice = text
+        noticeTask?.cancel()
+        noticeTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(Tuning.noticeTime))
+            guard !Task.isCancelled else { return }
+            self?.notice = nil
+        }
+    }
 
     private func isOwnName(_ author: String) -> Bool {
         if case .signedIn(let name, _, _) = account, !name.isEmpty, name == author { return true }
@@ -604,25 +719,61 @@ final class PlayerController: NSObject, ObservableObject {
         search(asked.query, kind: asked.kind)
     }
 
+    /// Songs for a query, for the vibe maker; wakes the page and waits for
+    /// it. Throws when the page does not come up or the search fails.
+    func findSongs(_ query: String) async throws -> [MusicItem] {
+        if !pageReady {
+            wake()
+            for _ in 0..<Int(Tuning.pageWaitSeconds * 5) where !pageReady {
+                try await Task.sleep(for: .milliseconds(200))
+            }
+            guard pageReady else { throw URLError(.timedOut) }
+        }
+        return MusicItem.list(try await bridge.value("findSongs", [query]))
+    }
+
+    /// Debug: makes a vibe from words without the sheet and logs it.
+    private func logVibe(_ words: String) {
+        Task {
+            let start = Date()
+            let reading = await VibeMaker.read(words, mix: .both)
+            EventLog.write("vibe\treading \(String(format: "%.1f", Date().timeIntervalSince(start))) s: \(reading.name) | \(reading.tags) | \(reading.artists) | \(reading.vocals) | \(reading.matchedMoods ?? [])")
+            do {
+                let found = try await VibeMaker.find(words, reading: reading, vocals: reading.vocals, search: findSongs)
+                EventLog.write("vibe\tfound \(String(format: "%.1f", Date().timeIntervalSince(start))) s: \(found.artists) | " + found.anchors.map { "\($0.title) — \($0.artist)" }.joined(separator: "; "))
+            } catch {
+                EventLog.write("vibe\tfailed: \(error)")
+            }
+        }
+    }
+
+    /// All of an artist's songs, from the first: their page's Play.
+    func play(artist page: ArtistPage) {
+        play(list: page.songsPlaylistID, from: 0, title: page.name, kind: .artist)
+    }
+
     /// A song plays with its radio after it, as in YouTube Music; an album
     /// or playlist plays from its first track.
     func play(_ item: MusicItem) {
         if !item.videoID.isEmpty {
             load(PlayTarget(videoID: item.videoID, listID: nil), from: .other, startAt: nil)
         } else if !item.playlistID.isEmpty {
+            listTitles[item.playlistID] = (item.title, item.kind == .album ? .album : .playlist)
             load(PlayTarget(videoID: nil, listID: item.playlistID), from: .playlist(item.playlistID), startAt: nil)
         }
     }
 
     /// An album or playlist from one of its tracks on.
     func play(_ collection: CollectionPage, from index: Int = 0) {
-        play(list: collection.playlistID, from: index)
+        play(list: collection.playlistID, from: index, title: collection.title,
+             kind: collection.isAlbum ? .album : .playlist)
     }
 
     /// A playlist from one of its tracks on: an album, or all of an artist's
     /// songs, which their top songs are the start of.
-    func play(list id: String, from index: Int) {
+    func play(list id: String, from index: Int, title: String = "", kind: SourceLabel.Kind = .playlist) {
         guard !id.isEmpty else { return }
+        if !title.isEmpty { listTitles[id] = (title, kind) }
         load(PlayTarget(videoID: nil, listID: id, startIndex: index), from: .playlist(id), startAt: nil)
     }
 
@@ -655,12 +806,26 @@ final class PlayerController: NSObject, ObservableObject {
 
     private func receive(artist id: String, page: ArtistPage?) {
         exploreAsked.remove(id)
-        if let page { artistPages[id] = page } else { exploreFailures.insert(id) }
+        if let page { artistPages[id] = page; keep(id) } else { exploreFailures.insert(id) }
     }
 
     private func receive(collection id: String, page: CollectionPage?) {
         exploreAsked.remove(id)
-        if let page { collectionPages[id] = page } else { exploreFailures.insert(id) }
+        if let page { collectionPages[id] = page; keep(id) } else { exploreFailures.insert(id) }
+    }
+
+    /// The pages in the order they came; past Tuning.explorePagesKept the
+    /// oldest go. One shown again loads again.
+    private var explorePageOrder: [String] = []
+
+    private func keep(_ id: String) {
+        explorePageOrder.removeAll { $0 == id }
+        explorePageOrder.append(id)
+        while explorePageOrder.count > Tuning.explorePagesKept {
+            let old = explorePageOrder.removeFirst()
+            artistPages[old] = nil
+            collectionPages[old] = nil
+        }
     }
 
     // MARK: - A playlist's tracks
@@ -841,7 +1006,7 @@ final class PlayerController: NSObject, ObservableObject {
         }
         let old = state
         state = new
-        stateDate = Date()
+        clock = clock.following(new, at: Date(), sameTrack: new.videoID == old.videoID)
         nowPlaying.update(new)
 
         // The title arrives a moment after the video ID, so wait for it.
@@ -903,6 +1068,7 @@ final class PlayerController: NSObject, ObservableObject {
             if openPlaylist == nil, let id = Settings.defaults.string(forKey: Keys.listTracks) {
                 open(Playlist(id: id, title: id))
             }
+            if let words = Settings.defaults.string(forKey: Keys.makeVibe) { logVibe(words) }
             if let pending = pendingTarget {
                 pendingTarget = nil
                 sendToPage(pending.target, startAt: pending.position)
@@ -925,6 +1091,8 @@ final class PlayerController: NSObject, ObservableObject {
                 problem = "This could not be played. It may be empty or unavailable."
             } else if detail.hasPrefix("player error") {
                 problem = "This track could not be played."
+            } else if detail.hasPrefix("playlist edit") {
+                show(notice: "The playlist could not be changed. Try again.")
             } else if detail.hasPrefix("like") {
                 problem = "The like could not be saved."
             }
@@ -976,7 +1144,8 @@ final class PlayerController: NSObject, ObservableObject {
         if sampleCount % 12 == 0 {
             let stalled = state.isPlaying && state.position == lastHeartbeatPosition
             EventLog.write("\(stalled ? "STALLED" : "heartbeat")\t\(state.isPlaying ? "playing" : "paused")\t"
-                + "\(Int(state.position))s\t\(state.videoID)\t\(Int(totalMegabytes)) MB")
+                + "\(Int(state.position))s\t\(state.videoID)\t\(Int(totalMegabytes)) MB"
+                + "\t" + processes.map { "\($0.name) \(Int($0.megabytes))" }.joined(separator: ", "))
             lastHeartbeatPosition = state.position
         }
     }

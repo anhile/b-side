@@ -5,6 +5,9 @@ enum Page: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// The pages with a bar of their own right under the window's top bar.
+    static let withBar: Set<Page?> = [.playlists, .explore]
+
     var title: String {
         switch self {
         case .vibe: return "Vibes"
@@ -35,9 +38,11 @@ enum Page: String, CaseIterable, Identifiable {
 /// Which page of the main window is showing. Shared with the menu bar.
 @MainActor
 final class Navigation: ObservableObject {
-    @Published var page: Page? = .nowPlaying
+    @Published var page: Page? = UserDefaults.standard.string(forKey: Keys.page).flatMap(Page.init) ?? .nowPlaying
     /// Now Playing shows the lyrics in place of the artwork.
     @Published var showsLyrics = false
+    /// The New Playlist sheet, and the track to put in it, if any.
+    @Published var newPlaylist: NewPlaylistRequest?
     /// The pages opened on Explore over the search, the last one showing.
     @Published private(set) var explorePath: [ExploreRoute] = []
     /// The page an Explore page was opened from, where Back returns from
@@ -176,8 +181,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         TrackNotifier.shared.install()
         if let folder = Settings.defaults.string(forKey: Keys.snapshot) {
+            MainWindow.startInMenuBar()
             Task { @MainActor in
                 await Snapshots.render(into: URL(fileURLWithPath: folder))
+                Settings.clearScratch()
                 NSApp.terminate(nil)
             }
             return

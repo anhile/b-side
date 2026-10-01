@@ -120,7 +120,53 @@ enum Snapshots {
         }
     }
 
+    /// The New Vibe sheet in each step, as it shows over the window.
+    private static func renderNewVibe(into folder: URL) async {
+        let jazz = VibeSpec(
+            name: "Rainy Sunday", colour: 2, tags: ["slow jazz", "rainy", "instrumental"],
+            artists: ["Bill Evans", "Chet Baker", "Kenny Dorham", "Paul Desmond"], vocals: .without, mix: .both,
+            anchors: [Track(index: 0, videoID: "a", title: "Peace Piece", artist: "Bill Evans", artworkURL: artwork),
+                      Track(index: 1, videoID: "b", title: "Alone Together", artist: "Chet Baker", artworkURL: nil),
+                      Track(index: 2, videoID: "c", title: "Lotus Blossom", artist: "Kenny Dorham", artworkURL: artwork)],
+            matchedMoods: nil)
+        var plain = jazz
+        plain.name = "Rainy Sunday"; plain.colour = 3; plain.tags = []; plain.artists = []
+        plain.matchedMoods = ["Chill", "Jazz"]
+        let prompt = "Rainy Sunday morning, slow jazz, no vocals"
+        let cases: [(String, NewVibeSheet)] = [
+            ("describe-empty", NewVibeSheet()),
+            ("describe", NewVibeSheet(prompt: prompt)),
+            ("nothing", NewVibeSheet(step: .nothing, prompt: "asdfgh qwerty")),
+            ("making", NewVibeSheet(step: .making(1), prompt: prompt)),
+            ("preview", NewVibeSheet(step: .preview(jazz), prompt: prompt)),
+            ("preview-plain", NewVibeSheet(step: .preview(plain), prompt: prompt)),
+        ]
+        let player = PlayerController.fixture()
+        for (name, sheet) in cases {
+            for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+                // A sheet sits on the window's own background, which a borderless
+                // window's content view does not draw.
+                let hosting = NSHostingController(rootView: sheet.environmentObject(player)
+                    .background(Color(nsColor: .windowBackgroundColor)))
+                let window = NSWindow(contentViewController: hosting)
+                window.styleMask = [.borderless]
+                window.appearance = NSAppearance(named: appearance)
+                window.isReleasedWhenClosed = false
+                window.setFrameOrigin(NSPoint(x: -4000, y: -4000))
+                window.orderFrontRegardless()
+                try? await Task.sleep(for: .seconds(0.8))
+                window.setContentSize(hosting.view.fittingSize)
+                try? await Task.sleep(for: .seconds(0.6))
+                if let image = capture(window) {
+                    try? image.write(to: folder.appendingPathComponent("newvibe-\(name)-\(suffix).png"))
+                }
+                window.close()
+            }
+        }
+    }
+
     static func render(into folder: URL) async {
+        await renderNewVibe(into: folder)
         await renderSettings(into: folder)
         await renderPage(.nowPlaying, player: .fixture(state: track, source: .mood(Mood.liked.id)),
                          name: "nowplaying-reduce-transparency", appearance: .aqua, into: folder,

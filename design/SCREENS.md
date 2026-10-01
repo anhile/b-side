@@ -46,6 +46,43 @@ Status: passed the rubric on 2026-09-30, iteration 2. Tiles are saved in
 UserDefaults as JSON (`moods`); the editor is a sheet with system controls.
 The playing tile shows an orange speaker in place of its source icon.
 
+## Sheet: New Vibe (from words)
+
+Approved by the owner 2026-10-01 and built: the "+" tile opens it, Edit…
+on a tile made from words opens it again with the words. Generation is
+`VibeMaker.swift`; mockups are `newvibe-*` in design/audit.
+Research: [docs/research/vibe-from-prompt.md](../docs/research/vibe-from-prompt.md).
+
+- User's job here: "describe how I feel in my own words and get music that
+  fits, without picking a playlist"
+- Primary action: Make, then Add Vibe
+- Secondary actions: an example chip fills the words; Try It plays the first
+  songs; a chip's x leaves that part out; Back returns to the words; "A
+  playlist, Liked Music or a track's radio…" opens the editor it replaced
+- Attention order: 1) the words field 2) the example chips 3) Make. In the
+  preview: 1) the tile as it will look 2) Vocals and Artists 3) "Heard as"
+  4) the first songs in one line
+- Steps, in one sheet:
+  - Describe: a field of three to five lines, a line on what happens, four
+    example chips, the link to the other kinds of tile
+  - Making: the words in quotes, three stages with a check, a spinner or an
+    empty circle (reading the words, finding artists on YouTube Music,
+    picking the first songs). Only Cancel
+  - Preview: the real `MoodTile` with the name and colour chosen for it,
+    the name field and Try It beside it; Vocals (vocals or not / with / no
+    vocals) and Artists (artists I know / known and new / only new) as
+    system menus; "Heard as" chips (tags, artists; YouTube Music moods when
+    no model was used); "Starts with …, then more like them."
+- What we removed or deferred: a full list of the first songs (one line is
+  enough to judge, and the sheet must fit the window); steering while it
+  plays ("calmer", "more like this") goes to Now Playing later
+- States: empty words (Make disabled) / making / preview / preview without
+  Apple Intelligence (a note, moods as chips) / nothing found (the words
+  stay, a note under them) / no network (as nothing found, with the reason)
+- Tile: symbol `text.bubble`, the words in quotes as its subtitle
+- Entry and exit: the "+" tile; Edit… on a tile made from words. Leaves by
+  Cancel, Escape or Add Vibe
+
 ## Screen: Playlists
 
 - User's job here: "find my playlist and play it"

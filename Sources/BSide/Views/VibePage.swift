@@ -7,6 +7,14 @@ struct VibePage: View {
 
     /// The tile being edited, or a new one.
     @State private var editing: Mood?
+    /// The New Vibe sheet: a new tile from words, or one made from words
+    /// made again.
+    @State private var describing: Describing?
+
+    private struct Describing: Identifiable {
+        let id = UUID()
+        var replacing: Mood?
+    }
 
     private let columns = [
         GridItem(.fixed(Theme.Size.tileWidth), spacing: Theme.Space.s),
@@ -40,12 +48,14 @@ struct VibePage: View {
                     .buttonStyle(TileButtonStyle())
                     .help(mood.name)
                     .contextMenu {
-                        Button("Edit…") { editing = mood }
+                        Button("Edit…") {
+                            if case .described = mood.source { describing = Describing(replacing: mood) } else { editing = mood }
+                        }
                         Button("Remove", role: .destructive) { player.remove(mood) }
                     }
                 }
                 Button {
-                    editing = Mood(name: "", source: .likedShuffled)
+                    describing = Describing()
                 } label: {
                     AddTile(isFirst: player.moods.isEmpty)
                 }
@@ -60,6 +70,12 @@ struct VibePage: View {
         }
         .contentMargins(.bottom, footerRoom, for: .scrollContent)
         .contentMargins(.bottom, footerRoom, for: .scrollIndicators)
+        .sheet(item: $describing) { describing in
+            NewVibeSheet(replacing: describing.replacing) {
+                // After this sheet is gone: one sheet at a time.
+                DispatchQueue.main.async { editing = Mood(name: "", source: .likedShuffled) }
+            }
+        }
         .sheet(item: $editing) { mood in
             MoodEditor(mood: mood, playlists: player.playlists) { saved in
                 player.save(saved)
@@ -68,46 +84,93 @@ struct VibePage: View {
     }
 }
 
-/// A mood: the name, what it plays, and the kind of source in the corner.
-/// The playing tile carries the accent; nothing else does.
+/// A mood: a gradient of its own colour (VibePalette), the name and what it
+/// plays in white in the deep corner, the kind of source in the other, and
+/// the same symbol large and faded, half off the edge. A glass edge on top.
+/// The playing tile has a white ring and a pulsing speaker.
 struct MoodTile: View {
     let mood: Mood
     let subtitle: String
     let isCurrent: Bool
     let isPlaying: Bool
+    @Environment(\.pageShown) private var pageShown
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: Theme.Radius.m) }
 
     var body: some View {
+        let swatch = VibePalette.swatch(for: mood)
         VStack(alignment: .leading, spacing: Theme.Space.xxs) {
             HStack {
                 Spacer()
-                if isCurrent {
-                    Image(systemName: isPlaying ? "speaker.wave.2.fill" : "speaker.fill")
-                        .font(Theme.Text.caption)
-                        .foregroundStyle(Theme.Colors.accentText)
-                        .accessibilityLabel(isPlaying ? "Playing" : "Paused")
-                } else {
-                    Image(systemName: mood.symbol)
-                        .font(Theme.Text.caption)
-                        .foregroundStyle(Theme.Colors.textMuted)
-                        .accessibilityHidden(true)
+                Group {
+                    if isCurrent {
+                        Image(systemName: isPlaying ? "speaker.wave.2.fill" : "speaker.fill")
+                            .symbolEffect(.variableColor.iterative, isActive: isPlaying && pageShown) // tokens-ok: an effect, not a colour
+                            .accessibilityLabel(isPlaying ? "Playing" : "Paused")
+                    } else {
+                        Image(systemName: mood.symbol)
+                            .accessibilityHidden(true)
+                    }
                 }
+                .font(Theme.Text.caption)
+                .foregroundStyle(Theme.Colors.onVibe)
             }
             Spacer(minLength: 0)
             Text(mood.name)
                 .font(Theme.Text.title)
-                .foregroundStyle(Theme.Colors.text)
+                .foregroundStyle(Theme.Colors.onVibe)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
             Text(subtitle)
                 .font(Theme.Text.caption)
-                .foregroundStyle(Theme.Colors.textMuted)
+                .foregroundStyle(Theme.Colors.onVibe.opacity(Theme.Opacity.vibeSubtitle))
                 .lineLimit(1)
         }
         .padding(Theme.Space.s)
         .frame(width: Theme.Size.tileWidth, height: Theme.Size.tileHeight, alignment: .bottomLeading)
-        .background(Theme.Colors.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.m))
-        .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.m))
+        .background { background(swatch) }
+        .clipShape(shape)
+        .overlay {
+            shape.strokeBorder(LinearGradient(colors: [Theme.Colors.onVibe.opacity(Theme.Opacity.vibeEdgeTop),
+                                                       Theme.Colors.onVibe.opacity(Theme.Opacity.vibeEdgeBottom)],
+                                              startPoint: .top, endPoint: .bottom))
+        }
+        .overlay {
+            // The playing tile's ring, in its own colour, a little outside
+            // it: the deep shade on the light page, the light one on the dark.
+            RoundedRectangle(cornerRadius: Theme.Radius.m + Theme.Size.currentRing * 1.5)
+                .strokeBorder(colorScheme == .dark ? swatch.light : swatch.deep, lineWidth: Theme.Size.currentRing)
+                .padding(-Theme.Size.currentRing * 1.5)
+                .opacity(isCurrent ? 1 : 0)
+        }
+        .shadow(color: swatch.deep.opacity(Theme.Opacity.vibeShadow), radius: Theme.Size.vibeShadow,
+                y: Theme.Size.vibeShadow / 2)
+        .contentShape(shape)
+    }
+
+    /// Light corner top right, deep corner bottom left under the name, a
+    /// glow in the light corner, the faded symbol, and a shade under the text.
+    private func background(_ swatch: VibePalette.Swatch) -> some View {
+        ZStack {
+            LinearGradient(colors: [swatch.light, swatch.deep], startPoint: .topTrailing, endPoint: .bottomLeading)
+            Circle()
+                .fill(swatch.light)
+                .frame(width: Theme.Size.vibeGlow, height: Theme.Size.vibeGlow)
+                .blur(radius: Theme.Size.vibeGlow / 3)
+                .opacity(Theme.Opacity.vibeGlow)
+                .offset(x: Theme.Size.vibeGlow / 2, y: -Theme.Size.vibeGlow / 2)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            Image(systemName: mood.symbol)
+                .font(.system(size: Theme.Size.vibeMark))
+                .foregroundStyle(Theme.Colors.onVibe.opacity(Theme.Opacity.vibeMark))
+                .rotationEffect(.degrees(-14))
+                .offset(x: Theme.Size.vibeMark / 4, y: Theme.Size.vibeMark / 5)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+            LinearGradient(colors: [.clear, Theme.Colors.shadow.opacity(Theme.Opacity.vibeShade)],
+                           startPoint: .center, endPoint: .bottom)
+        }
     }
 }
 
@@ -136,20 +199,28 @@ struct AddTile: View {
     }
 }
 
-/// Tiles under the pointer get a `control-border` outline; pressed, they dip.
+/// Tiles rise a little under the pointer and dip when pressed, on a spring.
 struct TileButtonStyle: ButtonStyle {
-    @State private var hovering = false
-
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.Radius.m)
-                    .strokeBorder(Theme.Colors.controlBorder)
-                    .opacity(hovering ? 1 : 0)
-            )
-            .opacity(configuration.isPressed ? Theme.Opacity.pressed : 1)
-            .onHover { hovering = $0 }
-            .animation(.easeOut(duration: Theme.Motion.feedback), value: hovering)
+        Lifted(configuration: configuration)
+    }
+
+    private struct Lifted: View {
+        let configuration: Configuration
+        @State private var hovering = false
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
+        @Environment(\.isEnabled) private var isEnabled
+
+        var body: some View {
+            configuration.label
+                .scaleEffect(reduceMotion ? 1 : configuration.isPressed ? Theme.Motion.tilePress
+                             : hovering ? Theme.Motion.tileHover : 1)
+                .opacity(reduceMotion && configuration.isPressed ? Theme.Opacity.pressed : 1)
+                .onHover { hovering = $0 }
+                .pointingHand(isEnabled)
+                .animation(.snappy(duration: Theme.Motion.feedback * 2), value: hovering)
+                .animation(.snappy(duration: Theme.Motion.feedback), value: configuration.isPressed)
+        }
     }
 }
 
@@ -194,6 +265,12 @@ struct MoodEditor: View {
             _playlistID = State(initialValue: playlists.first?.id ?? Tuning.likedMusicID)
             _shuffled = State(initialValue: false)
             _track = State(initialValue: videoID)
+        case .described(_, let anchors):
+            // Edited in NewVibeSheet; here only as a track's radio.
+            _kind = State(initialValue: .radio)
+            _playlistID = State(initialValue: playlists.first?.id ?? Tuning.likedMusicID)
+            _shuffled = State(initialValue: false)
+            _track = State(initialValue: anchors.first ?? "")
         }
     }
 
@@ -203,6 +280,13 @@ struct MoodEditor: View {
         VStack(spacing: 0) {
             Form {
                 TextField("Name", text: $mood.name, prompt: Text("Late night"))
+                LabeledContent("Colour") {
+                    HStack(spacing: Theme.Space.xs) {
+                        ForEach(VibePalette.swatches.indices, id: \.self) { index in
+                            swatchButton(index)
+                        }
+                    }
+                }
                 Picker("Plays", selection: $kind) {
                     ForEach(Kind.allCases) { Text($0.rawValue).tag($0) }
                 }
@@ -234,6 +318,23 @@ struct MoodEditor: View {
             .padding(Theme.Space.m)
         }
         .frame(width: Theme.Size.editorWidth)
+    }
+
+    private func swatchButton(_ index: Int) -> some View {
+        let swatch = VibePalette.swatches[index]
+        let isChosen = VibePalette.index(for: mood) == index
+        return Button { mood.colour = index } label: {
+            Circle()
+                .fill(LinearGradient(colors: [swatch.light, swatch.deep], startPoint: .topTrailing, endPoint: .bottomLeading))
+                .frame(width: Theme.Size.swatch, height: Theme.Size.swatch)
+                .padding(Theme.Size.currentRing * 1.5)
+                .overlay { Circle().strokeBorder(Theme.Colors.text, lineWidth: Theme.Size.currentRing).opacity(isChosen ? 1 : 0) }
+        }
+        .buttonStyle(.plain)
+        .pointingHand()
+        .help(swatch.name)
+        .accessibilityLabel(swatch.name)
+        .accessibilityAddTraits(isChosen ? .isSelected : [])
     }
 
     private var source: Mood.Source? {

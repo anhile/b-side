@@ -5,6 +5,8 @@ import WebKit
 /// Page-side knobs (config keys, endpoints, player API names) live in
 /// Resources/player.js.
 enum Tuning {
+    /// How long the vibe maker waits for a sleeping player page to load.
+    static let pageWaitSeconds: Double = 20
     /// Google sign-in tends to reject embedded web views ("This browser or app
     /// may not be secure"). Presenting as Safari avoids that. Set to nil to use
     /// WKWebView's default user agent.
@@ -43,6 +45,22 @@ enum Tuning {
     /// LRCLIB's lyrics count only for a recording this close in length, in
     /// seconds; a longer video or another edit would drift out of time.
     static let lyricsLengthTolerance: Double = 2
+
+    /// A failed artwork download is tried once more after this many seconds.
+    static let artworkRetryDelay: TimeInterval = 1
+    /// How far VoiceOver's adjust gestures move the progress bar, in seconds.
+    static let seekStep: TimeInterval = 10
+    /// The playback clock (PlaybackClock): a report off by less than the
+    /// tolerance is eased in over `clockEase` seconds; the shown time is
+    /// redrawn just after each new second.
+    static let clockTolerance: TimeInterval = 1.5
+    static let clockEase: TimeInterval = 3
+    static let clockMinimumTick: TimeInterval = 0.05
+    static let clockMargin: TimeInterval = 0.02
+    /// Artist and album pages kept for going back to them.
+    static let explorePagesKept = 30
+    /// How long a notice such as "Added to …" stays.
+    static let noticeTime: TimeInterval = 2.5
 }
 
 /// A video, a playlist, or a video within a playlist.

@@ -31,6 +31,8 @@ struct Playlist: Identifiable, Equatable {
     let title: String
     var subtitle = ""
     var artworkURL: URL?
+    /// The library says it is the user's (it can be deleted).
+    var isOwn = false
 }
 
 /// A track's lyrics: plain text, and where they come from ("Source: Musixmatch").
@@ -167,6 +169,12 @@ struct Track: Identifiable, Equatable {
     let title: String
     let artist: String
     var artworkURL: URL?
+    /// The entry's place in its playlist, and the version the playlist holds
+    /// (it may differ from the one that plays); empty outside a playlist.
+    var setVideoID = ""
+    var heldVideoID = ""
+    /// YouTube Music lets the user take it out: the playlist is theirs.
+    var removable = false
     var id: Int { index }
 }
 
@@ -196,6 +204,9 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
     var onArtist: ((_ id: String, _ page: ArtistPage?) -> Void)?
     var onCollection: ((_ id: String, _ page: CollectionPage?) -> Void)?
     var onLyrics: ((Lyrics) -> Void)?
+    /// A playlist was created ("created"), or a track added to one ("added",
+    /// or "already" when it was there).
+    var onPlaylistEdit: ((_ action: String, _ playlistID: String, _ title: String, _ videoID: String) -> Void)?
 
     static let script = "player"
 
@@ -251,6 +262,15 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
         }
     }
 
+    /// Calls `window.__bside.<method>(args...)` and waits for what it
+    /// returns (a promise is awaited).
+    func value(_ method: String, _ args: [Any]) async throws -> Any? {
+        guard let webView else { throw CancellationError() }
+        return try await webView.callAsyncJavaScript(
+            "return await window.__bside[method].apply(null, args)",
+            arguments: ["method": method, "args": args], in: nil, contentWorld: .page)
+    }
+
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard let body = message.body as? [String: Any], let type = body["type"] as? String else { return }
         switch type {
@@ -290,7 +310,10 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
                 return Track(index: 0, videoID: video,
                              title: item["title"] as? String ?? "",
                              artist: item["artist"] as? String ?? "",
-                             artworkURL: (item["artwork"] as? String).flatMap { $0.isEmpty ? nil : URL(string: $0) })
+                             artworkURL: (item["artwork"] as? String).flatMap { $0.isEmpty ? nil : URL(string: $0) },
+                             setVideoID: item["setVideoId"] as? String ?? "",
+                             heldVideoID: item["heldVideoId"] as? String ?? "",
+                             removable: item["removable"] as? Bool ?? false)
             }, body["append"] as? Bool ?? false, body["more"] as? Bool ?? false)
         case "search":
             onSearch?(body["query"] as? String ?? "", SearchKind(rawValue: body["kind"] as? String ?? "") ?? .songs,
@@ -320,13 +343,17 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
             onRemote?(body["action"] as? String ?? "", (body["seconds"] as? NSNumber)?.doubleValue)
         case "event":
             onEvent?(body["kind"] as? String ?? "", body["detail"] as? String ?? "")
+        case "playlistEdit":
+            onPlaylistEdit?(body["action"] as? String ?? "", body["playlistId"] as? String ?? "",
+                            body["title"] as? String ?? "", body["videoId"] as? String ?? "")
         case "playlists":
             let items = body["items"] as? [[String: Any]] ?? []
             onPlaylists?(items.compactMap { item in
                 guard let id = item["id"] as? String, let title = item["title"] as? String else { return nil }
                 return Playlist(id: id, title: title,
                                 subtitle: item["subtitle"] as? String ?? "",
-                                artworkURL: (item["artwork"] as? String).flatMap { $0.isEmpty ? nil : URL(string: $0) })
+                                artworkURL: (item["artwork"] as? String).flatMap { $0.isEmpty ? nil : URL(string: $0) },
+                                isOwn: item["own"] as? Bool ?? false)
             })
         default:
             break

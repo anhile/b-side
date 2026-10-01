@@ -25,10 +25,17 @@ enum Theme {
         static let accentText = Color("accentText")
         /// What sits on an accent shape.
         static let accentOn = Color("accentOn")
+        /// White on an accent shape: only the chosen Explore search kind, by
+        /// the owner's choice (3.0:1, so semibold and never small).
+        static let accentOnWhite = Color.white
         static let record = Color("record")
         static let recordGroove = Color("recordGroove")
         /// The one shadow, under large artwork. Black in both themes.
         static let shadow = Color.black
+        /// Text and marks on a Vibe tile's gradient, in both themes.
+        static let onVibe = Color.white
+        /// The progress bar's knob, as the system's sliders have it.
+        static let knob = Color.white
         static let danger = Color.red
         static let success = Color.green
     }
@@ -104,18 +111,41 @@ enum Theme {
         static var artworkAction: CGFloat { (48) * scale }
         /// The hover shape stops this short of the button's edge.
         static var hoverInset: CGFloat { (2) * scale }
+        /// The search field's ring while it has the keyboard.
+        static var focusRing: CGFloat { (2) * scale }
         static var volumeGlyph: CGFloat { (20) * scale }
         static var volumeSlider: CGFloat { (120) * scale }
+        /// The progress bar: its line, its knob, how tall it is to the
+        /// pointer, and the room a time label takes beside it.
+        static var progressLine: CGFloat { (4) * scale }
+        static var progressKnob: CGSize { CGSize(width: 20 * scale, height: 12 * scale) }
+        static var progressTarget: CGFloat { (20) * scale }
+        static var progressTick: CGFloat { (2) * scale }
+        static var timeLabel: CGFloat { (36) * scale }
         static let settingsWidth: CGFloat = 460
         static var menuWidth: CGFloat { (260) * scale }
         static let logHeight: CGFloat = 200
         static let avatar: CGFloat = 40
+        /// The app icon in Settings, General, About; a setting's icon.
+        static let aboutIcon: CGFloat = 56
+        static let settingIcon: CGFloat = 22
         /// Symbol sizes for the largest and smallest glyphs. Everything else
         /// takes its size from the text style next to it.
         static var emptyGlyph: CGFloat { (28) * scale }
+        /// Skeleton rows match the rows they stand for: a `body` title line
+        /// and a `caption` line under it, their middles where the text's are.
         static var skeletonLine: CGFloat { (10) * scale }
+        static var skeletonCaptionLine: CGFloat { (8) * scale }
+        static var skeletonGap: CGFloat { (5.5) * scale }
         static var skeletonTitle: CGFloat { (160) * scale }
-        static var skeletonCaption: CGFloat { (72) * scale }
+        static var skeletonCaption: CGFloat { (120) * scale }
+        /// A Vibe tile's large faded symbol and the glow in its light corner.
+        static var vibeMark: CGFloat { tileHeight * 0.8 }
+        static var vibeGlow: CGFloat { tileHeight * 1.1 }
+        static var vibeShadow: CGFloat { (8) * scale }
+        /// The colour choices in the Vibe editor.
+        static var swatch: CGFloat { (18) * scale }
+        static let currentRing: CGFloat = 2
     }
 
     /// The artwork colour behind Now Playing: how much of it shows over
@@ -148,12 +178,38 @@ enum Theme {
         /// The volume slider's orange at the lowest volume; it reaches full
         /// strength at 100%.
         static let volumeFloor: Double = 0.3
+        /// The notes drifting behind an empty Explore: barely there.
+        static let decoration: Double = 0.12
+        /// The progress bar's empty line, in the text colour; its filled part
+        /// in a light accent, full under the pointer.
+        static let progressTrack: Double = 0.14
+        static let progressRest: Double = 0.45
+        /// A Vibe tile: its faded symbol, the glow in the light corner, the
+        /// shade under its name, the glass edge from top to bottom, the
+        /// subtitle, and the coloured shadow under it.
+        static let vibeMark: Double = 0.16
+        static let vibeGlow: Double = 0.7
+        static let vibeShade: Double = 0.22
+        static let vibeEdgeTop: Double = 0.45
+        static let vibeEdgeBottom: Double = 0.08
+        static let vibeSubtitle: Double = 0.8
+        static let vibeShadow: Double = 0.35
     }
 
     enum Motion {
+        /// The notes behind an empty Explore: how fast they rise (points per
+        /// second), how far they sway, and how many frames a second they take.
+        static let notesRise: Double = 9
+        static let notesSway: Double = 14
+        static let notesFrameRate: Double = 30
+        /// A Vibe tile rises a little under the pointer and dips when pressed.
+        static let tileHover: Double = 1.03
+        static let tilePress: Double = 0.96
         static let feedback: Double = 0.15
         static let tooltipDelay: Double = 1.5
         static let page: Double = 0.3
+        /// A tab changes the page at once, and the page fades in.
+        static let pageFadeIn: Double = 0.15
         /// Half a cycle of a skeleton's breathing.
         static let breathe: Double = 0.9
         /// One turn of the record; how it stops: the time, how far it runs

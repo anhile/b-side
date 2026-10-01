@@ -156,22 +156,23 @@ final class SleeveAndRecordView: NSView {
         }
     }
 
+    /// The previous picture stays until the new one is here, so nothing
+    /// flashes; if the new one cannot be had, the placeholder takes its
+    /// place rather than leaving the last track's cover up.
     private func loadArtwork() {
+        guard let url = artworkURL else { return showPlaceholder() }
+        Task { @MainActor [weak self] in
+            let image = await ArtworkLoader.image(for: url)
+            guard let self, self.artworkURL == url else { return }
+            guard let image else { return self.showPlaceholder() }
+            self.artwork = image
+            self.sleeve.contents = image
+        }
+    }
+
+    private func showPlaceholder() {
         artwork = nil
-        guard let url = artworkURL else {
-            drawnFor = nil
-            needsLayout = true
-            return
-        }
-        Task { [weak self] in
-            guard let (data, _) = try? await URLSession.shared.data(from: url),
-                  let image = NSImage(data: data),
-                  let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
-            await MainActor.run {
-                guard let self, self.artworkURL == url else { return }
-                self.artwork = cgImage
-                self.sleeve.contents = cgImage
-            }
-        }
+        drawnFor = nil // layout draws the placeholder
+        needsLayout = true
     }
 }

@@ -27,6 +27,47 @@ extension View {
     func glass<S: InsettableShape>(in shape: S) -> some View {
         modifier(GlassSurface(shape: shape))
     }
+
+    /// For bars from edge to edge that meet another bar: the window's top
+    /// bar and the pages' bars under it. Glass lights a rim along every
+    /// edge, and two rims where bars meet read as a gap; `joined` names the
+    /// edges that meet another bar, which then get no rim.
+    func barGlass(joined: Edge.Set = []) -> some View {
+        modifier(BarSurface(joined: joined))
+    }
+}
+
+struct BarSurface: ViewModifier {
+    var joined: Edge.Set = []
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.previewReduceTransparency) private var previewReduceTransparency
+
+    /// Past the rim and its glow.
+    private static let bleed: CGFloat = 8
+
+    func body(content: Content) -> some View {
+        if reduceTransparency || previewReduceTransparency {
+            content.background(Theme.Colors.surface)
+        } else if #available(macOS 26, *) {
+            if joined.isEmpty {
+                content.glassEffect(.regular, in: Rectangle())
+            } else {
+                // The glass runs on past the joined edges and is cut at the
+                // bar's frame, which leaves their rims outside. Not one
+                // GlassEffectContainer around the window: on macOS 27 it
+                // hangs the window when the search field takes focus.
+                content
+                    .background {
+                        Color.clear
+                            .glassEffect(.regular, in: Rectangle())
+                            .padding(joined, -Self.bleed)
+                    }
+                    .clipped()
+            }
+        } else {
+            content.background(.regularMaterial)
+        }
+    }
 }
 
 /// Thin scrollers that show only while scrolling, whatever the system's

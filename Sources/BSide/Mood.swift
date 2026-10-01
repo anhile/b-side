@@ -6,16 +6,22 @@ struct Mood: Identifiable, Equatable, Codable {
         case likedShuffled
         case playlist(id: String, shuffled: Bool)
         case radio(videoID: String)
+        /// Made from the user's words: the songs found for them, whose
+        /// radios play one after another.
+        case described(prompt: String, anchors: [String])
     }
 
     var id: String
     var name: String
     var source: Source
+    /// One of VibePalette's colours, when the user picked one.
+    var colour: Int?
 
-    init(id: String = UUID().uuidString, name: String, source: Source) {
+    init(id: String = UUID().uuidString, name: String, source: Source, colour: Int? = nil) {
         self.id = id
         self.name = name
         self.source = source
+        self.colour = colour
     }
 
     /// The tile every account starts with.
@@ -33,6 +39,7 @@ struct Mood: Identifiable, Equatable, Codable {
         case .likedShuffled: return PlayTarget(videoID: nil, listID: Tuning.likedMusicID, shuffle: true)
         case .playlist(let id, let shuffled): return PlayTarget(videoID: nil, listID: id, shuffle: shuffled)
         case .radio(let videoID): return PlayTarget(videoID: videoID, listID: nil)
+        case .described(_, let anchors): return PlayTarget(videoID: anchors.randomElement(), listID: nil) // a different start each time
         }
     }
 
@@ -42,6 +49,7 @@ struct Mood: Identifiable, Equatable, Codable {
         case .likedShuffled: return "heart.fill"
         case .playlist: return "music.note.list"
         case .radio: return "dot.radiowaves.left.and.right"
+        case .described: return "text.bubble"
         }
     }
 
@@ -57,6 +65,8 @@ struct Mood: Identifiable, Equatable, Codable {
             return shuffled ? "\(title), shuffled" : title
         case .radio:
             return "Radio"
+        case .described(let prompt, _):
+            return "“\(prompt)”"
         }
     }
 

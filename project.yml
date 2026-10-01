@@ -23,6 +23,8 @@ targets:
       path: Support/Info.plist
       properties:
         CFBundleDisplayName: B-Side
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSApplicationCategoryType: public.app-category.music
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
     settings:
@@ -33,6 +35,9 @@ targets:
         PRODUCT_NAME: B-Side
         PRODUCT_MODULE_NAME: BSide
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # B-Side's orange for system controls (Settings' toggles and tabs, a
+        # sheet's default button) while the system accent is Multicolor.
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: accent
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: "-"
         ENABLE_HARDENED_RUNTIME: NO

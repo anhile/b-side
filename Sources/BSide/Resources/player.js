@@ -67,8 +67,12 @@
   const ACCOUNT_ENDPOINT = '/youtubei/v1/account/account_menu?prettyPrint=false';
   const LIKE_ENDPOINT = '/youtubei/v1/like/like?prettyPrint=false';
   const UNLIKE_ENDPOINT = '/youtubei/v1/like/removelike?prettyPrint=false';
+  const CREATE_PLAYLIST_ENDPOINT = '/youtubei/v1/playlist/create?prettyPrint=false';
+  const EDIT_PLAYLIST_ENDPOINT = '/youtubei/v1/browse/edit_playlist?prettyPrint=false';
+  const REMOVE_ACTION = 'ACTION_REMOVE_VIDEO';
   const LIKE_KEY = 'likeStatus';        // inside a queue item: 'LIKE' or 'INDIFFERENT'
   const LIKED = 'LIKE';
+  const LIKED_PLAYLIST = 'LM';         // Liked Music: everything in it is liked
   const ACCOUNT_HEADER = 'activeAccountHeaderRenderer'; // carries accountName, channelHandle, accountPhoto (no email)
   const AVATAR_MIN_WIDTH = 64;
   const AUTH_COOKIES = ['SAPISID', '__Secure-3PAPISID'];
@@ -90,6 +94,7 @@
   let announcedFor = ''; // track whose version and quality were already logged
   let lastQueueBytes = 0;
   let queueContinuation = null;
+  let queueListId = '';  // the playlist the queue came from, '' for a radio
   let refilling = false;
   let volume = 100;      // 0 to 100, set by the app
   let repeat = 'off';    // 'off', 'all' (the queue again from the top) or 'one' (this track again), set by the app
@@ -323,6 +328,8 @@
     if (!versions.length) return null;
     const song = versions.find(function (item) { return find(item, TYPE_KEY) === AUDIO_TYPE; });
     const chosen = (config.audioOnly && song) || versions[0];
+    // The version the playlist holds, and its place there, for removing it.
+    const held = versions.find(function (item) { return item.playlistSetVideoId; });
     return {
       id: chosen.videoId,
       versions: versions.map(function (item) { return item.videoId; }),
@@ -331,9 +338,16 @@
       artist: find(chosen.shortBylineText, 'text') || find(chosen.longBylineText, 'text') || '',
       artwork: thumbnail(chosen.thumbnail),
       thumb: thumbnail(chosen.thumbnail, ROW_ARTWORK_MIN_WIDTH),
-      like: find(chosen, LIKE_KEY) || '', // '' when the item does not say
+      // A like belongs to the track, whichever version got it: a liked video
+      // plays as its song version with audio only on.
+      like: versions.some(function (item) { return find(item, LIKE_KEY) === LIKED; })
+        ? LIKED : (find(chosen, LIKE_KEY) || ''), // '' when the item does not say
       artistId: linked(chosen.longBylineText, ARTIST_PREFIX),
       albumId: linked(chosen.longBylineText, ALBUM_PREFIX),
+      setId: held ? held.playlistSetVideoId : '',
+      // YouTube Music offers "Remove from playlist" only on the owner's.
+      removable: !!held && JSON.stringify(held).indexOf(REMOVE_ACTION) !== -1,
+      heldId: held ? held.videoId : '',
     };
   }
 
@@ -361,9 +375,19 @@
 
   function describe(tracks, source) {
     const songs = tracks.filter(function (entry) { return entry.audio; }).length;
+    const liked = tracks.filter(function (entry) { return entry.like === LIKED; }).length;
+    const unknown = tracks.filter(function (entry) { return !entry.like; }).length;
     return tracks.length + ' tracks from ' + source + ': ' + songs + ' songs, ' + (tracks.length - songs)
-      + ' videos, ' + (queueContinuation ? 'more available' : 'complete')
+      + ' videos, ' + liked + ' liked, ' + unknown + ' like unknown, '
+      + (queueContinuation ? 'more available' : 'complete')
       + ' (response ' + Math.round(lastQueueBytes / 1024) + ' KB)';
+  }
+
+  // Everything in Liked Music is liked, whether or not each item says so.
+  function markLiked(tracks, listId) {
+    if (listId !== LIKED_PLAYLIST) return tracks;
+    tracks.forEach(function (entry) { if (!entry.like) entry.like = LIKED; });
+    return tracks;
   }
 
   function setQueue(page, source) {
@@ -381,7 +405,7 @@
     try {
       const page = await fetchQueue({ continuation: token });
       if (queueContinuation !== token) return; // a different queue was loaded meanwhile
-      queue = queue.concat(page.tracks);
+      queue = queue.concat(markLiked(page.tracks, queueListId));
       queueContinuation = page.tracks.length ? page.continuation : null;
       event('queue', describe(queue, 'next page'));
     } catch (e) {
@@ -418,6 +442,8 @@
       if (shuffle) body.params = SHUFFLE_PARAMS;
       const page = await fetchQueue(body);
       if (!page.tracks.length) return event('error', 'load: playlist ' + id + ' is empty or not accessible');
+      queueListId = id;
+      markLiked(page.tracks, id);
       setQueue(page, shuffle ? 'shuffled playlist' : 'playlist');
       const start = (options && options.startIndex) || config.startIndex || 0;
       playAt(Math.min(start, queue.length - 1), 0);
@@ -431,6 +457,7 @@
     if (!page.tracks.length || page.tracks[0].versions.indexOf(id) === -1) {
       page.tracks.unshift({ id: id, versions: [id], audio: false });
     }
+    queueListId = '';
     setQueue(page, 'radio');
     playAt(0, startSeconds);
   }
@@ -465,16 +492,21 @@
     post({
       type: 'tracks', listId: listing.id, append: append, more: !!listing.continuation,
       items: items.map(function (entry) {
-        return { videoId: entry.id, title: entry.title, artist: entry.artist, artwork: entry.thumb };
+        return { videoId: entry.id, title: entry.title, artist: entry.artist, artwork: entry.thumb,
+                 setVideoId: entry.setId || '', heldVideoId: entry.heldId || '', removable: !!entry.removable };
       }),
     });
-    event('tracks', listing.tracks.length + ' tracks listed' + (listing.continuation ? ', more available' : ''));
+    const removable = listing.tracks.filter(function (entry) { return entry.removable; }).length;
+    const placed = listing.tracks.filter(function (entry) { return entry.setId; }).length;
+    event('tracks', listing.tracks.length + ' tracks listed, ' + placed + ' with a place, ' + removable + ' removable'
+      + (listing.continuation ? ', more available' : ''));
   }
 
   function playListing(id, index) {
     if (!player) return event('error', 'load: player not ready');
     if (!listing || listing.id !== id || !listing.tracks[index]) return event('error', 'load: the track list changed');
-    queue = listing.tracks.slice();
+    queue = markLiked(listing.tracks.slice(), id);
+    queueListId = id;
     queueContinuation = listing.continuation;
     event('queue', describe(queue, 'playlist from track ' + (index + 1)));
     playAt(index, 0);
@@ -570,6 +602,18 @@
     event('search', kind + ': ' + items.length + ' results (' + Math.round(bytes / 1024) + ' KB)');
   }
 
+  // Songs for a query, returned to the caller instead of posted: the vibe
+  // maker asks several at once and must not touch the Explore page.
+  async function findSongs(query) {
+    const text = await api(SEARCH_ENDPOINT, { query: query, params: SEARCH_FILTERS.songs[0] });
+    const items = [];
+    cut(text, [SEARCH_ITEM], function (key, node) {
+      const item = listItem(node);
+      if (item && item.videoId) items.push(item);
+    });
+    return items;
+  }
+
   // An artist's page: name, photo, top songs and the playlist of all their
   // songs, then rows of albums, singles, playlists and related artists.
   async function artist(id) {
@@ -638,23 +682,71 @@
   async function playlists() {
     const text = await api(BROWSE_ENDPOINT, { browseId: LIBRARY_PLAYLISTS });
     const items = [];
+    const shapes = []; // per tile: subtitle parts, d = can delete, e = can edit
     cut(text, [LIBRARY_ITEM], function (key, node) {
       const browseId = find(node.navigationEndpoint, 'browseId') || '';
       const title = find(node.title, 'text') || '';
       if (browseId.indexOf(PLAYLIST_BROWSE_PREFIX) !== 0 || !title) return; // e.g. the "New playlist" tile
       const subtitle = ((node.subtitle && node.subtitle.runs) || []).map(function (run) { return run.text; }).join('');
+      const raw = JSON.stringify(node);
+      shapes.push(((node.subtitle && node.subtitle.runs) || []).filter(function (run) { return run.text !== ' • '; }).length
+        + (raw.indexOf('deletePlaylistEndpoint') !== -1 ? 'd' : '') + (raw.indexOf('playlistEditEndpoint') !== -1 ? 'e' : ''));
       items.push({
         id: browseId.slice(PLAYLIST_BROWSE_PREFIX.length),
         title: title,
         subtitle: subtitle,
         artwork: thumbnail(node.thumbnailRenderer),
+        // Only the owner's tiles offer "Delete playlist".
+        own: raw.indexOf('deletePlaylistEndpoint') !== -1,
       });
     });
     post({ type: 'playlists', items: items });
-    event('library', items.length + ' playlists (response ' + Math.round(text.length / 1024) + ' KB)');
+    event('library', items.length + ' playlists (response ' + Math.round(text.length / 1024) + ' KB), shapes ' + shapes.join(' '));
+  }
+
+  // A new private playlist, with the track in it when one is given. The
+  // library is asked again so the list shows it.
+  async function createPlaylist(title, videoId) {
+    const text = await api(CREATE_PLAYLIST_ENDPOINT,
+      { title: title, privacyStatus: 'PRIVATE', videoIds: videoId ? [videoId] : [] });
+    const id = JSON.parse(text).playlistId || '';
+    if (!id) throw new Error('no playlist id in the reply');
+    post({ type: 'playlistEdit', action: 'created', playlistId: id, title: title, videoId: videoId || '' });
+    event('playlist', 'created' + (videoId ? ' with ' + videoId : ' empty'));
+    await playlists();
+  }
+
+  // Adds a track at the end, as YouTube Music does, and skips it when it is
+  // there already: an empty list of results then says so.
+  async function addToPlaylist(playlistId, videoId) {
+    const text = await api(EDIT_PLAYLIST_ENDPOINT, { playlistId: playlistId, actions: [
+      { action: 'ACTION_ADD_VIDEO', addedVideoId: videoId, dedupeOption: 'DEDUPE_OPTION_SKIP' }] });
+    const reply = JSON.parse(text);
+    if (reply.status !== 'STATUS_SUCCEEDED') throw new Error('status ' + reply.status);
+    const added = (reply.playlistEditResults || []).length > 0;
+    post({ type: 'playlistEdit', action: added ? 'added' : 'already', playlistId: playlistId, title: '', videoId: videoId });
+    event('playlist', (added ? 'added ' : 'already had ') + videoId);
+    await playlists();
+  }
+
+  // Takes one entry out of a playlist by its place there; the open list
+  // drops it too, so playing from a track still finds the right one.
+  async function removeFromPlaylist(playlistId, videoId, setVideoId) {
+    const text = await api(EDIT_PLAYLIST_ENDPOINT, { playlistId: playlistId, actions: [
+      { action: 'ACTION_REMOVE_VIDEO', removedVideoId: videoId, setVideoId: setVideoId }] });
+    const reply = JSON.parse(text);
+    if (reply.status !== 'STATUS_SUCCEEDED') throw new Error('status ' + reply.status);
+    if (listing && listing.id === playlistId) {
+      listing.tracks = listing.tracks.filter(function (entry) { return entry.setId !== setVideoId; });
+      postTracks(listing.tracks, false);
+    }
+    post({ type: 'playlistEdit', action: 'removed', playlistId: playlistId, title: '', videoId: videoId });
+    event('playlist', 'removed ' + videoId);
+    await playlists();
   }
 
   window.__bside = {
+    findSongs(query) { return findSongs(query); },
     load(kind, id, startSeconds, options) {
       load(kind, id, startSeconds, options).catch(function (e) { event('error', 'load: ' + e); });
     },
@@ -699,6 +791,15 @@
     collection: collection,
     lyrics(videoId) {
       lyrics(videoId).catch(function (e) { event('error', 'lyrics: ' + e); });
+    },
+    createPlaylist(title, videoId) {
+      createPlaylist(title, videoId).catch(function (e) { event('error', 'playlist edit: ' + e); });
+    },
+    removeFromPlaylist(playlistId, videoId, setVideoId) {
+      removeFromPlaylist(playlistId, videoId, setVideoId).catch(function (e) { event('error', 'playlist edit: ' + e); });
+    },
+    addToPlaylist(playlistId, videoId) {
+      addToPlaylist(playlistId, videoId).catch(function (e) { event('error', 'playlist edit: ' + e); });
     },
     like(videoId, on) {
       api(on ? LIKE_ENDPOINT : UNLIKE_ENDPOINT, { target: { videoId: videoId } }).then(function () {
