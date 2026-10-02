@@ -1,7 +1,8 @@
 # Plan: the B-Side vibe server
 
-Draft 2026-10-01; the owner's decisions are in section 8. Step 1 is in
-progress.
+Started 2026-10-01; the owner's decisions are in section 8. Steps 1 to 3
+and the launch are done (sections 5a to 5d); step 4, the comparison with
+Apple's model on 30 prompts, is still open.
 Background: [docs/research/vibe-from-prompt.md](../research/vibe-from-prompt.md).
 
 ## 1. Goal
@@ -222,6 +223,15 @@ Built and tested:
 Tested with `-vibeServer http://localhost:3000 -makeVibe "<words>"`
 against `npm run dev` in `server/`, and against an unreachable address.
 Not tried by Claude: clicking through the Settings tab and the sheet.
+
+## 5d. Launch (2026-10-02)
+
+- **The owner** set the $20 monthly AI Gateway budget and added the
+  CNAME `api.b-side` → `4e04ef00b9a2f734.vercel-dns-017.com` at Porkbun.
+- **Production** is open (`VIBE_OPEN=1`) at `https://api.b-side.anhile.com`,
+  also `b-side-server.vercel.app`. The certificate came within a minute.
+- **The app's default address** is that domain. The switch in Settings
+  stays off by default.
 
 ## 6. What stays out
 
