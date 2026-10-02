@@ -305,7 +305,7 @@ struct Artwork: View {
     var placeholder = "music.note"
 
     var body: some View {
-        AsyncImage(url: url) { image in
+        AsyncImage(url: url?.withoutBars) { image in
             image.resizable().aspectRatio(contentMode: .fill)
         } placeholder: {
             Rectangle()
