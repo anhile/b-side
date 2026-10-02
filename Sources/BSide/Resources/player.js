@@ -527,6 +527,22 @@
       if (!page.tracks.length) return event('error', 'load: playlist ' + id + ' is empty or not accessible');
       queueListId = id;
       markLiked(page.tracks, id);
+      // Resuming a track: where it is in the list, or before the list when
+      // it is not on this page (a shuffled list is in a new order each time).
+      const wanted = options && options.videoId;
+      if (wanted) {
+        let at = page.tracks.findIndex(function (entry) { return entry.versions.indexOf(wanted) !== -1; });
+        if (at === -1) {
+          const known = options.track || {};
+          page.tracks.unshift({ id: wanted, versions: [wanted], audio: false, title: known.title || '',
+                                artist: known.artist || '', artwork: known.artwork || '', thumb: known.artwork || '',
+                                like: known.like || '', artistId: known.artistId || '', albumId: known.albumId || '' });
+          at = 0;
+        }
+        setQueue(page, 'playlist, resuming ' + wanted + ' at track ' + (at + 1));
+        playAt(at, startSeconds);
+        return;
+      }
       setQueue(page, shuffle ? 'shuffled playlist' : 'playlist');
       const start = (options && options.startIndex) || config.startIndex || 0;
       playAt(Math.min(start, queue.length - 1), 0);
@@ -552,6 +568,7 @@
 
   async function tracks(id) {
     const page = await fetchQueue({ playlistId: id });
+    markLiked(page.tracks, id);
     listing = { id: id, tracks: page.tracks, continuation: page.continuation, loading: false };
     postTracks(page.tracks, false);
   }
@@ -563,6 +580,7 @@
     try {
       const page = await fetchQueue({ continuation: current.continuation });
       if (listing !== current) return; // another playlist was opened meanwhile
+      markLiked(page.tracks, current.id);
       current.tracks = current.tracks.concat(page.tracks);
       current.continuation = page.tracks.length ? page.continuation : null;
       postTracks(page.tracks, true);

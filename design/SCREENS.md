@@ -30,6 +30,9 @@ bar and under Command-comma. Starting music never switches the page.
   The same line is under "Advertisement" in the strip. Without a time from
   the player, the ad's own title, as before.
 - What we removed or deferred: shuffle toggle, dragging tracks in Up Next
+- At launch: the track that played last, paused where it stopped (as Music
+  and Spotify do); Play goes on from there, in the same playlist or vibe.
+  "Nothing playing" only before the first track ever, and after signing out
 - States: nothing playing (record alone, "Nothing playing", Play Vibe) /
   loading ("Loading…") / ad ("Advertisement", seek disabled) / long title (one
   line, tail truncation, tooltip) / no artwork (surface placeholder with a

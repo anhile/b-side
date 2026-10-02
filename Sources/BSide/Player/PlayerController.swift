@@ -121,6 +121,8 @@ final class PlayerController: NSObject, ObservableObject {
     private var webKitSessionChecked = false
 
     private var currentListID: String?
+    private var currentShuffle = false
+    private var savedSession: LastSession?
     /// Names of lists played from Explore, which are not in the library.
     private var listTitles: [String: (title: String, kind: SourceLabel.Kind)] = [:]
     private var playlistsAsked = Date.distantPast
@@ -245,6 +247,10 @@ final class PlayerController: NSObject, ObservableObject {
         window.center()
 
         nowPlaying.onCommand = { [weak self] in self?.receive($0, via: "system") }
+        NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil,
+                                               queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.saveSession() }
+        }
         MainWindow.onShow = { [weak self] in self?.wake() }
         applyNowPlayingSetting()
 
@@ -266,6 +272,7 @@ final class PlayerController: NSObject, ObservableObject {
             } else if let input = Settings.defaults.string(forKey: Keys.play), let target = PlayTarget(input) {
                 load(target, from: .other, startAt: nil)
             } else {
+                restoreSession()
                 // Wait for the launch to be classified: AppDelegate knows
                 // whether this is a start in the menu bar.
                 MainWindow.whenLaunched { [weak self] inMenuBar in
@@ -354,8 +361,86 @@ final class PlayerController: NSObject, ObservableObject {
     /// The page is about to be replaced: play the same track again once the
     /// new one is ready.
     private func rememberTrack(at position: Double) {
-        guard hasTrack, pendingTarget == nil else { return }
-        pendingTarget = (PlayTarget(videoID: state.videoID, listID: currentListID), position)
+        // A track that only waits for Play (restored, or unloaded) stays waiting.
+        guard hasTrack, pendingTarget == nil, unloaded == nil else { return }
+        pendingTarget = (currentTarget, position)
+    }
+
+    /// The track that plays, in the list it plays from.
+    private var currentTarget: PlayTarget {
+        PlayTarget(videoID: state.videoID, listID: currentListID, shuffle: currentShuffle)
+    }
+
+    // MARK: - The last session
+
+    /// Kept on every pause and track change, once a minute while playing,
+    /// and at quit: the next launch shows this track, paused where it was.
+    private func saveSession() {
+        guard hasTrack, !state.isAd, !Settings.isSnapshot else { return }
+        var kind = "other", id = ""
+        switch source {
+        case .mood(let mood): kind = "mood"; id = mood
+        case .playlist(let list): kind = "playlist"; id = list
+        case .other, nil: break
+        }
+        let known = currentListID.flatMap { listTitles[$0] }
+        let listKind: String? = switch known?.kind {
+        case .album: "album"
+        case .artist: "artist"
+        case .playlist: "playlist"
+        default: nil
+        }
+        let session = LastSession(
+            videoID: state.videoID, title: state.title, artist: state.artist,
+            artwork: state.artworkURL?.absoluteString, artistID: state.artistID, albumID: state.albumID,
+            like: state.like, position: unloaded?.position ?? position(at: Date()), duration: state.duration,
+            listID: currentListID, shuffle: currentShuffle, sourceKind: kind, sourceID: id,
+            listTitle: known?.title, listKind: listKind)
+        guard session != savedSession else { return }
+        savedSession = session
+        session.save()
+    }
+
+    /// Shows the last session's track, paused. The page is not asked for
+    /// anything: Play loads the track at its position, as after "unload
+    /// when paused".
+    private func restoreSession() {
+        guard !hasTrack, pendingTarget == nil, let session = LastSession.load() else { return }
+        savedSession = session
+        var restored = PlayerState()
+        restored.videoID = session.videoID
+        restored.title = session.title
+        restored.artist = session.artist
+        restored.artworkURL = session.artwork.flatMap(URL.init(string:))
+        restored.artistID = session.artistID
+        restored.albumID = session.albumID
+        restored.like = session.like
+        restored.position = session.position
+        restored.duration = session.duration
+        // Play, Next and Previous are the page's to answer once it plays.
+        restored.queueIndex = 0
+        restored.queueCount = 1
+        state = restored
+        clock = PlaybackClock(restored, at: Date())
+        currentListID = session.listID
+        currentShuffle = session.shuffle
+        source = switch session.sourceKind {
+        case "mood": .mood(session.sourceID)
+        case "playlist": .playlist(session.sourceID)
+        default: .other
+        }
+        if let list = session.listID, let title = session.listTitle {
+            let kind: SourceLabel.Kind = switch session.listKind {
+            case "album": .album
+            case "artist": .artist
+            default: .playlist
+            }
+            listTitles[list] = (title, kind)
+        }
+        unloaded = (currentTarget, session.position)
+        nowPlaying.update(restored)
+        EventLog.write("restored\t\(session.videoID)\tat \(Int(session.position)) s")
+        if Settings.bool(Keys.resume) { play() }
     }
 
     // MARK: - Commands
@@ -493,6 +578,7 @@ final class PlayerController: NSObject, ObservableObject {
 
     func seek(to seconds: Double) {
         bridge.call("seek", seconds)
+        unloaded?.position = seconds // a track that waits for Play starts from there
         // Shown at once; the page confirms with its next report.
         state.position = seconds
         clock = PlaybackClock(state, at: Date())
@@ -978,6 +1064,7 @@ final class PlayerController: NSObject, ObservableObject {
         problem = nil
         source = newSource
         currentListID = target.listID
+        currentShuffle = target.shuffle
         EventLog.write("load\t\(target.videoID ?? "-")\t\(target.listID ?? "-")\(target.shuffle ? "\tshuffle" : "")")
         if pageReady {
             sendToPage(target, startAt: position)
@@ -988,8 +1075,18 @@ final class PlayerController: NSObject, ObservableObject {
     }
 
     private func sendToPage(_ target: PlayTarget, startAt position: Double?) {
-        // Resuming a track wins over restarting its playlist from the top.
-        if let video = target.videoID, position != nil || target.listID == nil {
+        if let video = target.videoID, let list = target.listID, let position {
+            // Resuming: the same track at its position, and the list goes
+            // on after it.
+            bridge.call("load", "playlist", list, position, [
+                "shuffle": target.shuffle, "videoId": video,
+                // What is known of the track, for when the list's first
+                // page does not have it.
+                "track": ["title": state.title, "artist": state.artist, "like": state.like,
+                          "artwork": state.artworkURL?.absoluteString ?? "",
+                          "artistId": state.artistID, "albumId": state.albumID],
+            ])
+        } else if let video = target.videoID, target.listID == nil || position != nil {
             bridge.call("load", "video", video, position ?? 0)
         } else if let list = target.listID {
             bridge.call("load", "playlist", list, 0, ["shuffle": target.shuffle, "startIndex": target.startIndex])
@@ -1042,6 +1139,8 @@ final class PlayerController: NSObject, ObservableObject {
         unloaded = nil
         source = nil
         currentListID = nil
+        savedSession = nil
+        LastSession.clear() // it may be from the account's own playlists
         state = PlayerState()
         nowPlaying.update(state)
         playlists = []
@@ -1100,6 +1199,9 @@ final class PlayerController: NSObject, ObservableObject {
         }
         if new.isPlaying != old.isPlaying {
             playingChanged(new.isPlaying)
+        }
+        if new.isPlaying != old.isPlaying || new.videoID != old.videoID || new.title != old.title {
+            saveSession()
         }
         if new.isPlaying, !webKitSessionChecked {
             webKitSessionChecked = true
@@ -1208,7 +1310,7 @@ final class PlayerController: NSObject, ObservableObject {
     /// it again on the next Play.
     private func unloadAfterPause(minutes: Int) {
         guard !state.isPlaying, hasTrack else { return }
-        unloaded = (PlayTarget(videoID: state.videoID, listID: currentListID), state.position)
+        unloaded = (currentTarget, state.position)
         EventLog.write("unloaded after \(minutes) min paused")
         webView.load(URLRequest(url: URL(string: "about:blank")!))
     }
@@ -1222,6 +1324,7 @@ final class PlayerController: NSObject, ObservableObject {
         // advancing while "playing" is a silent stop.
         sampleCount += 1
         if sampleCount % 12 == 0 {
+            saveSession() // where a track is, should the app be killed
             let stalled = state.isPlaying && state.position == lastHeartbeatPosition
             EventLog.write("\(stalled ? "STALLED" : "heartbeat")\t\(state.isPlaying ? "playing" : "paused")\t"
                 + "\(Int(state.position))s\t\(state.videoID)\t\(Int(totalMegabytes)) MB"
