@@ -220,13 +220,15 @@ Permissions background:
 
 ## 7. Open questions and proposed experiments
 
-All experiments go into `spikes/default-player/`, not into `Sources/`. I have
+All experiments go into `spikes/default-player/`, not into `Sources/`. (The
+folder was removed before the release; the code and raw results of the ones
+that were run are in the git history, at commit `e72e39d`.) I have
 not run any of them; each needs your go-ahead, and some need your hands
 (keys, AirPods).
 
 1. **Eligibility at launch. Done 2026-09-30** on macOS 27.0.1, one F8 press
    per round, B-Side, Music and Spotify quit
-   ([spike](../../spikes/default-player/README.md)):
+   (spike):
 
    | Round | Command received | Music launched |
    |---|---|---|
@@ -244,7 +246,7 @@ not run any of them; each needs your go-ahead, and some need your hands
    playing in between (that is experiment 2).
 2. **App stack. Done 2026-09-30** on macOS 27.0.1, one F8 press per round.
    A "home" spike claimed the key as B-Side does, then another player took it
-   ([spike](../../spikes/default-player/README.md)):
+   (spike):
 
    | What the other player did before the press | Home got | Other got | Music launched |
    |---|---|---|---|
@@ -267,7 +269,7 @@ not run any of them; each needs your go-ahead, and some need your hands
    take over from a player the user chose more recently, so it should happen
    only on an explicit action (starting playback in B-Side already does it).
 3. **AirPods. Done 2026-09-30** on macOS 27.0.1 with AirPods connected to
-   this Mac ([spike](../../spikes/default-player/README.md)):
+   this Mac (spike):
 
    | Setup | Action | Received | Music launched |
    |---|---|---|---|

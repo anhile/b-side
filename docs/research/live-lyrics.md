@@ -1,8 +1,9 @@
 # Live (time-synced) lyrics in B-Side
 
 Research only, no code changes. Written 2026-09-30. Experiments 1 and 3 were
-run the same day; their results are in section 8 and in
-[spikes/live-lyrics](../../spikes/live-lyrics/README.md).
+run the same day; their results are in section 8. The spike's code was in
+`spikes/live-lyrics/`, removed before the release; it is in the git history,
+at commit `e72e39d`.
 
 ## 1. Short answer
 
@@ -135,7 +136,7 @@ This is not decided, only the options the data allows:
 
 ## 6. Proposed experiments (1 and 3 run, see section 8)
 
-All of them would go in `spikes/live-lyrics/`, with no change to `Sources/`.
+All of them went in `spikes/live-lyrics/`, with no change to `Sources/`.
 
 1. **Coverage and agreement.** A script with about 40 public tracks: English
    pop and rock, Russian, K-pop, hip-hop, old catalogue, a few music videos and
