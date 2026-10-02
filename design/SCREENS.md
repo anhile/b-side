@@ -16,11 +16,16 @@ bar and under Command-comma. Starting music never switches the page.
 - Secondary actions: Next, Previous, seek, volume (speaker opens a popover)
 - Attention order: 1) artwork 160 with the record showing from behind on the
   right 2) title and artist 3) progress 4) transport
-- Like: a heart at the end of the title line, always in view; muted, and
-  orange and filled once liked. As much room is kept free before the title,
-  so it stays centred. Not on the artwork's hover, which keeps Lyrics and
-  Repeat.
-- Up Next: a list button before the title, as wide as Like after it. It
+- Title and artist start at the left edge, in line with the progress bar; a
+  long title scrolls. What can be done with the track comes after them:
+  Like, then the track's menu ("…"). Both are muted and without glass, so
+  they weigh the same (since 2026-10-02; before, Up Next and Like stood on
+  the two sides of a centred title, which squeezed it and put an unrelated
+  pair in balance).
+- Like: a heart, always in view; orange and filled once liked. Not on the
+  artwork's hover, which keeps Lyrics and Repeat. Hidden during an ad.
+- Up Next: a list button in a glass circle at the end of the transport row,
+  mirroring the speaker at its start; both open something. It
   puts what plays next in the artwork's place (as Lyrics do; one of the two
   at a time) and is orange while the list shows. A click on a track jumps to
   it; its menu is a track's menu plus Remove from Up Next. The next 30

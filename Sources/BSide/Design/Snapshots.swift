@@ -172,6 +172,7 @@ enum Snapshots {
     }
 
     static func render(into folder: URL) async {
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         await renderNewVibe(into: folder)
         await renderSettings(into: folder)
         await renderPage(.nowPlaying, player: .fixture(state: track, source: .mood(Mood.liked.id)),
@@ -281,7 +282,6 @@ enum Snapshots {
                          name: "vibe-reduce-transparency", appearance: .darkAqua, into: folder,
                          reduceTransparency: true)
         EventLog.write("snapshot: rendering \(cases.count) cases into \(folder.path)")
-        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         NSSetUncaughtExceptionHandler { exception in
             EventLog.write("snapshot: exception \(exception.name.rawValue): \(exception.reason ?? "")")
         }

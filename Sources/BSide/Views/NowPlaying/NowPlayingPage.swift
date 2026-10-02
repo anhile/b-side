@@ -29,15 +29,11 @@ struct NowPlayingPage: View {
             artworkZone
                 .layoutPriority(1) // the record takes the free height, not the gaps
             Spacer(minLength: Theme.Space.s)
-            // Up Next before the title and Like after it, always in view;
-            // the two are as wide, so the title stays centred.
-            HStack(spacing: Theme.Space.xxs) {
-                queueButton
-                VStack(spacing: Theme.Space.xxs) {
-                    Text(title)
-                        .font(Theme.Text.title)
-                        .foregroundStyle(Theme.Colors.text)
-                        .lineLimit(1)
+            // The track's name from the left edge, and what can be done
+            // with the track after it: Like and the menu, always in view.
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: Theme.Space.xxs) {
+                    MarqueeText(text: title, font: Theme.Text.title, color: Theme.Colors.text)
                         .help(title)
                     if player.state.isAd, player.state.adLeft >= 0 {
                         AdCountdown(font: Theme.Text.body)
@@ -57,10 +53,13 @@ struct NowPlayingPage: View {
                         .help("Show \(subtitle)")
                     }
                 }
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 likeButton
+                trackMenu
             }
-            .padding(.horizontal, Theme.Space.m)
+            .padding(.leading, Theme.Space.m)
+            // The menu's dots sit over the middle of the Up Next circle.
+            .padding(.trailing, Theme.Space.m + (Theme.Size.transportBar - Theme.Size.transportTarget) / 2)
             Spacer(minLength: Theme.Space.m)
             progress
                 .padding(.horizontal, Theme.Space.m)
@@ -72,14 +71,15 @@ struct NowPlayingPage: View {
     }
 
     /// Opens the list of what plays next in the artwork's place, and closes
-    /// it; orange while it shows.
+    /// it; orange while it shows. Its circle mirrors the speaker's.
     private var queueButton: some View {
         TransportButton(symbol: "list.bullet", label: showsQueue ? "Hide Up Next" : "Up Next",
-                        color: showsQueue ? Theme.Colors.accentText : Theme.Colors.textMuted) {
+                        target: Theme.Size.transportBar,
+                        color: showsQueue ? Theme.Colors.accentText : Theme.Colors.text) {
             navigation.showsQueue.toggle()
         }
-        .opacity(player.state.isAd ? 0 : 1)
         .disabled(player.state.isAd)
+        .glass(in: Circle())
     }
 
     /// Orange and filled once liked. An ad cannot be liked: the button
@@ -246,7 +246,7 @@ struct NowPlayingPage: View {
     }
 
     /// Previous, Play and Next share one glass capsule, centred; the speaker
-    /// has its own circle on the left and the track menu one on the right.
+    /// has its own circle on the left and Up Next one on the right.
     /// All three are the same height.
     private var transport: some View {
         // Each button is as tall as the capsule, so its hover fills it and
@@ -263,7 +263,7 @@ struct NowPlayingPage: View {
         .glass(in: Capsule())
         .frame(maxWidth: .infinity)
         .overlay(alignment: .leading) { volumeButton }
-        .overlay(alignment: .trailing) { trackMenu }
+        .overlay(alignment: .trailing) { queueButton }
     }
 
     /// What can be done with the track itself: Like with its shortcut, then
@@ -297,15 +297,14 @@ struct NowPlayingPage: View {
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: Theme.Size.transportGlyph, weight: .semibold))
-                .foregroundStyle(Theme.Colors.text)
-                .frame(width: Theme.Size.transportBar, height: Theme.Size.transportBar)
+                .foregroundStyle(Theme.Colors.textMuted)
+                .frame(width: Theme.Size.transportTarget, height: Theme.Size.transportTarget)
                 .contentShape(Circle())
         }
         .menuStyle(.button)
         .buttonStyle(PressableStyle())
         .menuIndicator(.hidden)
         .pointingHand()
-        .glass(in: Circle())
         .help("More")
         .accessibilityLabel("More")
     }
