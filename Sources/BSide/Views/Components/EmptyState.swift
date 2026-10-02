@@ -44,7 +44,7 @@ struct EmptyState: View {
 func blockingState(for player: PlayerController) -> EmptyState? {
     if case .failed(let reason) = player.phase {
         return EmptyState(symbol: "exclamationmark.triangle", title: "The player did not start",
-                          message: reason, actionTitle: "Try Again") { player.retry() }
+                          message: reason, actionTitle: "Try Again", action: { player.retry() })
     }
     switch player.account {
     case .unknown:

@@ -222,10 +222,7 @@ final class PlayerController: NSObject, ObservableObject {
             if let command { self?.receive(command, via: "page") }
         }
         bridge.onPlaylistEdit = { [weak self] in self?.playlistEdited($0, id: $1, title: $2, videoID: $3) }
-        bridge.onPlaylists = { [weak self] in
-            self?.playlists = $0
-            self?.playlistsState = .loaded
-        }
+        bridge.onPlaylists = { [weak self] in self?.receive(playlists: $0) }
         installScripts()
 
         webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 1000, height: 720), configuration: configuration)
@@ -259,7 +256,7 @@ final class PlayerController: NSObject, ObservableObject {
             Task { @MainActor in self?.sampleProcesses() }
         }
 
-        Task {
+        Task { [self] in
             // The rules must be in place before the first request goes out.
             await installContentRules()
             if let text = Settings.defaults.string(forKey: Keys.url), let url = URL(string: text) {
@@ -693,6 +690,38 @@ final class PlayerController: NSObject, ObservableObject {
     /// whatever their subtitles say.
     private var ownedPlaylistIDs: Set<String> = []
 
+    /// Playlists made here that the library has not listed yet. YouTube
+    /// Music's library learns of a new playlist a minute or two after it is
+    /// made, so the list asked for right away comes back without it.
+    private var newPlaylists: [(playlist: Playlist, made: Date)] = []
+
+    private func receive(playlists listed: [Playlist]) {
+        let now = Date()
+        newPlaylists.removeAll { new in
+            listed.contains { $0.id == new.playlist.id }
+                || now.timeIntervalSince(new.made) > Tuning.newPlaylistWaitSeconds
+        }
+        playlists = withNew(listed)
+        playlistsState = .loaded
+        guard !newPlaylists.isEmpty else { return }
+        // Ask again until the library has them.
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(Tuning.newPlaylistRetrySeconds))
+            guard let self, !self.newPlaylists.isEmpty else { return }
+            self.loadPlaylists()
+        }
+    }
+
+    /// The library's list with the playlists it does not know yet, the
+    /// newest first, after Liked Music.
+    private func withNew(_ listed: [Playlist]) -> [Playlist] {
+        let missing = newPlaylists.map(\.playlist).filter { new in !listed.contains { $0.id == new.id } }
+        guard !missing.isEmpty else { return listed }
+        var all = listed
+        all.insert(contentsOf: missing.reversed(), at: all.first?.id == Tuning.likedMusicID ? 1 : 0)
+        return all
+    }
+
     /// Whether the open playlist's tracks can be taken out of it.
     var canEditOpenPlaylist: Bool {
         guard let id = openPlaylist?.id else { return false }
@@ -724,6 +753,10 @@ final class PlayerController: NSObject, ObservableObject {
     }
 
     private func playlistEdited(_ action: String, id: String, title: String, videoID: String) {
+        if action == "created", !playlists.contains(where: { $0.id == id }) {
+            newPlaylists.append((Playlist(id: id, title: title, isOwn: true), Date()))
+            playlists = withNew(playlists)
+        }
         if !videoID.isEmpty {
             if action == "removed" {
                 playlistsHolding[videoID]?.remove(id)

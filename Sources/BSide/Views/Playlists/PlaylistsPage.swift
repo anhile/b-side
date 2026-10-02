@@ -40,7 +40,7 @@ struct PlaylistsPage: View {
             } else if player.account == .signedOut {
                 EmptyState(symbol: "person.crop.circle", title: "Sign in for your playlists",
                            message: "Your playlists and Liked Music live in your YouTube Music account.",
-                           actionTitle: "Sign In…") { player.showSignIn() }
+                           actionTitle: "Sign In…", action: { player.showSignIn() })
                     .padding(.top, Theme.Size.pageBar)
                     .padding(.bottom, footerRoom)
             } else {
@@ -120,7 +120,7 @@ struct PlaylistsPage: View {
                 .padding(.bottom, footerRoom)
         case .failed(let reason):
             EmptyState(symbol: "exclamationmark.triangle", title: "Could not load playlists",
-                       message: reason, actionTitle: "Try Again") { player.loadPlaylists() }
+                       message: reason, actionTitle: "Try Again", action: { player.loadPlaylists() })
                 .padding(.top, Theme.Size.pageBar)
                 .padding(.bottom, footerRoom)
         case .loaded:

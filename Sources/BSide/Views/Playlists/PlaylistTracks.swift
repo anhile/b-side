@@ -23,7 +23,7 @@ struct PlaylistTracks: View {
                 .padding(.bottom, footerRoom)
         case .failed(let reason):
             EmptyState(symbol: "exclamationmark.triangle", title: "Could not load the tracks",
-                       message: reason, actionTitle: "Try Again") { player.retryTracks() }
+                       message: reason, actionTitle: "Try Again", action: { player.retryTracks() })
                 .padding(.top, Theme.Size.pageBar)
                 .padding(.bottom, footerRoom)
         case .loaded where player.tracks.isEmpty:

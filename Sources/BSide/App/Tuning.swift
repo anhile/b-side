@@ -18,6 +18,10 @@ enum Tuning {
     /// The list of playlists is not asked for again sooner than this when
     /// the Playlists page comes into view.
     static let playlistsFreshSeconds: Double = 30
+    /// A playlist made here is shown at once and the library is asked again
+    /// this often until it lists it, for this long at most.
+    static let newPlaylistRetrySeconds: Double = 15
+    static let newPlaylistWaitSeconds: Double = 300
     /// How long the vibe maker waits for a sleeping player page to load.
     static let pageWaitSeconds: Double = 20
     /// Google sign-in tends to reject embedded web views ("This browser or app

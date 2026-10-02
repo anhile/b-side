@@ -181,7 +181,7 @@ struct ExplorePage: View {
                         .frame(maxHeight: .infinity, alignment: .top)
                 case .failed(let reason):
                     EmptyState(symbol: "exclamationmark.triangle", title: "Search failed",
-                               message: reason, actionTitle: "Try Again") { player.retrySearch() }
+                               message: reason, actionTitle: "Try Again", action: { player.retrySearch() })
                 case .loaded where player.searchResults.isEmpty:
                     EmptyState(symbol: "magnifyingglass", title: "Nothing found",
                                message: "Try other words, or another kind.")
@@ -258,7 +258,7 @@ struct PageState: View {
             if player.exploreFailures.contains(id) {
                 EmptyState(symbol: "exclamationmark.triangle", title: "Could not load this page",
                            message: "Check the connection and try again.",
-                           actionTitle: "Try Again") { player.retryExplorePage(id) }
+                           actionTitle: "Try Again", action: { player.retryExplorePage(id) })
             } else {
                 SkeletonList()
                     .frame(maxHeight: .infinity, alignment: .top)
