@@ -117,6 +117,7 @@ decipher signatures or download anything.
 | Something does not work | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) |
 | How it is built | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Building, running, testing | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) |
+| Making a signed, notarised release | [docs/RELEASING.md](docs/RELEASING.md) |
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | How it should look and behave | [DESIGN.md](DESIGN.md), [design/SCREENS.md](design/SCREENS.md) |
 | What data goes where | [PRIVACY.md](PRIVACY.md) |

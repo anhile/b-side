@@ -8,3 +8,4 @@ measurements/*.csv
 server/node_modules/
 server/.env*.local
 server/.vercel/
+dist/
