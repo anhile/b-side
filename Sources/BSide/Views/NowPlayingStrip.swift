@@ -47,20 +47,10 @@ struct NowPlayingStrip: View {
         }
     }
 
-    /// Right-click: the track's playlists, artist and album, as in Now
-    /// Playing's menu.
-    @ViewBuilder
+    /// Right-click: the menu every track has.
     private var trackMenu: some View {
-        AddToPlaylistMenu(videoID: player.state.isAd ? "" : player.state.videoID)
-        Divider()
-        Button { navigation.open(.artist(id: player.state.artistID, name: player.state.artist)) } label: {
-            Label("Go to Artist", systemImage: "person")
-        }
-        .disabled(player.state.artistID.isEmpty || player.state.isAd)
-        Button { navigation.open(.collection(id: player.state.albumID, title: "Album")) } label: {
-            Label("Go to Album", systemImage: "square.stack")
-        }
-        .disabled(player.state.albumID.isEmpty || player.state.isAd)
+        TrackMenu(videoID: player.state.isAd ? "" : player.state.videoID, artist: player.state.artist,
+                  artistID: player.state.artistID, albumID: player.state.albumID, liked: player.state.isLiked)
     }
 
     private func sourceLine(_ label: SourceLabel) -> some View {

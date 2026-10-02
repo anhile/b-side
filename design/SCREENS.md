@@ -14,7 +14,11 @@ bar and under Command-comma. Starting music never switches the page.
 - Secondary actions: Next, Previous, seek, volume (speaker opens a popover)
 - Attention order: 1) artwork 160 with the record showing from behind on the
   right 2) title and artist 3) progress 4) transport
-- What we removed or deferred: queue, like, shuffle toggle, lyrics
+- Like: a heart at the end of the title line, always in view; muted, and
+  orange and filled once liked. As much room is kept free before the title,
+  so it stays centred. Not on the artwork's hover, which keeps Lyrics and
+  Repeat.
+- What we removed or deferred: queue, shuffle toggle
 - States: nothing playing (record alone, "Nothing playing", Play Vibe) /
   loading ("Loading…") / ad ("Advertisement", seek disabled) / long title (one
   line, tail truncation, tooltip) / no artwork (surface placeholder with a
@@ -23,6 +27,22 @@ bar and under Command-comma. Starting music never switches the page.
   by swipe or dots
 
 Status: passed the rubric on 2026-09-30, iteration 2 (design/audit).
+
+## Menu: a track
+
+One menu wherever a track is listed or plays (a playlist's track, a search
+result, an album's track, the strip, Now Playing's "…"), added 2026-10-02:
+
+- Like or Remove Like
+- Add to Playlist (a submenu, checked where the track already is)
+- what only that place offers: Remove from Playlist in an own playlist;
+  Lyrics and Repeat on Now Playing
+- Start Radio: the track, then its radio
+- Go to Artist, Go to Album (disabled when YouTube Music does not link them)
+- Copy Link
+
+A list knows a track's like as of when it was loaded; likes set in B-Side
+since then win.
 
 ## Screen: Vibe
 

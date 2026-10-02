@@ -369,12 +369,13 @@ struct PlaylistTracks: View {
                     .buttonStyle(RowButtonStyle())
                     .help(track.title)
                     .contextMenu {
-                        AddToPlaylistMenu(videoID: track.videoID)
-                        if track.removable || player.canEditOpenPlaylist, !track.setVideoID.isEmpty,
-                           let playlist = player.openPlaylist {
-                            Divider()
-                            Button(role: .destructive) { player.remove(track, from: playlist) } label: {
-                                Label("Remove from Playlist", systemImage: "minus.circle")
+                        TrackMenu(videoID: track.videoID, artist: track.artist, artistID: track.artistID,
+                                  albumID: track.albumID, liked: track.liked) {
+                            if track.removable || player.canEditOpenPlaylist, !track.setVideoID.isEmpty,
+                               let playlist = player.openPlaylist {
+                                Button(role: .destructive) { player.remove(track, from: playlist) } label: {
+                                    Label("Remove from Playlist", systemImage: "minus.circle")
+                                }
                             }
                         }
                     }

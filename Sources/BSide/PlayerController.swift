@@ -89,6 +89,8 @@ final class PlayerController: NSObject, ObservableObject {
     /// The user's playlists that hold a track, by video ID: the checkmarks
     /// in Add to Playlist. Asked again each time the menu opens.
     @Published private(set) var playlistsHolding: [String: Set<String>] = [:]
+    /// Likes set and taken back here, by video ID, since the app started.
+    @Published private(set) var likeChanges: [String: Bool] = [:]
     private var askingHolding: Set<String> = []
     @Published private(set) var playlistsState = Loadable.idle
     /// Names of lists played from Explore, which are not in the library.
@@ -432,9 +434,28 @@ final class PlayerController: NSObject, ObservableObject {
     /// page confirms.
     func toggleLike() {
         guard hasTrack else { return }
-        let on = !state.isLiked
-        bridge.call("like", state.videoID, on)
-        state.like = on ? "LIKE" : "INDIFFERENT"
+        setLike(state.videoID, on: !state.isLiked)
+    }
+
+    /// Likes any track, or takes the like back: from a row's menu.
+    func setLike(_ videoID: String, on: Bool) {
+        guard !videoID.isEmpty else { return }
+        bridge.call("like", videoID, on)
+        likeChanges[videoID] = on
+        if hasTrack, videoID == state.videoID { state.like = on ? "LIKE" : "INDIFFERENT" }
+    }
+
+    /// A list knows a track's like as of when it was loaded; the playing
+    /// track and the likes set here since are newer.
+    func isLiked(_ videoID: String, listed: Bool) -> Bool {
+        if hasTrack, videoID == state.videoID, !state.like.isEmpty { return state.isLiked }
+        return likeChanges[videoID] ?? listed
+    }
+
+    /// The track, then its radio, as a click on a search result plays it.
+    func playRadio(of videoID: String) {
+        guard !videoID.isEmpty else { return }
+        load(PlayTarget(videoID: videoID, listID: nil), from: .other, startAt: nil)
     }
 
     private func assume(playing: Bool) {
@@ -890,8 +911,9 @@ final class PlayerController: NSObject, ObservableObject {
         defer { playTrackFromLaunchArgument() }
         let start = append ? tracks.count : 0
         let numbered = items.enumerated().map { offset, track in
-            Track(index: start + offset, videoID: track.videoID, title: track.title,
-                  artist: track.artist, artworkURL: track.artworkURL)
+            var track = track
+            track.index = start + offset
+            return track
         }
         tracks = append ? tracks + numbered : numbered
         tracksHaveMore = more

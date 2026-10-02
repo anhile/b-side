@@ -41,7 +41,7 @@ enum Snapshots {
 
     /// Name, page, and the situation to show.
     private static var cases: [(String, Page, PlayerController)] {
-        var paused = track; paused.isPlaying = false
+        var paused = track; paused.isPlaying = false; paused.like = "LIKE" // it plays from Liked Music
         var long = track
         long.title = "Everything In Its Right Place (Live at Glastonbury 2003, Remastered)"
         long.artist = "Radiohead feat. Someone With A Very Long Name Indeed"

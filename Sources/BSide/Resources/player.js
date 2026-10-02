@@ -497,12 +497,16 @@
       type: 'tracks', listId: listing.id, append: append, more: !!listing.continuation,
       items: items.map(function (entry) {
         return { videoId: entry.id, title: entry.title, artist: entry.artist, artwork: entry.thumb,
+                 like: entry.like || '', artistId: entry.artistId || '', albumId: entry.albumId || '',
                  setVideoId: entry.setId || '', heldVideoId: entry.heldId || '', removable: !!entry.removable };
       }),
     });
     const removable = listing.tracks.filter(function (entry) { return entry.removable; }).length;
     const placed = listing.tracks.filter(function (entry) { return entry.setId; }).length;
-    event('tracks', listing.tracks.length + ' tracks listed, ' + placed + ' with a place, ' + removable + ' removable'
+    const liked = listing.tracks.filter(function (entry) { return entry.like === LIKED; }).length;
+    const linked = listing.tracks.filter(function (entry) { return entry.artistId; }).length;
+    event('tracks', listing.tracks.length + ' tracks listed, ' + placed + ' with a place, ' + removable + ' removable, '
+      + liked + ' liked, ' + linked + ' with an artist page'
       + (listing.continuation ? ', more available' : ''));
   }
 
@@ -560,6 +564,7 @@
       detail: length || '',
       artistId: linked(byline, ARTIST_PREFIX),
       albumId: linked(byline, ALBUM_PREFIX),
+      like: find(node.menu, LIKE_KEY) || '', // '' when the row does not say
       artwork: thumbnail(node.thumbnail, ROW_ARTWORK_MIN_WIDTH),
     };
   }
@@ -603,7 +608,8 @@
       if (items.length) break;
     }
     post({ type: 'search', query: query, kind: kind, items: items });
-    event('search', kind + ': ' + items.length + ' results (' + Math.round(bytes / 1024) + ' KB)');
+    const liked = items.filter(function (item) { return item.like === LIKED; }).length;
+    event('search', kind + ': ' + items.length + ' results, ' + liked + ' liked (' + Math.round(bytes / 1024) + ' KB)');
   }
 
   // Songs for a query, returned to the caller instead of posted: the vibe

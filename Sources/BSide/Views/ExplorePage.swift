@@ -248,7 +248,7 @@ private struct ExploreScroll<Content: View>: View {
 
 /// A row that does what its item does: a song plays (with its radio); an
 /// album, a playlist or an artist opens. Albums and playlists also have a
-/// play button at the end. Right-click goes to a song's artist or album.
+/// play button at the end. Right-click: a song's menu, an album's artist.
 private struct ItemRowButton: View {
     let item: MusicItem
     /// Within an album or playlist: plays it from this track instead.
@@ -278,16 +278,12 @@ private struct ItemRowButton: View {
         }
         .contextMenu {
             if item.kind == .song, !item.videoID.isEmpty {
-                AddToPlaylistMenu(videoID: item.videoID)
-                Divider()
-            }
-            if !item.artistID.isEmpty {
-                Button("Go to Artist") {
-                    navigation.open(.artist(id: item.artistID, name: artistName))
+                TrackMenu(videoID: item.videoID, artist: artistName, artistID: item.artistID,
+                          albumID: item.albumID, liked: item.liked)
+            } else if !item.artistID.isEmpty {
+                Button { navigation.open(.artist(id: item.artistID, name: artistName)) } label: {
+                    Label("Go to Artist", systemImage: "person")
                 }
-            }
-            if !item.albumID.isEmpty {
-                Button("Go to Album") { navigation.open(.collection(id: item.albumID, title: "Album")) }
             }
         }
     }

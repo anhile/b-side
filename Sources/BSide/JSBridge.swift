@@ -98,6 +98,8 @@ struct MusicItem: Identifiable, Equatable {
     /// The pages behind the artist's and the album's names, when known.
     var artistID = ""
     var albumID = ""
+    /// Liked when the list was loaded; see `PlayerController.isLiked`.
+    var liked = false
 
     init(id: Int, kind: Kind = .song, videoID: String = "", playlistID: String = "", browseID: String = "",
          title: String, subtitle: String = "", detail: String = "", artworkURL: URL? = nil,
@@ -123,6 +125,7 @@ struct MusicItem: Identifiable, Equatable {
                   subtitle: body["subtitle"] as? String ?? "", detail: body["detail"] as? String ?? "",
                   artworkURL: (body["artwork"] as? String).flatMap { $0.isEmpty ? nil : URL(string: $0) },
                   artistID: body["artistId"] as? String ?? "", albumID: body["albumId"] as? String ?? "")
+        liked = body["like"] as? String == "LIKE"
     }
 
     static func list(_ value: Any?) -> [MusicItem] {
@@ -164,7 +167,7 @@ struct CollectionPage: Equatable {
 /// One track in a playlist's list. A playlist can hold a track twice, so the
 /// identity is the position.
 struct Track: Identifiable, Equatable {
-    let index: Int
+    var index: Int
     let videoID: String
     let title: String
     let artist: String
@@ -175,6 +178,11 @@ struct Track: Identifiable, Equatable {
     var heldVideoID = ""
     /// YouTube Music lets the user take it out: the playlist is theirs.
     var removable = false
+    /// The pages behind the artist's and the album's names, when known.
+    var artistID = ""
+    var albumID = ""
+    /// Liked when the list was loaded; see `PlayerController.isLiked`.
+    var liked = false
     var id: Int { index }
 }
 
@@ -313,7 +321,10 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
                              artworkURL: (item["artwork"] as? String).flatMap { $0.isEmpty ? nil : URL(string: $0) },
                              setVideoID: item["setVideoId"] as? String ?? "",
                              heldVideoID: item["heldVideoId"] as? String ?? "",
-                             removable: item["removable"] as? Bool ?? false)
+                             removable: item["removable"] as? Bool ?? false,
+                             artistID: item["artistId"] as? String ?? "",
+                             albumID: item["albumId"] as? String ?? "",
+                             liked: item["like"] as? String == "LIKE")
             }, body["append"] as? Bool ?? false, body["more"] as? Bool ?? false)
         case "search":
             onSearch?(body["query"] as? String ?? "", SearchKind(rawValue: body["kind"] as? String ?? "") ?? .songs,

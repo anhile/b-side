@@ -29,27 +29,34 @@ struct NowPlayingPage: View {
             artworkZone
                 .layoutPriority(1) // the record takes the free height, not the gaps
             Spacer(minLength: Theme.Space.s)
-            VStack(spacing: Theme.Space.xxs) {
-                Text(title)
-                    .font(Theme.Text.title)
-                    .foregroundStyle(Theme.Colors.text)
-                    .lineLimit(1)
-                    .help(title)
-                if player.state.artistID.isEmpty || player.state.isAd {
-                    Text(subtitle)
-                        .font(Theme.Text.body)
-                        .foregroundStyle(Theme.Colors.textMuted)
+            // Like stands at the end of the title, always in view; as much
+            // room is kept free at the start, so the title stays centred.
+            HStack(spacing: Theme.Space.xxs) {
+                Spacer(minLength: 0).frame(width: Theme.Size.transportTarget)
+                VStack(spacing: Theme.Space.xxs) {
+                    Text(title)
+                        .font(Theme.Text.title)
+                        .foregroundStyle(Theme.Colors.text)
                         .lineLimit(1)
-                        .help(subtitle)
-                } else {
-                    // The artist's page on Explore; Back there returns here.
-                    Button { navigation.open(.artist(id: player.state.artistID, name: subtitle)) } label: {
-                        LinkText(text: subtitle)
+                        .help(title)
+                    if player.state.artistID.isEmpty || player.state.isAd {
+                        Text(subtitle)
+                            .font(Theme.Text.body)
+                            .foregroundStyle(Theme.Colors.textMuted)
+                            .lineLimit(1)
+                            .help(subtitle)
+                    } else {
+                        // The artist's page on Explore; Back there returns here.
+                        Button { navigation.open(.artist(id: player.state.artistID, name: subtitle)) } label: {
+                            LinkText(text: subtitle)
+                        }
+                        .buttonStyle(.plain)
+                        .pointingHand()
+                        .help("Show \(subtitle)")
                     }
-                    .buttonStyle(.plain)
-                    .pointingHand()
-                    .help("Show \(subtitle)")
                 }
+                .frame(maxWidth: .infinity)
+                likeButton
             }
             .padding(.horizontal, Theme.Space.m)
             Spacer(minLength: Theme.Space.m)
@@ -62,9 +69,21 @@ struct NowPlayingPage: View {
         }
     }
 
+    /// Orange and filled once liked. An ad cannot be liked: the button
+    /// keeps its place and goes away.
+    private var likeButton: some View {
+        TransportButton(symbol: player.state.isLiked ? "heart.fill" : "heart",
+                        label: player.state.isLiked ? "Remove Like" : "Like",
+                        color: player.state.isLiked ? Theme.Colors.accentText : Theme.Colors.textMuted) {
+            player.toggleLike()
+        }
+        .opacity(player.state.isAd ? 0 : 1)
+        .disabled(player.state.isAd)
+    }
+
     /// The zone the artwork's colour fills: from the top of the page to half
     /// way to the title. While the pointer is over it, a dark veil covers all
-    /// of it, with Like and Lyrics in the middle. Lyrics take the artwork's
+    /// of it, with Lyrics and Repeat in the middle. Lyrics take the artwork's
     /// place, in the same frame, so nothing else moves.
     private var artworkZone: some View {
         VStack(spacing: 0) {
@@ -124,13 +143,6 @@ struct NowPlayingPage: View {
 
     private var artworkActions: some View {
         HStack(spacing: Theme.Space.s) {
-            TransportButton(symbol: player.state.isLiked ? "heart.fill" : "heart",
-                            label: player.state.isLiked ? "Remove Like" : "Like",
-                            glyph: Theme.Size.playGlyph, target: Theme.Size.artworkAction) {
-                player.toggleLike()
-            }
-            .glass(in: Circle())
-            .disabled(player.state.isAd)
             if player.lyricsAvailable == true {
                 TransportButton(symbol: "quote.bubble", label: "Lyrics",
                                 glyph: Theme.Size.playGlyph, target: Theme.Size.artworkAction) {
@@ -232,7 +244,8 @@ struct NowPlayingPage: View {
         .overlay(alignment: .trailing) { trackMenu }
     }
 
-    /// What can be done with the track itself. One thing so far.
+    /// What can be done with the track itself: Like with its shortcut, then
+    /// the menu every track has, with Lyrics and Repeat in it.
     private var trackMenu: some View {
         Menu {
             Button { player.toggleLike() } label: {
@@ -241,26 +254,19 @@ struct NowPlayingPage: View {
             }
             .keyboardShortcut("l", modifiers: .command)
             .disabled(player.state.isAd)
-            AddToPlaylistMenu(videoID: player.state.isAd ? "" : player.state.videoID)
-            Button { navigation.showsLyrics.toggle() } label: {
-                Label(showsLyrics ? "Hide Lyrics" : "Show Lyrics", systemImage: "quote.bubble")
+            TrackMenu(videoID: player.state.isAd ? "" : player.state.videoID, artist: player.state.artist,
+                      artistID: player.state.artistID, albumID: player.state.albumID, showsLike: false) {
+                Button { navigation.showsLyrics.toggle() } label: {
+                    Label(showsLyrics ? "Hide Lyrics" : "Show Lyrics", systemImage: "quote.bubble")
+                }
+                .disabled(!showsLyrics && player.lyricsAvailable != true)
+                Picker(selection: $player.repeatMode) {
+                    ForEach(RepeatMode.allCases) { Text($0.title).tag($0) }
+                } label: {
+                    Label("Repeat", systemImage: player.repeatMode.symbol)
+                }
+                .pickerStyle(.menu)
             }
-            .disabled(!showsLyrics && player.lyricsAvailable != true)
-            Picker(selection: $player.repeatMode) {
-                ForEach(RepeatMode.allCases) { Text($0.title).tag($0) }
-            } label: {
-                Label("Repeat", systemImage: player.repeatMode.symbol)
-            }
-            .pickerStyle(.menu)
-            Divider()
-            Button { navigation.open(.artist(id: player.state.artistID, name: player.state.artist)) } label: {
-                Label("Go to Artist", systemImage: "person")
-            }
-            .disabled(player.state.artistID.isEmpty || player.state.isAd)
-            Button { navigation.open(.collection(id: player.state.albumID, title: "Album")) } label: {
-                Label("Go to Album", systemImage: "square.stack")
-            }
-            .disabled(player.state.albumID.isEmpty || player.state.isAd)
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: Theme.Size.transportGlyph, weight: .semibold))

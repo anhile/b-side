@@ -16,6 +16,8 @@ enum Tuning {
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15"
 
     static let musicHome = URL(string: "https://music.youtube.com/")!
+    /// A track's link, before its video ID: what Copy Link copies.
+    static let trackLink = "https://music.youtube.com/watch?v="
 
     static let signIn = URL(string:
         "https://accounts.google.com/ServiceLogin?service=youtube&continue=https%3A%2F%2Fmusic.youtube.com%2F")!
