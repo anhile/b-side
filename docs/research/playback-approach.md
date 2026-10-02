@@ -2,7 +2,7 @@
 
 This is the record of the memory spike that chose B-Side's playback approach.
 Four variants were compared. **Variant D was kept; the code for A, B and C was
-removed afterwards.** README.md describes D.
+removed afterwards.** [ARCHITECTURE.md](../ARCHITECTURE.md) describes D.
 
 | Variant | What it was |
 |---|---|
