@@ -7,10 +7,29 @@ struct GeneralSettings: View {
         Form {
             OpenAtLogin()
             TrackNotifications()
+            MenuBarTrack()
             AboutSection()
         }
         .formStyle(.grouped)
         .background(ThinScrollers())
+    }
+}
+
+/// The track's name next to the record in the menu bar. Off by default:
+/// the menu bar is short of room.
+struct MenuBarTrack: View {
+    @AppStorage(Keys.menuBarTrack) private var shows = false
+
+    var body: some View {
+        Section {
+            Toggle(isOn: $shows) {
+                SettingLabel(title: "Show the track in the menu bar", symbol: "menubar.rectangle", colour: 6)
+            }
+        } footer: {
+            Text("The title and artist next to the record. Long names are cut short.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
     }
 }
 

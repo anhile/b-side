@@ -12,6 +12,9 @@ enum Tuning {
     /// second it offers to start again.
     static let startSlowSeconds: Double = 6
     static let startRetrySeconds: Double = 15
+    /// The track's name in the menu bar is cut after this many characters:
+    /// the menu bar is short of room, more so beside a notch.
+    static let menuBarTrackLength = 32
     /// The list of playlists is not asked for again sooner than this when
     /// the Playlists page comes into view.
     static let playlistsFreshSeconds: Double = 30

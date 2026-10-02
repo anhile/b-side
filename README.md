@@ -29,7 +29,8 @@ The pictures are rendered by the app itself with sample data.
 - **Explore.** Search songs, albums, artists and playlists; artist and album
   pages.
 - **Menu bar.** The current track with Previous, Play and Next, every vibe
-  and playlist. Closing the window does not stop the music.
+  and playlist. Closing the window does not stop the music. A setting puts
+  the track's name next to the icon.
 - **Media keys, AirPods and Control Center** work as with any player. With
   "Open at login" on, the Play key starts B-Side instead of Apple Music.
 - **The last track is back** when you open B-Side again, paused where it

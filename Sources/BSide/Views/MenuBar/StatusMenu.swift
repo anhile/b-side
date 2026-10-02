@@ -1,10 +1,12 @@
 import AppKit
+import Combine
 import SwiftUI
 
 /// The record in the menu bar and its menu, in AppKit so the first item can
 /// be a real view: artwork, the title scrolling when long, and the transport
 /// buttons. The rest are ordinary items, rebuilt each time the menu opens.
-/// Nothing runs while the menu is closed.
+/// While the menu is closed nothing runs but the watch for a new track,
+/// whose name can stand next to the record (Settings, General).
 @MainActor
 final class StatusMenu: NSObject, NSMenuDelegate {
     static let shared = StatusMenu()
@@ -13,6 +15,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     private let menu = NSMenu()
     private weak var player: PlayerController?
     private var openMain: (() -> Void)?
+    private var watches: Set<AnyCancellable> = []
 
     func install(player: PlayerController, openMain: @escaping () -> Void) {
         self.player = player
@@ -27,9 +30,27 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         item.autosaveName = "B-Side"
         item.button?.image = MenuBarIcon.image
         item.button?.toolTip = "B-Side"
+        item.button?.imagePosition = .imageLeading
         item.menu = menu
         menu.delegate = self
         self.item = item
+        // The track's name next to the record: again when the track changes
+        // (the state is published before it is set, hence from the value),
+        // and when the setting does.
+        player.$state
+            .map(Self.trackLine)
+            .removeDuplicates()
+            .sink { [weak self] in self?.show(track: $0) }
+            .store(in: &watches)
+        NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                MainActor.assumeIsolated {
+                    guard let self, let player = self.player else { return }
+                    self.show(track: Self.trackLine(player.state))
+                }
+            }
+            .store(in: &watches)
         // Where the icon ended up, for when it cannot be seen: a place
         // left of the screen is a menu bar manager's hidden section.
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak item] in
@@ -40,6 +61,25 @@ final class StatusMenu: NSObject, NSMenuDelegate {
                 + (item.isVisible ? "allowed" : "not allowed") + " in the menu bar"
                 + (item.button?.window?.screen == nil ? ", off every screen" : ""))
         }
+    }
+
+    /// "Title — Artist", cut to fit the menu bar; empty with nothing loaded.
+    private static func trackLine(_ state: PlayerState) -> String {
+        guard !state.videoID.isEmpty else { return "" }
+        if state.isAd { return "Advertisement" }
+        let line = state.artist.isEmpty ? state.title : "\(state.title) — \(state.artist)"
+        guard line.count > Tuning.menuBarTrackLength else { return line }
+        return line.prefix(Tuning.menuBarTrackLength - 1).trimmingCharacters(in: .whitespaces) + "…"
+    }
+
+    /// The record alone, or with the track's name after it when the user
+    /// asked for it and something is loaded.
+    private func show(track line: String) {
+        guard let item else { return }
+        let title = Settings.bool(Keys.menuBarTrack) ? line : ""
+        guard item.button?.title != title else { return }
+        item.button?.title = title
+        item.length = title.isEmpty ? NSStatusItem.squareLength : NSStatusItem.variableLength
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {

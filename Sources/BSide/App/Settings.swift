@@ -10,6 +10,7 @@ enum Keys {
     static let wasSignedIn = "wasSignedIn"       // greet with "Welcome back" while the player loads
     static let guest = "guest"                   // chose to use B-Side without signing in
     static let notifyTrack = "notifyTrack"       // a notification when the next track starts
+    static let menuBarTrack = "menuBarTrack"     // the track's name next to the record in the menu bar
     static let theme = "theme"                   // ThemeMode: system, light or dark
     static let uiSize = "uiSize"                 // UISize: compact or large
     static let repeatMode = "repeatMode"         // RepeatMode: off, all or one
@@ -63,6 +64,7 @@ enum Settings {
             Keys.forceAudioOnly: true,
             Keys.volume: 100.0,
             Keys.notifyTrack: false,
+            Keys.menuBarTrack: false,
         ])
     }
 
