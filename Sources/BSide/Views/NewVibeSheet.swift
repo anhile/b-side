@@ -67,10 +67,14 @@ struct NewVibeSheet: View {
     @State private var work: Task<Void, Never>?
     /// The songs are being found again after a change in the preview.
     @State private var refinding = false
+    /// With the server on: how many vibes this Mac has left this month.
+    @State private var quota: VibeServer.Health?
 
     static let examples = ["Rainy Sunday morning", "Night drive", "Deep focus, no lyrics", "Dinner with friends"]
 
-    init(replacing: Mood? = nil, step: Step = .describe, prompt: String? = nil, pickSource: @escaping () -> Void = {}) {
+    init(replacing: Mood? = nil, step: Step = .describe, prompt: String? = nil, quota: VibeServer.Health? = nil,
+         pickSource: @escaping () -> Void = {}) {
+        _quota = State(initialValue: quota)
         var words = prompt ?? ""
         if prompt == nil, case .described(let saved, _) = replacing?.source { words = saved }
         _prompt = State(initialValue: words)
@@ -95,6 +99,25 @@ struct NewVibeSheet: View {
         .frame(width: Theme.Size.editorWidth)
         .animation(.easeInOut(duration: Theme.Motion.feedback * 2), value: step)
         .onDisappear { work?.cancel() }
+        // Asked when the sheet opens and after each vibe made.
+        .task(id: isDescribing) {
+            guard isDescribing, VibeServer.isOn, let url = VibeServer.address else { return }
+            if let health = await VibeServer.health(at: url) { quota = health }
+        }
+    }
+
+    private var isDescribing: Bool {
+        switch step {
+        case .describe, .nothing, .failed: true
+        case .making, .preview: false
+        }
+    }
+
+    /// Under the words, with the server on: what is left of the month.
+    private var quotaText: String? {
+        guard let quota, quota.open, let left = quota.left else { return nil }
+        return left > 0 ? quota.leftText.map { $0 + "." }
+            : "This month\u{2019}s \(quota.perMonth) vibes are used; this Mac reads the words until next month."
     }
 
     // MARK: - Making
@@ -177,7 +200,7 @@ struct NewVibeSheet: View {
             } header: {
                 Text("Describe a vibe")
             } footer: {
-                Group {
+                VStack(alignment: .leading, spacing: 0) {
                     switch step {
                     case .nothing:
                         Label("Nothing on YouTube Music fit these words. Try a genre, an artist or a place.",
@@ -190,6 +213,10 @@ struct NewVibeSheet: View {
                              : VibeMaker.hasModel
                              ? "In any language. B-Side finds songs that fit and keeps playing more like them."
                              : "B-Side matches the words to YouTube Music\u{2019}s moods and searches for them. Turn on Apple Intelligence for a closer match.")
+                        if let quotaText {
+                            Text(quotaText)
+                                .padding(.top, Theme.Space.xxs)
+                        }
                     }
                 }
                 .font(Theme.Text.caption)
@@ -202,14 +229,25 @@ struct NewVibeSheet: View {
                     }
                 }
             }
+            // The other way to a tile, as a row of its own: it leads to
+            // the editor with its three kinds.
             if replacing == nil {
-                Section {
-                    Button("A playlist, Liked Music or a track's radio…") {
+                Section("Or play what you have") {
+                    Button {
                         dismiss()
                         pickSource()
+                    } label: {
+                        HStack(spacing: Theme.Space.xs) {
+                            Label("A playlist, Liked Music or a track\u{2019}s radio", systemImage: "music.note.list")
+                                .foregroundStyle(Theme.Colors.text)
+                            Spacer(minLength: 0)
+                            Image(systemName: "chevron.right")
+                                .imageScale(.small)
+                                .foregroundStyle(Theme.Colors.textMuted)
+                        }
+                        .contentShape(Rectangle())
                     }
-                    .buttonStyle(.link)
-                    .font(Theme.Text.caption)
+                    .buttonStyle(.plain)
                     .pointingHand()
                 }
             }
@@ -308,16 +346,18 @@ private struct Preview: View {
                                         source: .described(prompt: prompt, anchors: []), colour: spec.colour),
                              subtitle: "\u{201C}\(prompt)\u{201D}", isCurrent: false, isPlaying: false)
                     VStack(alignment: .leading, spacing: Theme.Space.xs) {
-                        TextField("Name", text: edited.name, prompt: Text("Name"))
-                            .labelsHidden()
                         Button(action: tryIt) {
                             Label("Try It", systemImage: "play.fill")
                         }
                         .buttonStyle(OutlineButtonStyle())
                         .disabled(refinding)
-                        .help("Play the first songs")
+                        Text("Plays the first songs.")
+                            .font(Theme.Text.caption)
+                            .foregroundStyle(Theme.Colors.textMuted)
                     }
                 }
+                // A row of its own, like the two under it: plainly a field.
+                TextField("Name", text: edited.name, prompt: Text("Untitled"))
                 Picker("Vocals", selection: edited.vocals) {
                     ForEach(VibeSpec.Vocals.allCases) { Text($0.rawValue).tag($0) }
                 }

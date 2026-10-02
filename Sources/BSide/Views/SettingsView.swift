@@ -221,7 +221,7 @@ private struct VibeSettings: View {
 
     private enum Status: Equatable {
         case checking, unreachable, closed
-        case open(perMonth: Int)
+        case open(VibeServer.Health)
     }
 
     var body: some View {
@@ -257,7 +257,7 @@ private struct VibeSettings: View {
             // may take a while to reach this Mac's DNS.
             while !Task.isCancelled {
                 if let url = VibeServer.address, let health = await VibeServer.health(at: url) {
-                    status = health.open ? .open(perMonth: health.perMonth) : .closed
+                    status = health.open ? .open(health) : .closed
                     if health.open { return }
                 } else {
                     status = .unreachable
@@ -275,7 +275,7 @@ private struct VibeSettings: View {
             case .checking: Text("Checking…")
             case .unreachable: Text("Cannot be reached")
             case .closed: Text("Not open right now")
-            case .open(let perMonth): Text("Available, \(perMonth) vibes a month")
+            case .open(let health): Text("Available, " + (health.leftText ?? "\(health.perMonth) vibes a month"))
             }
         }
     }

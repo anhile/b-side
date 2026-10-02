@@ -48,6 +48,12 @@ export async function takeVibe(install: string): Promise<boolean> {
   return true;
 }
 
+/// How many of this month's vibes the install still has.
+export async function vibesLeft(install: string): Promise<number> {
+  const used = Number((await redis().get<number>(`vibe:install:${install}:${month()}`)) ?? 0);
+  return Math.max(0, installMonthly - used);
+}
+
 export async function returnVibe(install: string): Promise<void> {
   await redis().decr(`vibe:install:${install}:${month()}`);
 }

@@ -95,7 +95,11 @@ Research: [docs/research/vibe-from-prompt.md](../docs/research/vibe-from-prompt.
   4) the first songs in one line
 - Steps, in one sheet:
   - Describe: a field of three to five lines, a line on what happens, four
-    example chips, the link to the other kinds of tile
+    example chips, and "Or play what you have": a row with a chevron to the
+    other kinds of tile (a row, not a link, since 2026-10-02). With the
+    server on, a line under the words: "7 of 10 vibes left this month."
+  - Preview's top (since 2026-10-02): the tile with Try It beside it, then
+    Name as a row of its own above Vocals and Artists
   - Making: the words in quotes, three stages with a check, a spinner or an
     empty circle (reading the words, finding artists on YouTube Music,
     picking the first songs). Only Cancel

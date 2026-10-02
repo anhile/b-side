@@ -75,11 +75,21 @@ enum VibeServer {
     struct Health: Equatable {
         let open: Bool
         let perMonth: Int
+        /// How many of this month's vibes this Mac still has; nil when the
+        /// server does not say.
+        var left: Int?
+
+        /// "7 of 10 vibes left this month", for Settings and the sheet.
+        var leftText: String? {
+            left.map { "\($0) of \(perMonth) vibes left this month" }
+        }
     }
 
     /// Whether the server makes vibes now; nil when it cannot be reached.
     static func health(at base: URL) async -> Health? {
-        let request = URLRequest(url: base.appending(path: "v1/health"), timeoutInterval: timeout)
+        var request = URLRequest(url: base.appending(path: "v1/health"), timeoutInterval: timeout)
+        // So the server can say how many vibes this Mac has left.
+        request.setValue(installID, forHTTPHeaderField: "X-BSide-Install")
         let data: Data, response: URLResponse
         do {
             (data, response) = try await URLSession.shared.data(for: request)
@@ -89,7 +99,8 @@ enum VibeServer {
         }
         guard (response as? HTTPURLResponse)?.statusCode == 200,
               let body = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
-        return Health(open: body["vibes"] as? Bool ?? false, perMonth: body["perMonth"] as? Int ?? 0)
+        return Health(open: body["vibes"] as? Bool ?? false, perMonth: body["perMonth"] as? Int ?? 0,
+                      left: body["left"] as? Int)
     }
 }
 

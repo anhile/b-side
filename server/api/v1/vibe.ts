@@ -6,7 +6,7 @@ import { maxWords, read, type Mix, type Reading } from "../../lib/reading.js";
 export const config = { maxDuration: 15 };
 
 const mixes: Mix[] = ["familiar", "both", "new"];
-const installPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const installPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /// POST {words, mix, install} → {name, energy, tags, artists, vocals}.
 /// The words are not stored. Limits: per address, per install a month,

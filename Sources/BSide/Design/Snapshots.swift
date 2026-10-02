@@ -139,6 +139,7 @@ enum Snapshots {
         let cases: [(String, NewVibeSheet)] = [
             ("describe-empty", NewVibeSheet()),
             ("describe", NewVibeSheet(prompt: prompt)),
+            ("describe-quota", NewVibeSheet(prompt: prompt, quota: VibeServer.Health(open: true, perMonth: 10, left: 7))),
             ("nothing", NewVibeSheet(step: .nothing, prompt: "asdfgh qwerty")),
             ("making", NewVibeSheet(step: .making(1), prompt: prompt)),
             ("preview", NewVibeSheet(step: .preview(jazz), prompt: prompt)),

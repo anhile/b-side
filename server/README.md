@@ -21,7 +21,9 @@ limits and costs are in [docs/plans/vibe-server.md](../docs/plans/vibe-server.md
 
 - `POST /v1/vibe` with `{"words": "...", "mix": "familiar" | "both" | "new"}`
   returns `{moment, energy, name, tags, artists, vocals}`.
-- `GET /v1/health` returns `{"vibes": true}` when vibes can be made.
+- `GET /v1/health` returns `{"vibes": true, "perMonth": 10}` when vibes
+  can be made. With the install ID in the `X-BSide-Install` header, also
+  `"left"`: how many of this month's vibes that Mac still has.
 
 ## Limits
 

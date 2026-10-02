@@ -17,7 +17,7 @@ createServer(async (incoming, outgoing) => {
     body: incoming.method === "POST" ? Buffer.concat(chunks) : undefined,
   });
   const response = url.pathname === "/v1/vibe" && incoming.method === "POST" ? await vibe(request)
-    : url.pathname === "/v1/health" ? await health()
+    : url.pathname === "/v1/health" ? await health(request)
     : new Response("Not found", { status: 404 });
   outgoing.writeHead(response.status, Object.fromEntries(response.headers));
   outgoing.end(Buffer.from(await response.arrayBuffer()));
