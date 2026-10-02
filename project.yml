@@ -1,6 +1,6 @@
 name: BSide
 options:
-  bundleIdPrefix: dev.bside
+  bundleIdPrefix: com.anhile
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
@@ -30,8 +30,9 @@ targets:
     settings:
       base:
         # The bundle ID must stay stable: WKWebsiteDataStore.default() keys the
-        # cookie store on it, so changing it signs you out.
-        PRODUCT_BUNDLE_IDENTIFIER: dev.bside.spike
+        # cookie store on it, and the settings, the login item and the menu bar
+        # icon's place go by it too. Changing it signs every user out.
+        PRODUCT_BUNDLE_IDENTIFIER: com.anhile.bside
         PRODUCT_NAME: B-Side
         PRODUCT_MODULE_NAME: BSide
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

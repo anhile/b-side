@@ -104,16 +104,16 @@ The full list, with the stored settings, is in
 |---|---|
 | `~/Library/Application Support/B-Side/events.log` | Track changes, play and pause, ads, errors, crashes, and a heartbeat per minute |
 | `~/Library/Application Support/B-Side/processes.tsv` | The processes that belong to the app, refreshed every 5 s while it runs |
-| Preferences, `dev.bside.spike` | Settings, the Vibe tiles, the last session |
+| Preferences, `com.anhile.bside` | Settings, the Vibe tiles, the last session |
 | WebKit's data store | The Google session: cookies and site data, as in a browser |
 
 The event log is the first place to look when something fails. Each line is a
 time, a kind and details, separated by tabs. A `STALLED` line means the
 player claimed to be playing but its position did not move for a minute.
 
-The bundle identifier still ends in `.spike`. WebKit keys the cookie store on
-it, so changing it signs every user out; it stays until a release decides
-otherwise.
+The bundle identifier is `com.anhile.bside`. WebKit keys the cookie store on
+it, and the settings, the login item and the menu bar icon's place go by it
+too, so it must not change: a new one signs every user out.
 
 ## Measuring memory
 

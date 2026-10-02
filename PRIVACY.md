@@ -36,12 +36,12 @@ list is in
 | Where | What |
 |---|---|
 | WebKit's data store for B-Side | Your Google session (cookies, site data), as a browser keeps it. Sign Out in Settings, Account removes it |
-| Preferences (`dev.bside.spike`) | Settings, your Vibe tiles with the words they were made from, the last track and where it stopped, the random server ID |
+| Preferences (`com.anhile.bside`) | Settings, your Vibe tiles with the words they were made from, the last track and where it stopped, the random server ID |
 | `~/Library/Application Support/B-Side/events.log` | A diagnostic log: track changes, play and pause, errors, what a new vibe was read as, memory once a minute. No account name, no search queries. It is never sent anywhere |
 
 To remove everything: sign out in Settings, quit B-Side, then delete the
 app, `~/Library/Application Support/B-Side` and
-`~/Library/Preferences/dev.bside.spike.plist`.
+`~/Library/Preferences/com.anhile.bside.plist`.
 
 ## Permissions
 
