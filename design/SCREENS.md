@@ -125,7 +125,7 @@ Research: [docs/research/vibe-from-prompt.md](../docs/research/vibe-from-prompt.
 - States: empty words (Make disabled) / making / preview / preview without
   Apple Intelligence (a note, moods as chips) / nothing found (the words
   stay, a note under them) / no network (as nothing found, with the reason)
-- Tile: symbol `text.bubble`, the words in quotes as its subtitle
+- Tile: symbol `text.bubble`; under the name what it was heard as, never the words
 - Entry and exit: the "+" tile; Edit… on a tile made from words. Leaves by
   Cancel, Escape or Add Vibe
 
