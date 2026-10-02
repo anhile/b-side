@@ -30,6 +30,16 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         item.menu = menu
         menu.delegate = self
         self.item = item
+        // Where the icon ended up, for when it cannot be seen: a place
+        // left of the screen is a menu bar manager's hidden section.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak item] in
+            guard let item else { return }
+            let frame = item.button?.window?.frame ?? .zero
+            let screen = item.button?.window?.screen?.frame ?? NSScreen.main?.frame ?? .zero
+            EventLog.write("status\ticon at x \(Int(frame.minX)) of \(Int(screen.width)), "
+                + (item.isVisible ? "allowed" : "not allowed") + " in the menu bar"
+                + (item.button?.window?.screen == nil ? ", off every screen" : ""))
+        }
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
