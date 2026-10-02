@@ -55,8 +55,11 @@ start it. After that, tag and publish:
 
 ```bash
 git tag v1.0.0 && git push origin v1.0.0
-gh release create v1.0.0 dist/B-Side-1.0.0.dmg --title "B-Side 1.0.0" --notes "<what is new>"
+gh release create v1.0.0 dist/B-Side-1.0.0.dmg --title "B-Side 1.0.0" --notes-file docs/releases/1.0.0.md
 ```
+
+The release's text is written beforehand in `docs/releases/<version>.md`,
+with the image's SHA-256 in it. Tag the commit the image was built from.
 
 ## Trying the script without Apple
 
