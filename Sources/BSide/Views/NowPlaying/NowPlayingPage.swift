@@ -266,24 +266,19 @@ struct NowPlayingPage: View {
         .overlay(alignment: .trailing) { queueButton }
     }
 
-    /// What can be done with the track itself: Like with its shortcut, then
-    /// the menu every track has, with Lyrics and Repeat in it.
+    /// The menu every track has, with Lyrics, Up Next and Repeat in it. No
+    /// Like: the heart is next to it, and Command-L is in the Playback menu.
     private var trackMenu: some View {
         Menu {
-            Button { player.toggleLike() } label: {
-                Label(player.state.isLiked ? "Remove Like" : "Like",
-                      systemImage: player.state.isLiked ? "heart.slash" : "heart")
-            }
-            .keyboardShortcut("l", modifiers: .command)
-            .disabled(player.state.isAd)
-            .labelStyle(.titleAndIcon)
             TrackMenu(videoID: player.state.isAd ? "" : player.state.videoID, title: player.state.title,
                       artist: player.state.artist,
                       artistID: player.state.artistID, albumID: player.state.albumID, showsLike: false) {
-                Button { navigation.showsLyrics.toggle() } label: {
-                    Label(showsLyrics ? "Hide Lyrics" : "Show Lyrics", systemImage: "quote.bubble")
+                // A track without lyrics has no Lyrics item at all.
+                if showsLyrics || player.lyricsAvailable == true {
+                    Button { navigation.showsLyrics.toggle() } label: {
+                        Label(showsLyrics ? "Hide Lyrics" : "Show Lyrics", systemImage: "quote.bubble")
+                    }
                 }
-                .disabled(!showsLyrics && player.lyricsAvailable != true)
                 Button { navigation.showsQueue.toggle() } label: {
                     Label(showsQueue ? "Hide Up Next" : "Show Up Next", systemImage: "list.bullet")
                 }

@@ -52,10 +52,12 @@ Status: passed the rubric on 2026-09-30, iteration 2 (design/audit).
 One menu wherever a track is listed or plays (a playlist's track, a search
 result, an album's track, the strip, Now Playing's "…"), added 2026-10-02:
 
-- Like or Remove Like
+- Like or Remove Like; not in Now Playing's "…", which has the heart next
+  to it (Command-L stays in the Playback menu)
 - Add to Playlist (a submenu, checked where the track already is)
 - what only that place offers: Remove from Playlist in an own playlist;
-  Lyrics and Repeat on Now Playing
+  Lyrics, Up Next and Repeat on Now Playing (no Lyrics item for a track
+  without lyrics)
 - Play Next: right after the track that plays
 - Start Radio: the track, then its radio
 - Go to Artist, Go to Album (disabled when YouTube Music does not link them)
