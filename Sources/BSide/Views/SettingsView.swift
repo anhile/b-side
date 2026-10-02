@@ -253,12 +253,17 @@ private struct VibeSettings: View {
             guard useServer else { return }
             status = .checking
             try? await Task.sleep(for: .milliseconds(600)) // while the address is typed
-            guard !Task.isCancelled else { return }
-            guard let url = VibeServer.address, let health = await VibeServer.health(at: url) else {
-                status = .unreachable
-                return
+            // Asked again while it is not available: a new server's name
+            // may take a while to reach this Mac's DNS.
+            while !Task.isCancelled {
+                if let url = VibeServer.address, let health = await VibeServer.health(at: url) {
+                    status = health.open ? .open(perMonth: health.perMonth) : .closed
+                    if health.open { return }
+                } else {
+                    status = .unreachable
+                }
+                try? await Task.sleep(for: .seconds(30))
             }
-            status = health.open ? .open(perMonth: health.perMonth) : .closed
         }
     }
 
