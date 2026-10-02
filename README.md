@@ -49,16 +49,30 @@ The pictures are rendered by the app itself with sample data.
 
 ## Install
 
-There are no ready-made downloads yet. Build it from source: you need Xcode
-and [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`).
+**Download.** Get `B-Side-<version>.dmg` from the
+[latest release](https://github.com/anhile/b-side/releases/latest), open it
+and drag B-Side to Applications.
+
+The build is not signed with an Apple certificate and not notarised yet, so
+macOS stops it the first time:
+
+1. Open B-Side. macOS says that Apple could not verify it. Click **Done**.
+2. Open System Settings → Privacy & Security, scroll down to "B-Side was
+   blocked", and click **Open Anyway**. You do this once.
+
+**Or build it from source.** macOS does not ask about an app built on your
+own Mac. You need Xcode and
+[XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`).
 
 ```bash
 ./scripts/install.sh
 ```
 
-It builds B-Side, puts it in `/Applications` and opens it. Run it from
-there, not from the build folder: macOS treats the copy in `/Applications`
-as the app, and Open at login and menu bar managers depend on that.
+It builds B-Side, puts it in `/Applications` and opens it.
+
+Either way, run B-Side from `/Applications`, not from the disk image or the
+build folder: macOS treats the copy in `/Applications` as the app, and Open
+at login and menu bar managers depend on that.
 
 Click **Sign In…** and log in to Google in the window that appears. It closes
 by itself when Google sends you back to YouTube Music. Or choose **Continue
