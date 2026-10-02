@@ -41,7 +41,7 @@ struct TrackMenu<Extra: View>: View {
             Label("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward")
         }
         .disabled(videoID.isEmpty || !player.hasTrack || videoID == player.state.videoID)
-        Button { player.playRadio(of: videoID) } label: {
+        Button { player.playRadio(of: videoID, title: title) } label: {
             Label("Start Radio", systemImage: "dot.radiowaves.left.and.right")
         }
         .disabled(videoID.isEmpty)

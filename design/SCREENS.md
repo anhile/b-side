@@ -166,6 +166,11 @@ Artwork 24, "Title — Artist" in the caption role, Pause or Play, Next. The
 line opens Now Playing. When something failed, the panel shows the message
 instead.
 
+Under the track, what it plays from: a vibe's name in the vibe's colour; a
+playlist, an album or an artist in the accent; "Radio: <track>" after Start
+Radio in a track's menu (since 2026-10-03), which stays while the radio
+plays on. A track played on its own has no such line.
+
 A glass panel of its own (radius m), 8 inside the window edges, floating over
 the bottom of the page: the lists run under it and keep its height as scroll
 margin, so the last row can scroll clear. Changed 2026-09-30: it used to sit

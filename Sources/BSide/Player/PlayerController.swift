@@ -381,6 +381,7 @@ final class PlayerController: NSObject, ObservableObject {
         switch source {
         case .mood(let mood): kind = "mood"; id = mood
         case .playlist(let list): kind = "playlist"; id = list
+        case .radio(let title): kind = "radio"; id = title
         case .other, nil: break
         }
         let known = currentListID.flatMap { listTitles[$0] }
@@ -427,6 +428,8 @@ final class PlayerController: NSObject, ObservableObject {
         source = switch session.sourceKind {
         case "mood": .mood(session.sourceID)
         case "playlist": .playlist(session.sourceID)
+        // Play goes on with this track's radio, not the one it came from.
+        case "radio": .radio(session.title)
         default: .other
         }
         if let list = session.listID, let title = session.listTitle {
@@ -556,9 +559,9 @@ final class PlayerController: NSObject, ObservableObject {
     }
 
     /// The track, then its radio, as a click on a search result plays it.
-    func playRadio(of videoID: String) {
+    func playRadio(of videoID: String, title: String) {
         guard !videoID.isEmpty else { return }
-        load(PlayTarget(videoID: videoID, listID: nil), from: .other, startAt: nil)
+        load(PlayTarget(videoID: videoID, listID: nil), from: .radio(title), startAt: nil)
     }
 
     private func assume(playing: Bool) {
@@ -631,7 +634,8 @@ final class PlayerController: NSObject, ObservableObject {
     private static let subtitleSeparator = " • "
 
     /// What plays, for the strip: the vibe, or the playlist or album, by
-    /// name. Nil for a track's radio, an ad, or a list whose name is unknown.
+    /// name, or the track whose radio was started. Nil for a track played on
+    /// its own, an ad, or a list whose name is unknown.
     var sourceLabel: SourceLabel? {
         guard hasTrack, !state.isAd else { return nil }
         switch source {
@@ -652,6 +656,9 @@ final class PlayerController: NSObject, ObservableObject {
             default: "music.note.list"
             }
             return SourceLabel(kind: known.kind, name: known.title, symbol: symbol)
+        case .radio(let title):
+            return SourceLabel(kind: .radio, name: title.isEmpty ? "Radio" : "Radio: \(title)",
+                               symbol: "dot.radiowaves.left.and.right")
         case .other, nil:
             return nil
         }

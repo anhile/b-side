@@ -44,17 +44,20 @@ enum Loadable: Equatable {
 enum PlaySource: Equatable {
     case mood(String)
     case playlist(String)
+    /// A track's radio, started as one: the track's title.
+    case radio(String)
     case other
 }
 
 /// What the strip says plays under the track: a vibe in its colour, or a
-/// playlist or album in the accent.
+/// playlist, an album or a track's radio in the accent.
 struct SourceLabel: Hashable {
     enum Kind: Hashable {
         case vibe(colour: Int)
         case playlist
         case album
         case artist
+        case radio
     }
 
     let kind: Kind

@@ -2,8 +2,8 @@ import SwiftUI
 
 /// One line under Vibe and Playlists: what plays, Pause and Next. The line
 /// itself leads to the Now Playing page. When a vibe or a playlist plays, its
-/// name slides up under the track: a vibe in its own colour, a playlist or
-/// an album in the accent.
+/// name slides up under the track: a vibe in its own colour, a playlist, an
+/// album or a track's radio in the accent.
 struct NowPlayingStrip: View {
     @EnvironmentObject private var player: PlayerController
     @EnvironmentObject private var navigation: Navigation
@@ -73,7 +73,7 @@ struct NowPlayingStrip: View {
         case .vibe(let index):
             let swatch = VibePalette.swatches[index]
             return colorScheme == .dark ? swatch.light : swatch.deep
-        case .playlist, .album, .artist:
+        case .playlist, .album, .artist, .radio:
             return Theme.Colors.accentText
         }
     }
