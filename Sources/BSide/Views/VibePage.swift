@@ -67,16 +67,23 @@ struct VibePage: View {
                         .accessibilityAction(.default, play)
                         .help(mood.name)
                         .contextMenu {
-                            Button("Edit…") {
-                                if case .described = mood.source { describing = Describing(replacing: mood) } else { editing = mood }
+                            Group {
+                                Button {
+                                    if case .described = mood.source { describing = Describing(replacing: mood) } else { editing = mood }
+                                } label: {
+                                    Label("Edit…", systemImage: "pencil")
+                                }
+                                Divider()
+                                Button { move(mood, by: -1) } label: { Label("Move Earlier", systemImage: "arrow.left") }
+                                    .disabled(mood.id == player.moods.first?.id)
+                                Button { move(mood, by: 1) } label: { Label("Move Later", systemImage: "arrow.right") }
+                                    .disabled(mood.id == player.moods.last?.id)
+                                Divider()
+                                Button(role: .destructive) { player.remove(mood) } label: {
+                                    Label("Remove", systemImage: "trash")
+                                }
                             }
-                            Divider()
-                            Button("Move Earlier") { move(mood, by: -1) }
-                                .disabled(mood.id == player.moods.first?.id)
-                            Button("Move Later") { move(mood, by: 1) }
-                                .disabled(mood.id == player.moods.last?.id)
-                            Divider()
-                            Button("Remove", role: .destructive) { player.remove(mood) }
+                            .labelStyle(.titleAndIcon)
                         }
                 }
                 Button {

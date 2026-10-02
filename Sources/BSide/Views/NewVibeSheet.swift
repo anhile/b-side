@@ -184,6 +184,7 @@ struct NewVibeSheet: View {
         mood.name = spec.name.trimmingCharacters(in: .whitespaces)
         mood.colour = spec.colour
         mood.source = .described(prompt: words, anchors: spec.anchors.map(\.videoID))
+        mood.heardAs = Mood.heardAs(tags: spec.matchedMoods ?? spec.tags, artists: spec.artists)
         player.save(mood)
         dismiss()
     }
@@ -342,9 +343,10 @@ private struct Preview: View {
         Form {
             Section {
                 HStack(alignment: .center, spacing: Theme.Space.s) {
-                    MoodTile(mood: Mood(id: "preview", name: spec.name.isEmpty ? "Untitled" : spec.name,
-                                        source: .described(prompt: prompt, anchors: []), colour: spec.colour),
-                             subtitle: "\u{201C}\(prompt)\u{201D}", isCurrent: false, isPlaying: false)
+                    let mood = Mood(id: "preview", name: spec.name.isEmpty ? "Untitled" : spec.name,
+                                    source: .described(prompt: prompt, anchors: []), colour: spec.colour,
+                                    heardAs: Mood.heardAs(tags: spec.matchedMoods ?? spec.tags, artists: spec.artists))
+                    MoodTile(mood: mood, subtitle: mood.subtitle(playlists: []), isCurrent: false, isPlaying: false)
                     VStack(alignment: .leading, spacing: Theme.Space.xs) {
                         Button(action: tryIt) {
                             Label("Try It", systemImage: "play.fill")

@@ -21,6 +21,12 @@ struct TrackMenu<Extra: View>: View {
     @EnvironmentObject private var navigation: Navigation
 
     var body: some View {
+        // A menu on the Mac shows a Label's title alone unless asked.
+        Group { items }
+            .labelStyle(.titleAndIcon)
+    }
+
+    @ViewBuilder private var items: some View {
         if showsLike {
             let isLiked = player.isLiked(videoID, listed: liked)
             Button { player.setLike(videoID, on: !isLiked) } label: {

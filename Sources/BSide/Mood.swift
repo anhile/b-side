@@ -16,12 +16,23 @@ struct Mood: Identifiable, Equatable, Codable {
     var source: Source
     /// One of VibePalette's colours, when the user picked one.
     var colour: Int?
+    /// For a vibe made from words: what it was heard as ("slow jazz,
+    /// rainy"), shown under the name. Tiles made before this have none.
+    var heardAs: String?
 
-    init(id: String = UUID().uuidString, name: String, source: Source, colour: Int? = nil) {
+    init(id: String = UUID().uuidString, name: String, source: Source, colour: Int? = nil, heardAs: String? = nil) {
         self.id = id
         self.name = name
         self.source = source
         self.colour = colour
+        self.heardAs = heardAs
+    }
+
+    /// The first genres, or without any the first artists: short enough
+    /// for the line under a tile's name.
+    static func heardAs(tags: [String], artists: [String]) -> String? {
+        let words = tags.isEmpty ? artists : tags
+        return words.isEmpty ? nil : words.prefix(2).joined(separator: ", ")
     }
 
     /// The tile every account starts with.
@@ -61,12 +72,16 @@ struct Mood: Identifiable, Equatable, Codable {
             return "Shuffled"
         case .playlist(let id, let shuffled):
             var title = playlists.first { $0.id == id }?.title ?? (id == Tuning.likedMusicID ? "Liked Music" : "Playlist")
-            if title == name { title = "Playlist" } // "Focus / Focus" says nothing
+            // "Focus / Focus" says nothing, nor does a name's own beginning.
+            if title.lowercased().hasPrefix(name.lowercased()) { title = "Playlist" }
             return shuffled ? "\(title), shuffled" : title
         case .radio:
             return "Radio"
         case .described(let prompt, _):
-            return "“\(prompt)”"
+            if let heardAs, !heardAs.isEmpty { return heardAs }
+            // A name taken from the words would only be said twice.
+            let same = prompt.lowercased().hasPrefix(name.lowercased()) || name.lowercased().hasPrefix(prompt.lowercased())
+            return same ? "From words" : "“\(prompt)”"
         }
     }
 

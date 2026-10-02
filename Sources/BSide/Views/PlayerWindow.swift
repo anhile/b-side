@@ -27,6 +27,19 @@ struct PlayerWindow: View {
             // A glass bar the height of the title bar: traffic lights on the
             // left, the page icons on the right, the window dragged by the rest.
             DragHandle()
+                // The page's name after the traffic lights, where a window
+                // has its title; the icons at the other end are the buttons.
+                .overlay(alignment: .leading) {
+                    Text((navigation.page ?? .nowPlaying).title)
+                        .font(Theme.Text.label)
+                        .foregroundStyle(Theme.Colors.text)
+                        .id(navigation.page)
+                        .transition(.opacity)
+                        .padding(.leading, Theme.Size.trafficLights)
+                        .opacity(player.showsWelcome ? 0 : 1)
+                        .allowsHitTesting(false) // the bar under it moves the window
+                        .animation(.easeOut(duration: Theme.Motion.page), value: navigation.page)
+                }
                 .overlay(alignment: .trailing) {
                     PageTabs(page: $navigation.page)
                         .padding(.trailing, Theme.Space.xs)
@@ -242,19 +255,11 @@ struct PageTabs: View {
     @Namespace private var pill
 
     var body: some View {
-        HStack(spacing: Theme.Space.xs) {
-            Text(current.title)
-                .font(Theme.Text.label)
-                .foregroundStyle(Theme.Colors.accentText)
-                .fixedSize()
-                .id(current)
-                .transition(.opacity)
-            HStack(spacing: 0) {
-                ForEach(Page.allCases) { item in
-                    PageTab(item: item, isCurrent: item == current, pill: pill,
-                            // The last tab is near the window edge: its tooltip ends under it.
-                            tooltipAlignment: item == Page.allCases.last ? .topTrailing : .top) { page = item }
-                }
+        HStack(spacing: 0) {
+            ForEach(Page.allCases) { item in
+                PageTab(item: item, isCurrent: item == current, pill: pill,
+                        // The last tab is near the window edge: its tooltip ends under it.
+                        tooltipAlignment: item == Page.allCases.last ? .topTrailing : .top) { page = item }
             }
         }
         .animation(.easeOut(duration: Theme.Motion.page), value: current)

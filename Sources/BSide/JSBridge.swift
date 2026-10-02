@@ -198,6 +198,8 @@ struct Track: Identifiable, Equatable {
     var albumID = ""
     /// Liked when the list was loaded; see `PlayerController.isLiked`.
     var liked = false
+    /// "3:41", when the list says.
+    var length = ""
     var id: Int { index }
 }
 
@@ -347,7 +349,8 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
                              removable: item["removable"] as? Bool ?? false,
                              artistID: item["artistId"] as? String ?? "",
                              albumID: item["albumId"] as? String ?? "",
-                             liked: item["like"] as? String == "LIKE")
+                             liked: item["like"] as? String == "LIKE",
+                             length: item["length"] as? String ?? "")
             }, body["append"] as? Bool ?? false, body["more"] as? Bool ?? false)
         case "upNext":
             let items = body["items"] as? [[String: Any]] ?? []
@@ -359,7 +362,8 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
                              artworkURL: (item["artwork"] as? String).flatMap { $0.isEmpty ? nil : URL(string: $0) },
                              artistID: item["artistId"] as? String ?? "",
                              albumID: item["albumId"] as? String ?? "",
-                             liked: item["like"] as? String == "LIKE")
+                             liked: item["like"] as? String == "LIKE",
+                             length: item["length"] as? String ?? "")
             })
         case "search":
             onSearch?(body["query"] as? String ?? "", SearchKind(rawValue: body["kind"] as? String ?? "") ?? .songs,

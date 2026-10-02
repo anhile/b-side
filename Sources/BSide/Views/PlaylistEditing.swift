@@ -17,7 +17,10 @@ struct AddToPlaylistMenu: View {
 
     var body: some View {
         Menu {
-            Button("New Playlist…") { navigation.newPlaylist = NewPlaylistRequest(videoID: videoID) }
+            Button { navigation.newPlaylist = NewPlaylistRequest(videoID: videoID) } label: {
+                Label("New Playlist…", systemImage: "plus")
+            }
+            .labelStyle(.titleAndIcon)
             let own = player.ownPlaylists
             if !own.isEmpty {
                 Divider()
@@ -32,6 +35,7 @@ struct AddToPlaylistMenu: View {
             }
         } label: {
             Label("Add to Playlist", systemImage: "text.badge.plus")
+                .labelStyle(.titleAndIcon)
         }
         .onAppear { player.checkPlaylists(holding: videoID) }
         .disabled(videoID.isEmpty || !player.account.isSignedIn)

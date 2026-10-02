@@ -6,6 +6,7 @@ struct PlaylistsPage: View {
     @EnvironmentObject private var player: PlayerController
     @EnvironmentObject private var navigation: Navigation
     @Environment(\.footerRoom) private var footerRoom
+    @Environment(\.pageShown) private var pageShown
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let likedMusic = Playlist(id: Tuning.likedMusicID, title: "Liked Music", subtitle: "Auto playlist")
@@ -22,6 +23,9 @@ struct PlaylistsPage: View {
                 }
             }
             .clipped()
+            // No button for it: the list is asked for again whenever the
+            // page comes into view, at most twice a minute.
+            .task(id: pageShown) { if pageShown { player.refreshPlaylists() } }
             bar
         }
         .animation(.easeInOut(duration: Theme.Motion.page), value: player.openPlaylist?.id)
@@ -71,11 +75,6 @@ struct PlaylistsPage: View {
             Spacer()
             IconButton(symbol: "plus", label: "New Playlist") {
                 navigation.newPlaylist = NewPlaylistRequest()
-            }
-            .disabled(!player.account.isSignedIn || player.phase != .ready)
-            .frame(width: Theme.Size.pageTabTarget)
-            IconButton(symbol: "arrow.clockwise", label: "Refresh playlists") {
-                player.loadPlaylists()
             }
             .disabled(!player.account.isSignedIn || player.phase != .ready)
             .frame(width: Theme.Size.pageTabTarget)
@@ -428,6 +427,12 @@ struct TrackRow: View {
                     .font(Theme.Text.body)
                     .foregroundStyle(Theme.Colors.accentText)
                     .accessibilityLabel(isPlaying ? "Playing" : "Paused")
+            } else if !track.length.isEmpty {
+                // As in an album's and a search's rows.
+                Text(track.length)
+                    .font(Theme.Text.caption)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.Colors.textMuted)
             }
         }
         .padding(.horizontal, Theme.Space.xs)

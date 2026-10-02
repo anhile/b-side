@@ -73,6 +73,9 @@ enum Theme {
         /// The system's title bar; the bar with the page tabs grows with the
         /// size, the system's does not.
         static let titleBar: CGFloat = 28
+        /// From the window's edge to where a title starts, past the three
+        /// window buttons.
+        static let trafficLights: CGFloat = 76
         static var tabBar: CGFloat { titleBar * scale }
         static var pageDotTarget: CGFloat { (24) * scale }
         static var pageTabTarget: CGFloat { (28) * scale }

@@ -27,7 +27,7 @@ enum Snapshots {
                      ("Goosebumps", "Travis Scott"), ("", ""), ("Money Longer", "Lil Uzi Vert")]
         return names.enumerated().map { index, name in
             Track(index: index, videoID: index == 1 ? current : "t\(index)", title: name.0, artist: name.1,
-                  artworkURL: index % 2 == 0 ? artwork : nil)
+                  artworkURL: index % 2 == 0 ? artwork : nil, length: "\(2 + index % 3):\(10 + index * 7)")
         }
     }
 
@@ -202,12 +202,12 @@ enum Snapshots {
         plain.text = "Plain lyrics, without timings,\nshown as text you can select.\n\nA second verse\nof made-up words."
         await renderPage(.nowPlaying, player: .fixture(state: singing, source: .mood(Mood.liked.id), lyrics: plain),
                          name: "nowplaying-lyrics-plain", appearance: .aqua, into: folder, showsLyrics: true)
-        let found = [("Вокруг шум", "Каста • Быль в глаза • 3:36"), ("Plug Walk", "Rich The Kid • Plug Walk • 2:55"),
-                     ("A result with a title long enough to be cut", "Someone feat. Someone Else • An album • 4:07"),
-                     ("Ды-ды-дым", "Каста • Быль в глаза • 4:07")]
+        let found = [("Вокруг шум", "Каста • Быль в глаза", "3:36"), ("Plug Walk", "Rich The Kid • Plug Walk", "2:55"),
+                     ("A result with a title long enough to be cut", "Someone feat. Someone Else • An album", "4:07"),
+                     ("Ды-ды-дым", "Каста • Быль в глаза", "4:07")]
             .enumerated().map { index, item in
                 MusicItem(id: index, videoID: index == 1 ? track.videoID : "s\(index)", title: item.0,
-                          subtitle: item.1, artworkURL: index % 2 == 0 ? artwork : nil)
+                          subtitle: item.1, detail: item.2, artworkURL: index % 2 == 0 ? artwork : nil)
             }
         for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
             await renderPage(.explore, player: .fixture(state: track, source: .other), name: "explore-empty-\(suffix)",

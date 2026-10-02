@@ -370,6 +370,7 @@
       artist: find(chosen.shortBylineText, 'text') || find(chosen.longBylineText, 'text') || '',
       artwork: thumbnail(chosen.thumbnail),
       thumb: thumbnail(chosen.thumbnail, ROW_ARTWORK_MIN_WIDTH),
+      length: find(chosen.lengthText, 'text') || '',
       // A like belongs to the track, whichever version got it: a liked video
       // plays as its song version with audio only on.
       like: versions.some(function (item) { return find(item, LIKE_KEY) === LIKED; })
@@ -457,7 +458,7 @@
       items: queue.slice(from, from + UP_NEXT_COUNT).map(function (entry, offset) {
         return { index: from + offset, videoId: entry.id, title: entry.title || '', artist: entry.artist || '',
                  artwork: entry.thumb || '', like: entry.like || '', artistId: entry.artistId || '',
-                 albumId: entry.albumId || '' };
+                 albumId: entry.albumId || '', length: entry.length || '' };
       }),
     });
   }
@@ -576,6 +577,7 @@
       items: items.map(function (entry) {
         return { videoId: entry.id, title: entry.title, artist: entry.artist, artwork: entry.thumb,
                  like: entry.like || '', artistId: entry.artistId || '', albumId: entry.albumId || '',
+                 length: entry.length || '',
                  setVideoId: entry.setId || '', heldVideoId: entry.heldId || '', removable: !!entry.removable };
       }),
     });
@@ -630,15 +632,20 @@
     const pageType = find(node.navigationEndpoint, PAGE_TYPE) || '';
     const playlistId = videoId ? '' : (find(node.overlay, 'playlistId') || '');
     const byline = node.flexColumns && node.flexColumns[1] && find(node.flexColumns[1], 'text');
-    const length = node.fixedColumns && joined(find(node.fixedColumns[0], 'text'));
+    let length = node.fixedColumns && joined(find(node.fixedColumns[0], 'text'));
     if (!columns[0] || (!videoId && !playlistId && !browseId)) return null;
+    // A search result ends its second line with the length ("Artist • Album
+    // • 3:36"); it goes to the end of the row, as in an album.
+    let subtitle = columns[1] || '';
+    const timed = !length && subtitle.match(/^(.*) • (\d+(?::\d{2})+)$/);
+    if (timed) { subtitle = timed[1]; length = timed[2]; }
     return {
       kind: videoId ? 'song' : kindOf(pageType, browseId),
       videoId: videoId,
       playlistId: playlistId,
       browseId: browseId,
       title: columns[0],
-      subtitle: columns[1] || '',
+      subtitle: subtitle,
       detail: length || '',
       artistId: linked(byline, ARTIST_PREFIX),
       albumId: linked(byline, ALBUM_PREFIX),

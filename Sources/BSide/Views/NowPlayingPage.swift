@@ -276,6 +276,7 @@ struct NowPlayingPage: View {
             }
             .keyboardShortcut("l", modifiers: .command)
             .disabled(player.state.isAd)
+            .labelStyle(.titleAndIcon)
             TrackMenu(videoID: player.state.isAd ? "" : player.state.videoID, title: player.state.title,
                       artist: player.state.artist,
                       artistID: player.state.artistID, albumID: player.state.albumID, showsLike: false) {

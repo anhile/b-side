@@ -284,6 +284,7 @@ private struct ItemRowButton: View {
                 Button { navigation.open(.artist(id: item.artistID, name: artistName)) } label: {
                     Label("Go to Artist", systemImage: "person")
                 }
+                .labelStyle(.titleAndIcon)
             }
         }
     }

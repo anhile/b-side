@@ -4,7 +4,9 @@ Confirmed by the owner on 2026-09-30. One spec per screen, written before the
 screen is built; the critique in each design pass is checked against it.
 
 Shared: three pages side by side, page icons in a capsule at the bottom, the
-strip with the current track above them. No gear: Settings are in the menu
+strip with the current track above them. The page's name stands after the
+window buttons, in the text colour, where a window has its title; the icons
+at the other end are the buttons (since 2026-10-02). No gear: Settings are in the menu
 bar and under Command-comma. Starting music never switches the page.
 
 ## Screen: Now Playing
@@ -54,10 +56,18 @@ result, an album's track, the strip, Now Playing's "…"), added 2026-10-02:
 A list knows a track's like as of when it was loaded; likes set in B-Side
 since then win.
 
+Every item of this menu, and of a tile's menu, has its symbol before the
+title.
+
+Rows of tracks (a playlist's, an album's, a search's, Up Next) end the same
+way: the track's length, or the orange speaker on the one that plays.
+
 ## Screen: Vibe
 
 - User's job here: "start music for how I feel right now, in one click"
 - Primary action: click a tile
+- Under a tile's name: what it plays. For a vibe made from words, what it
+  was heard as ("slow jazz, rainy"); never the name again
 - Secondary actions: add a tile (the "+" tile at the end); edit and remove in
   a tile's context menu; drag a tile to another's place, the others make
   room as it passes (also Move Earlier and Move Later in the menu)
@@ -122,7 +132,8 @@ Research: [docs/research/vibe-from-prompt.md](../docs/research/vibe-from-prompt.
 
 - User's job here: "find my playlist and play it"
 - Primary action: click a row
-- Secondary actions: refresh
+- Secondary actions: a new playlist ("+"). No refresh button: the list is
+  asked for again whenever the page comes into view, at most twice a minute
 - Attention order: 1) rows with artwork 36 and the name 2) the playing row
   with the accent indicator 3) the strip
 - States: signed out / loading (skeleton rows) / error with Try Again / no

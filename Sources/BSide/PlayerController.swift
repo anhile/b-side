@@ -70,6 +70,7 @@ final class PlayerController: NSObject, ObservableObject {
         didSet { if phase != .starting { startWaitTask?.cancel() } }
     }
     @Published private(set) var startWait = StartWait.short
+    private var playlistsAsked = Date.distantPast
     private var startWaitTask: Task<Void, Never>?
     /// Chose to use B-Side without signing in. Cleared by signing in.
     @Published private(set) var isGuest = Settings.bool(Keys.guest) {
@@ -1005,7 +1006,15 @@ final class PlayerController: NSObject, ObservableObject {
     func loadPlaylists() {
         guard pageReady else { return }
         if playlists.isEmpty { playlistsState = .loading }
+        playlistsAsked = Date()
         bridge.call("playlists")
+    }
+
+    /// For the Playlists page coming into view: the list again, unless it
+    /// was asked for a moment ago.
+    func refreshPlaylists() {
+        guard account.isSignedIn, Date().timeIntervalSince(playlistsAsked) > Tuning.playlistsFreshSeconds else { return }
+        loadPlaylists()
     }
 
     private func load(_ target: PlayTarget, from newSource: PlaySource, startAt position: Double?) {
