@@ -48,7 +48,7 @@ All of them come from environment variables:
 (`vercel env pull .env.development.local --environment preview`, then
 delete the `VIBE_*` lines: sensitive values come down as placeholders).
 Point B-Side at it in Settings → Vibes, or launch it with
-`-vibeServer http://localhost:3000`.
+`-vibeServerURL http://localhost:3000`.
 
 ## Comparing models
 

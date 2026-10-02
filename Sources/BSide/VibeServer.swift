@@ -11,7 +11,7 @@ enum VibeServer {
     /// The server is slower than the Mac's own model is to fall back to.
     private static let timeout: TimeInterval = 10
 
-    /// `-vibeServer <url>` turns it on with that address, for testing.
+    /// `-vibeServerURL <url>` turns it on with that address, for testing.
     static var isOn: Bool {
         UserDefaults.standard.string(forKey: Keys.vibeServerDebug) != nil || Settings.bool(Keys.vibeServer)
     }
@@ -59,6 +59,7 @@ enum VibeServer {
         do {
             (data, response) = try await URLSession.shared.data(for: request)
         } catch {
+            EventLog.write("vibe\tserver unreachable: \(error.localizedDescription) (\((error as NSError).code))")
             throw Failure.unreachable
         }
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
@@ -79,8 +80,14 @@ enum VibeServer {
     /// Whether the server makes vibes now; nil when it cannot be reached.
     static func health(at base: URL) async -> Health? {
         let request = URLRequest(url: base.appending(path: "v1/health"), timeoutInterval: timeout)
-        guard let (data, response) = try? await URLSession.shared.data(for: request),
-              (response as? HTTPURLResponse)?.statusCode == 200,
+        let data: Data, response: URLResponse
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            EventLog.write("vibe\tserver health: \(request.url?.absoluteString ?? "-"): \(error.localizedDescription) (\((error as NSError).code))")
+            return nil
+        }
+        guard (response as? HTTPURLResponse)?.statusCode == 200,
               let body = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
         return Health(open: body["vibes"] as? Bool ?? false, perMonth: body["perMonth"] as? Int ?? 0)
     }

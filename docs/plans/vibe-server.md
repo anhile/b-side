@@ -132,7 +132,7 @@ size; check the current limits before launch.
     says: "The B-Side server is busy, so this Mac read the words."
 - **The install ID.** A random UUID in UserDefaults, made once, sent only
   to the server.
-- **Debug.** `-makeVibe` and `-vibeServer <url>` test all of it without
+- **Debug.** `-makeVibe` and `-vibeServerURL <url>` test all of it without
   the screen.
 
 ## 5. Steps
@@ -220,7 +220,7 @@ Built and tested:
   read them. With the server's artists the first songs are theirs (Сплин,
   Наутилус, ДДТ for Russian rock 90s, not whatever the words match).
 
-Tested with `-vibeServer http://localhost:3000 -makeVibe "<words>"`
+Tested with `-vibeServerURL http://localhost:3000 -makeVibe "<words>"`
 against `npm run dev` in `server/`, and against an unreachable address.
 Not tried by Claude: clicking through the Settings tab and the sheet.
 
