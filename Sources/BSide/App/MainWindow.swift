@@ -1,34 +1,6 @@
 import AppKit
 import ServiceManagement
 
-/// Open at login, through `SMAppService.mainApp` (macOS 13+). The system's
-/// Login Items list is the only record of it; nothing is stored here.
-///
-/// It exists for the media keys: the system sends Play only to a running
-/// app, and with none it starts Apple Music (experiments 1 to 3 in
-/// docs/research/default-player.md).
-enum LoginItem {
-    static var status: SMAppService.Status { SMAppService.mainApp.status }
-
-    static func set(_ enabled: Bool) throws {
-        if enabled {
-            try SMAppService.mainApp.register()
-        } else {
-            try SMAppService.mainApp.unregister()
-        }
-        EventLog.write("login item\t\(enabled ? "on" : "off"), status \(status.rawValue)")
-    }
-
-    /// Whether this launch came from the Login Items. Valid only inside
-    /// `applicationDidFinishLaunching`, while the launch Apple event is still
-    /// the current one; the check sindresorhus/LaunchAtLogin-Modern uses.
-    static func launchedAtLogin() -> Bool {
-        let event = NSAppleEventManager.shared().currentAppleEvent
-        return event?.eventID == kAEOpenApplication
-            && event?.paramDescriptor(forKeyword: keyAEPropData)?.enumCodeValue == keyAELaunchedAsLogInItem
-    }
-}
-
 /// The main window, for starting in the menu bar. SwiftUI creates the window
 /// at launch either way; a menu-bar start hides it before it is drawn, so the
 /// player and the status item start as usual.
@@ -92,27 +64,6 @@ enum MainWindow {
         DispatchQueue.main.async {
             guard hiddenAtLaunch else { return }
             window.orderOut(nil)
-        }
-    }
-}
-
-/// Space plays and pauses while the main window is in front, as in other
-/// players. Not a menu shortcut: a menu shortcut takes Space from every text
-/// field too, in Settings and in the mood editor.
-@MainActor
-enum SpaceKey {
-    private static var monitor: Any?
-
-    static func install(_ action: @escaping () -> Void) {
-        guard monitor == nil else { return }
-        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            let space: UInt16 = 49 // kVK_Space
-            guard event.keyCode == space,
-                  event.modifierFlags.intersection(.deviceIndependentFlagsMask).isEmpty,
-                  let window = NSApp.keyWindow, window === MainWindow.window,
-                  !(window.firstResponder is NSText) else { return event }
-            action()
-            return nil
         }
     }
 }

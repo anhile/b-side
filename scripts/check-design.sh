@@ -3,7 +3,7 @@
 # tokens from Sources/BSide/Design/Theme.swift. See DESIGN.md, Enforcement.
 # Settings keeps the system look on purpose and is not checked.
 cd "$(dirname "$0")/.." || exit 1
-files=$(ls Sources/BSide/Views/*.swift | grep -v SettingsView.swift)
+files=$(find Sources/BSide/Views -name '*.swift' | grep -v '/Settings/' | sort)
 status=0
 check() {
     pattern=$1; message=$2

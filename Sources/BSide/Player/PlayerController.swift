@@ -2,127 +2,18 @@ import AppKit
 import Combine
 import WebKit
 
-enum Account: Equatable {
-    case unknown
-    case signedOut
-    /// YouTube Music tells the account's name and channel handle, not its
-    /// email address.
-    case signedIn(name: String, handle: String, photoURL: URL? = nil)
-
-    var isSignedIn: Bool {
-        if case .signedIn = self { return true }
-        return false
-    }
-}
-
-enum PlayerPhase: Equatable {
-    /// Started in the menu bar: registered for the media keys, but the page
-    /// is not loaded until the first Play or until the window is shown.
-    case asleep
-    case starting
-    case ready
-    case failed(String)
-}
-
-/// How long the page has been starting, for the Welcome screen.
-enum StartWait: Equatable {
-    case short
-    /// Longer than usual: said so.
-    case long
-    /// Long enough to offer starting again.
-    case tooLong
-}
-
-enum Loadable: Equatable {
-    case idle
-    case loading
-    case loaded
-    case failed(String)
-}
-
-/// What started the current queue.
-enum PlaySource: Equatable {
-    case mood(String)
-    case playlist(String)
-    case other
-}
-
-/// What the strip says plays under the track: a vibe in its colour, or a
-/// playlist or album in the accent.
-struct SourceLabel: Hashable {
-    enum Kind: Hashable {
-        case vibe(colour: Int)
-        case playlist
-        case album
-        case artist
-    }
-
-    let kind: Kind
-    let name: String
-    let symbol: String
-}
-
 /// Owns the hidden WKWebView, its host window, and everything around playback.
 @MainActor
 final class PlayerController: NSObject, ObservableObject {
+    // MARK: - What plays
+
     @Published private(set) var state = PlayerState()
-    @Published private(set) var phase = PlayerPhase.starting {
-        didSet { if phase != .starting { startWaitTask?.cancel() } }
-    }
-    @Published private(set) var startWait = StartWait.short
-    private var playlistsAsked = Date.distantPast
-    private var startWaitTask: Task<Void, Never>?
-    /// Chose to use B-Side without signing in. Cleared by signing in.
-    @Published private(set) var isGuest = Settings.bool(Keys.guest) {
-        didSet { Settings.defaults.set(isGuest, forKey: Keys.guest) }
-    }
-    /// The playlist whose tracks the Playlists page shows, if any.
-    @Published private(set) var openPlaylist: Playlist?
-    @Published private(set) var tracks: [Track] = []
+    /// Where playback is between the page's reports; see PlaybackClock.
+    @Published private(set) var clock = PlaybackClock()
+    @Published private(set) var source: PlaySource?
     /// What plays after the current track, in order; a track's `index` is
     /// its place in the page's queue.
     @Published private(set) var upNext: [Track] = []
-    @Published private(set) var tracksState = Loadable.idle
-    /// The current track's lyrics, fetched when the lyrics are opened. Only
-    /// the last track's are kept.
-    /// The Explore page's search: what was asked, and what came back.
-    @Published private(set) var searchResults: [MusicItem] = []
-    @Published private(set) var searchState = Loadable.idle
-    private var searchAsked: (query: String, kind: SearchKind)?
-    /// The last search, so the page shows it again when it is built again.
-    var lastSearch: (query: String, kind: SearchKind)? { searchAsked }
-    @Published private(set) var lyrics: Lyrics?
-    @Published private(set) var lyricsState = Loadable.idle
-    private var tracksHaveMore = false
-    private var loadingMoreTracks = false
-    private var launchTrackPlayed = false
-    @Published private(set) var account = Account.unknown
-    @Published private(set) var source: PlaySource?
-    /// The Vibe tiles, in the user's order. Saved on every change.
-    @Published private(set) var moods: [Mood] = Mood.load() {
-        didSet { if moods != oldValue { Mood.save(moods) } }
-    }
-    @Published private(set) var playlists: [Playlist] = []
-    /// The user's playlists that hold a track, by video ID: the checkmarks
-    /// in Add to Playlist. Asked again each time the menu opens.
-    @Published private(set) var playlistsHolding: [String: Set<String>] = [:]
-    /// Likes set and taken back here, by video ID, since the app started.
-    @Published private(set) var likeChanges: [String: Bool] = [:]
-    private var askingHolding: Set<String> = []
-    @Published private(set) var playlistsState = Loadable.idle
-    /// Names of lists played from Explore, which are not in the library.
-    private var listTitles: [String: (title: String, kind: SourceLabel.Kind)] = [:]
-    /// A short word that something was done, such as "Added to Road trip";
-    /// gone after a moment.
-    @Published private(set) var notice: String?
-    private var noticeTask: Task<Void, Never>?
-    /// The last thing that went wrong while loading or playing, for the user.
-    @Published private(set) var problem: String?
-    @Published private(set) var processes: [ProcessInfoRow] = []
-    /// Snapshots only: rows to show instead of the live ones.
-    var processesForSnapshot: [ProcessInfoRow] = [] {
-        didSet { processes = processesForSnapshot }
-    }
     /// 0 to 100. Kept between launches.
     @Published var volume: Double = Settings.defaults.double(forKey: Keys.volume) {
         didSet {
@@ -140,12 +31,66 @@ final class PlayerController: NSObject, ObservableObject {
             EventLog.write("repeat\t\(repeatMode.rawValue)")
         }
     }
+    /// Likes set and taken back here, by video ID, since the app started.
+    @Published private(set) var likeChanges: [String: Bool] = [:]
 
-    /// Where the volume was before it was muted with the speaker button.
-    private var volumeBeforeMute: Double = 100
-
-    var totalMegabytes: Double { processes.reduce(0) { $0 + $1.megabytes } }
     var hasTrack: Bool { !state.videoID.isEmpty }
+
+    // MARK: - The page and the account
+
+    @Published private(set) var phase = PlayerPhase.starting {
+        didSet { if phase != .starting { startWaitTask?.cancel() } }
+    }
+    @Published private(set) var startWait = StartWait.short
+    @Published private(set) var account = Account.unknown
+    /// Chose to use B-Side without signing in. Cleared by signing in.
+    @Published private(set) var isGuest = Settings.bool(Keys.guest) {
+        didSet { Settings.defaults.set(isGuest, forKey: Keys.guest) }
+    }
+    /// The last thing that went wrong while loading or playing, for the user.
+    @Published private(set) var problem: String?
+    /// A short word that something was done, such as "Added to Road trip";
+    /// gone after a moment.
+    @Published private(set) var notice: String?
+
+    // MARK: - The library: vibes, playlists, a playlist's tracks
+
+    /// The Vibe tiles, in the user's order. Saved on every change.
+    @Published private(set) var moods: [Mood] = Mood.load() {
+        didSet { if moods != oldValue { Mood.save(moods) } }
+    }
+    @Published private(set) var playlists: [Playlist] = []
+    @Published private(set) var playlistsState = Loadable.idle
+    /// The user's playlists that hold a track, by video ID: the checkmarks
+    /// in Add to Playlist. Asked again each time the menu opens.
+    @Published private(set) var playlistsHolding: [String: Set<String>] = [:]
+    /// The playlist whose tracks the Playlists page shows, if any.
+    @Published private(set) var openPlaylist: Playlist?
+    @Published private(set) var tracks: [Track] = []
+    @Published private(set) var tracksState = Loadable.idle
+
+    // MARK: - Explore and lyrics
+
+    /// The Explore page's search: what came back, and what was asked.
+    @Published private(set) var searchResults: [MusicItem] = []
+    @Published private(set) var searchState = Loadable.idle
+    /// The last search, so the page shows it again when it is built again.
+    var lastSearch: (query: String, kind: SearchKind)? { searchAsked }
+    /// The current track's lyrics, fetched when the lyrics are opened. Only
+    /// the last track's are kept.
+    @Published private(set) var lyrics: Lyrics?
+    @Published private(set) var lyricsState = Loadable.idle
+
+    // MARK: - Diagnostics
+
+    @Published private(set) var processes: [ProcessInfoRow] = []
+    /// Snapshots only: rows to show instead of the live ones.
+    var processesForSnapshot: [ProcessInfoRow] = [] {
+        didSet { processes = processesForSnapshot }
+    }
+    var totalMegabytes: Double { processes.reduce(0) { $0 + $1.megabytes } }
+
+    // MARK: - Kept to itself
 
     private var webView: WKWebView!
     private let contentController = WKUserContentController()
@@ -153,28 +98,39 @@ final class PlayerController: NSObject, ObservableObject {
     private let bridge = JSBridge()
     private let nowPlaying = NowPlaying()
     private var started = false
-    private var webKitSessionChecked = false
-    private var lastRemote: (kind: String, at: Date)?
-    /// Two copies of one key press arrive well within this; two presses
-    /// by hand are further apart.
-    private static let remoteEchoWindow: TimeInterval = 0.3
+    /// Whether the page has reported its player ready, and what to play once
+    /// it has.
+    private var pageReady = false
+    private var pendingTarget: (target: PlayTarget, position: Double?)?
+    private var startWaitTask: Task<Void, Never>?
+    private var signingIn = false
+    /// Set while the page is unloaded by "free memory when paused".
+    private var unloaded: (target: PlayTarget, position: Double)?
 
-    private var currentListID: String?
-    /// When `state` arrived, to run the position forward between reports.
-    /// Where playback is between the page's reports; see PlaybackClock.
-    @Published private(set) var clock = PlaybackClock()
     /// What Play or Pause just asked for, and until when the page's reports
     /// may still say otherwise. The button and the record follow the click,
     /// not the round trip.
     private var expected: (isPlaying: Bool, until: Date)?
     private static let expectationWindow: TimeInterval = 1.5
-    /// Set while the page is unloaded by "free memory when paused".
-    private var unloaded: (target: PlayTarget, position: Double)?
-    /// Whether the page has reported its player ready, and what to play once
-    /// it has.
-    private var pageReady = false
-    private var pendingTarget: (target: PlayTarget, position: Double?)?
-    private var signingIn = false
+    /// Where the volume was before it was muted with the speaker button.
+    private var volumeBeforeMute: Double = 100
+    private var lastRemote: (kind: String, at: Date)?
+    /// Two copies of one key press arrive well within this; two presses
+    /// by hand are further apart.
+    private static let remoteEchoWindow: TimeInterval = 0.3
+    private var webKitSessionChecked = false
+
+    private var currentListID: String?
+    /// Names of lists played from Explore, which are not in the library.
+    private var listTitles: [String: (title: String, kind: SourceLabel.Kind)] = [:]
+    private var playlistsAsked = Date.distantPast
+    private var askingHolding: Set<String> = []
+    private var tracksHaveMore = false
+    private var loadingMoreTracks = false
+    private var launchTrackPlayed = false
+    private var searchAsked: (query: String, kind: SearchKind)?
+    private var noticeTask: Task<Void, Never>?
+
     private var pauseTimer: Timer?
     private var processTimer: Timer?
     private var playbackActivity: NSObjectProtocol?
