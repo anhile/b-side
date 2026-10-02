@@ -29,10 +29,10 @@ struct NowPlayingPage: View {
             artworkZone
                 .layoutPriority(1) // the record takes the free height, not the gaps
             Spacer(minLength: Theme.Space.s)
-            // Like stands at the end of the title, always in view; as much
-            // room is kept free at the start, so the title stays centred.
+            // Up Next before the title and Like after it, always in view;
+            // the two are as wide, so the title stays centred.
             HStack(spacing: Theme.Space.xxs) {
-                Spacer(minLength: 0).frame(width: Theme.Size.transportTarget)
+                queueButton
                 VStack(spacing: Theme.Space.xxs) {
                     Text(title)
                         .font(Theme.Text.title)
@@ -69,6 +69,17 @@ struct NowPlayingPage: View {
         }
     }
 
+    /// Opens the list of what plays next in the artwork's place, and closes
+    /// it; orange while it shows.
+    private var queueButton: some View {
+        TransportButton(symbol: "list.bullet", label: showsQueue ? "Hide Up Next" : "Up Next",
+                        color: showsQueue ? Theme.Colors.accentText : Theme.Colors.textMuted) {
+            navigation.showsQueue.toggle()
+        }
+        .opacity(player.state.isAd ? 0 : 1)
+        .disabled(player.state.isAd)
+    }
+
     /// Orange and filled once liked. An ad cannot be liked: the button
     /// keeps its place and goes away.
     private var likeButton: some View {
@@ -89,9 +100,17 @@ struct NowPlayingPage: View {
         VStack(spacing: 0) {
             Spacer(minLength: Theme.Space.m)
             ArtworkWithRecord(url: player.state.artworkURL, spinning: player.state.isPlaying && pageShown)
-                .opacity(showsLyrics ? 0 : 1)
+                .opacity(showsLyrics || showsQueue ? 0 : 1)
             Spacer(minLength: Theme.Space.s)
         }
+        .overlay {
+            if showsQueue {
+                UpNextList()
+                    .clipped() // at the title bar's edge
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: Theme.Motion.page), value: showsQueue)
         // The whole zone, so the lines scroll out under the title bar's edge
         // rather than being cut in the middle of the colour.
         .overlay {
@@ -136,10 +155,11 @@ struct NowPlayingPage: View {
     }
 
     private var showsArtworkActions: Bool {
-        !showsLyrics && (hoveringArtwork || previewArtworkHover)
+        !showsLyrics && !showsQueue && (hoveringArtwork || previewArtworkHover)
     }
 
     private var showsLyrics: Bool { navigation.showsLyrics }
+    private var showsQueue: Bool { navigation.showsQueue && !player.state.isAd }
 
     private var artworkActions: some View {
         HStack(spacing: Theme.Space.s) {
@@ -254,12 +274,16 @@ struct NowPlayingPage: View {
             }
             .keyboardShortcut("l", modifiers: .command)
             .disabled(player.state.isAd)
-            TrackMenu(videoID: player.state.isAd ? "" : player.state.videoID, artist: player.state.artist,
+            TrackMenu(videoID: player.state.isAd ? "" : player.state.videoID, title: player.state.title,
+                      artist: player.state.artist,
                       artistID: player.state.artistID, albumID: player.state.albumID, showsLike: false) {
                 Button { navigation.showsLyrics.toggle() } label: {
                     Label(showsLyrics ? "Hide Lyrics" : "Show Lyrics", systemImage: "quote.bubble")
                 }
                 .disabled(!showsLyrics && player.lyricsAvailable != true)
+                Button { navigation.showsQueue.toggle() } label: {
+                    Label(showsQueue ? "Hide Up Next" : "Show Up Next", systemImage: "list.bullet")
+                }
                 Picker(selection: $player.repeatMode) {
                     ForEach(RepeatMode.allCases) { Text($0.title).tag($0) }
                 } label: {
@@ -791,5 +815,50 @@ struct LinkText: View {
             .contentShape(Rectangle())
             .onHover { hovering = $0 }
             .pointingHand()
+    }
+}
+
+/// What plays after the current track, in the artwork's place: a click
+/// jumps to a track, its menu takes it out of the queue. The page sends
+/// the next thirty; the list fills again as the queue moves on.
+struct UpNextList: View {
+    @EnvironmentObject private var player: PlayerController
+
+    var body: some View {
+        if player.upNext.isEmpty {
+            Text(player.repeatMode == .all ? "Then the same again, from the top." : "Nothing after this track.")
+                .font(Theme.Text.caption)
+                .foregroundStyle(Theme.Colors.textMuted)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    Text("Up Next")
+                        .font(Theme.Text.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(Theme.Colors.textMuted)
+                        .padding(.horizontal, Theme.Space.xs)
+                        .padding(.bottom, Theme.Space.xxs)
+                    ForEach(player.upNext) { track in
+                        Button { player.playUpNext(track) } label: {
+                            TrackRow(track: track, isCurrent: false, isPlaying: false)
+                        }
+                        .buttonStyle(RowButtonStyle())
+                        .help("Play \(track.title)")
+                        .contextMenu {
+                            TrackMenu(videoID: track.videoID, title: track.title, artist: track.artist,
+                                      artistID: track.artistID, albumID: track.albumID, liked: track.liked) {
+                                Button(role: .destructive) { player.removeFromQueue(track) } label: {
+                                    Label("Remove from Up Next", systemImage: "minus.circle")
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, Theme.Space.xs)
+                .padding(.vertical, Theme.Space.xs)
+                .background(OverlayScrollers())
+            }
+        }
     }
 }

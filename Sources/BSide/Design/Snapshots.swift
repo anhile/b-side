@@ -183,6 +183,15 @@ enum Snapshots {
             await renderPage(.nowPlaying, player: .fixture(state: singing, source: .mood(Mood.liked.id), lyrics: lyrics),
                              name: "nowplaying-lyrics-\(suffix)", appearance: appearance, into: folder, showsLyrics: true)
         }
+        let next = tracks(current: "").enumerated().map { offset, item in
+            var item = item; item.index = offset + 4; return item
+        }
+        for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+            await renderPage(.nowPlaying, player: .fixture(state: track, source: .mood(Mood.liked.id), upNext: next),
+                             name: "nowplaying-queue-\(suffix)", appearance: appearance, into: folder, showsQueue: true)
+        }
+        await renderPage(.nowPlaying, player: .fixture(state: track, source: .mood(Mood.liked.id)),
+                         name: "nowplaying-queue-empty", appearance: .darkAqua, into: folder, showsQueue: true)
         var plain = lyrics; plain.lines = []; plain.timedTried = true
         plain.text = "Plain lyrics, without timings,\nshown as text you can select.\n\nA second verse\nof made-up words."
         await renderPage(.nowPlaying, player: .fixture(state: singing, source: .mood(Mood.liked.id), lyrics: plain),
@@ -313,9 +322,12 @@ enum Snapshots {
     private static func renderPage(_ page: Page, player: PlayerController, name: String,
                                    appearance: NSAppearance.Name, into folder: URL,
                                    reduceTransparency: Bool = false, artworkHover: Bool = false,
-                                   showsLyrics: Bool = false, explorePath: [ExploreRoute] = []) async {
+                                   showsLyrics: Bool = false, showsQueue: Bool = false,
+                                   explorePath: [ExploreRoute] = []) async {
+        if let only = UserDefaults.standard.string(forKey: Keys.snapshotOnly), !name.contains(only) { return }
         let navigation = Navigation()
         navigation.showsLyrics = showsLyrics
+        navigation.showsQueue = showsQueue
         navigation.setExplorePath(explorePath)
         let window = NSWindow(
             contentRect: NSRect(origin: .zero, size: Theme.Size.window),

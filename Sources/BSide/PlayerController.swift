@@ -65,6 +65,9 @@ final class PlayerController: NSObject, ObservableObject {
     /// The playlist whose tracks the Playlists page shows, if any.
     @Published private(set) var openPlaylist: Playlist?
     @Published private(set) var tracks: [Track] = []
+    /// What plays after the current track, in order; a track's `index` is
+    /// its place in the page's queue.
+    @Published private(set) var upNext: [Track] = []
     @Published private(set) var tracksState = Loadable.idle
     /// The current track's lyrics, fetched when the lyrics are opened. Only
     /// the last track's are kept.
@@ -174,7 +177,7 @@ final class PlayerController: NSObject, ObservableObject {
                         problem: String? = nil, volume: Double = 70,
                         moods: [Mood] = [.liked], isGuest: Bool = false, openPlaylist: Playlist? = nil,
                         tracks: [Track] = [], tracksState: Loadable = .idle,
-                        lyrics: Lyrics? = nil, search: (String, [MusicItem])? = nil,
+                        lyrics: Lyrics? = nil, upNext: [Track] = [], search: (String, [MusicItem])? = nil,
                         searchState: Loadable = .idle, artist: ArtistPage? = nil,
                         collection: CollectionPage? = nil) -> PlayerController {
         let controller = PlayerController()
@@ -192,6 +195,7 @@ final class PlayerController: NSObject, ObservableObject {
         controller.tracks = tracks
         controller.tracksState = tracksState
         controller.lyrics = lyrics
+        controller.upNext = upNext
         if let search {
             controller.searchAsked = (search.0, .songs)
             controller.searchResults = search.1
@@ -221,6 +225,7 @@ final class PlayerController: NSObject, ObservableObject {
         bridge.onEvent = { [weak self] in self?.handle(event: $0, detail: $1) }
         bridge.onAccount = { [weak self] in self?.handle(account: $0) }
         bridge.onLyrics = { [weak self] in self?.receive(lyrics: $0) }
+        bridge.onUpNext = { [weak self] in self?.upNext = $0 }
         bridge.onArtist = { [weak self] in self?.receive(artist: $0, page: $1) }
         bridge.onCollection = { [weak self] in self?.receive(collection: $0, page: $1) }
         bridge.onSearch = { [weak self] query, kind, items in
@@ -464,6 +469,23 @@ final class PlayerController: NSObject, ObservableObject {
     func isLiked(_ videoID: String, listed: Bool) -> Bool {
         if hasTrack, videoID == state.videoID, !state.like.isEmpty { return state.isLiked }
         return likeChanges[videoID] ?? listed
+    }
+
+    /// Jumps to a track of Up Next; the ones before it are skipped.
+    func playUpNext(_ track: Track) {
+        bridge.call("playQueued", track.index, track.videoID)
+    }
+
+    func removeFromQueue(_ track: Track) {
+        bridge.call("removeQueued", track.index, track.videoID)
+        upNext.removeAll { $0.index == track.index } // shown at once; the page sends the list again
+    }
+
+    /// Puts a track right after the one that plays. The title and artist
+    /// are what the list showed, for when YouTube Music gives none.
+    func playNext(_ videoID: String, title: String, artist: String) {
+        guard hasTrack, !videoID.isEmpty else { return }
+        bridge.call("playNext", videoID, title, artist)
     }
 
     /// The track, then its radio, as a click on a search result plays it.

@@ -40,7 +40,14 @@ enum Page: String, CaseIterable, Identifiable {
 final class Navigation: ObservableObject {
     @Published var page: Page? = UserDefaults.standard.string(forKey: Keys.page).flatMap(Page.init) ?? .nowPlaying
     /// Now Playing shows the lyrics in place of the artwork.
-    @Published var showsLyrics = false
+    @Published var showsLyrics = false {
+        didSet { if showsLyrics { showsQueue = false } }
+    }
+    /// Now Playing shows what plays next in place of the artwork. One of
+    /// the two at a time.
+    @Published var showsQueue = false {
+        didSet { if showsQueue { showsLyrics = false } }
+    }
     /// The New Playlist sheet, and the track to put in it, if any.
     @Published var newPlaylist: NewPlaylistRequest?
     /// The pages opened on Explore over the search, the last one showing.

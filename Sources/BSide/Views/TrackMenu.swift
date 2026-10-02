@@ -2,11 +2,12 @@ import AppKit
 import SwiftUI
 
 /// What can be done with a track, the same wherever it is listed or plays:
-/// like it, put it in a playlist, start its radio, go to its artist or
-/// album, copy its link. `extra` comes after the playlists: what only that
+/// like it, put it in a playlist, play it next, start its radio, go to its
+/// artist or album, copy its link. `extra` comes after the playlists: what only that
 /// place offers.
 struct TrackMenu<Extra: View>: View {
     let videoID: String
+    var title = ""
     var artist = ""
     var artistID = ""
     var albumID = ""
@@ -30,6 +31,10 @@ struct TrackMenu<Extra: View>: View {
         AddToPlaylistMenu(videoID: videoID)
         extra
         Divider()
+        Button { player.playNext(videoID, title: title, artist: artist) } label: {
+            Label("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward")
+        }
+        .disabled(videoID.isEmpty || !player.hasTrack || videoID == player.state.videoID)
         Button { player.playRadio(of: videoID) } label: {
             Label("Start Radio", systemImage: "dot.radiowaves.left.and.right")
         }
@@ -54,7 +59,9 @@ struct TrackMenu<Extra: View>: View {
 }
 
 extension TrackMenu where Extra == EmptyView {
-    init(videoID: String, artist: String = "", artistID: String = "", albumID: String = "", liked: Bool = false) {
-        self.init(videoID: videoID, artist: artist, artistID: artistID, albumID: albumID, liked: liked) { EmptyView() }
+    init(videoID: String, title: String = "", artist: String = "", artistID: String = "", albumID: String = "",
+         liked: Bool = false) {
+        self.init(videoID: videoID, title: title, artist: artist, artistID: artistID, albumID: albumID,
+                  liked: liked) { EmptyView() }
     }
 }

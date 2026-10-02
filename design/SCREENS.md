@@ -18,7 +18,12 @@ bar and under Command-comma. Starting music never switches the page.
   orange and filled once liked. As much room is kept free before the title,
   so it stays centred. Not on the artwork's hover, which keeps Lyrics and
   Repeat.
-- What we removed or deferred: queue, shuffle toggle
+- Up Next: a list button before the title, as wide as Like after it. It
+  puts what plays next in the artwork's place (as Lyrics do; one of the two
+  at a time) and is orange while the list shows. A click on a track jumps to
+  it; its menu is a track's menu plus Remove from Up Next. The next 30
+  tracks; "Nothing after this track." when there are none.
+- What we removed or deferred: shuffle toggle, dragging tracks in Up Next
 - States: nothing playing (record alone, "Nothing playing", Play Vibe) /
   loading ("Loading…") / ad ("Advertisement", seek disabled) / long title (one
   line, tail truncation, tooltip) / no artwork (surface placeholder with a
@@ -37,6 +42,7 @@ result, an album's track, the strip, Now Playing's "…"), added 2026-10-02:
 - Add to Playlist (a submenu, checked where the track already is)
 - what only that place offers: Remove from Playlist in an own playlist;
   Lyrics and Repeat on Now Playing
+- Play Next: right after the track that plays
 - Start Radio: the track, then its radio
 - Go to Artist, Go to Album (disabled when YouTube Music does not link them)
 - Copy Link

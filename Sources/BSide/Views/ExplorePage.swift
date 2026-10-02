@@ -278,7 +278,7 @@ private struct ItemRowButton: View {
         }
         .contextMenu {
             if item.kind == .song, !item.videoID.isEmpty {
-                TrackMenu(videoID: item.videoID, artist: artistName, artistID: item.artistID,
+                TrackMenu(videoID: item.videoID, title: item.title, artist: artistName, artistID: item.artistID,
                           albumID: item.albumID, liked: item.liked)
             } else if !item.artistID.isEmpty {
                 Button { navigation.open(.artist(id: item.artistID, name: artistName)) } label: {

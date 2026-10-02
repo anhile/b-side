@@ -369,7 +369,7 @@ struct PlaylistTracks: View {
                     .buttonStyle(RowButtonStyle())
                     .help(track.title)
                     .contextMenu {
-                        TrackMenu(videoID: track.videoID, artist: track.artist, artistID: track.artistID,
+                        TrackMenu(videoID: track.videoID, title: track.title, artist: track.artist, artistID: track.artistID,
                                   albumID: track.albumID, liked: track.liked) {
                             if track.removable || player.canEditOpenPlaylist, !track.setVideoID.isEmpty,
                                let playlist = player.openPlaylist {

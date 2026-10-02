@@ -28,6 +28,7 @@ enum Keys {
     static let page = "page"                     // debug: open the window on this page (nowPlaying, vibe, playlists, explore)
     static let makeVibe = "makeVibe"             // debug: make a vibe from these words once the page is ready, and log it
     static let vibeServerDebug = "vibeServerURL" // debug: -vibeServerURL <url> turns the server on with that address
+    static let snapshotOnly = "snapshotOnly"     // with snapshot: only the pages whose name has this in it
     static let snapshot = "snapshot"             // render the screens with sample data into this folder and quit
 }
 

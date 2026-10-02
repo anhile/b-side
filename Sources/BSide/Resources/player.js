@@ -37,6 +37,7 @@
   const ROW_ARTWORK_MIN_WIDTH = 96;     // the same for a 36 pt row in a track list
   const CONTINUATION = /"next(?:Radio)?ContinuationData":\{"continuation":"([^"]+)"/; // token for the next page
   const REFILL_THRESHOLD = 3;           // fetch the next page this many tracks before the end
+  const UP_NEXT_COUNT = 30;             // tracks after the current one that the Up Next list shows
   const BROWSE_ENDPOINT = '/youtubei/v1/browse?prettyPrint=false';
   const LIBRARY_PLAYLISTS = 'FEmusic_liked_playlists'; // browse ID of the user's playlists
   const LIBRARY_ITEM = 'musicTwoRowItemRenderer';      // one tile in that list
@@ -412,11 +413,60 @@
       queue = queue.concat(markLiked(page.tracks, queueListId));
       queueContinuation = page.tracks.length ? page.continuation : null;
       event('queue', describe(queue, 'next page'));
+      postQueue();
     } catch (e) {
       event('error', 'queue refill: ' + e);
     } finally {
       refilling = false;
     }
+  }
+
+  // What plays after the current track, for the Up Next list in the app:
+  // sent whenever the place in the queue or the queue itself changes.
+  function postQueue() {
+    const from = queueIndex + 1;
+    post({
+      type: 'upNext',
+      items: queue.slice(from, from + UP_NEXT_COUNT).map(function (entry, offset) {
+        return { index: from + offset, videoId: entry.id, title: entry.title || '', artist: entry.artist || '',
+                 artwork: entry.thumb || '', like: entry.like || '', artistId: entry.artistId || '',
+                 albumId: entry.albumId || '' };
+      }),
+    });
+  }
+
+  // From the Up Next list. The place is checked against the track: the
+  // list in the app may be a moment behind the queue.
+  function playQueued(index, videoId) {
+    if (!queue[index] || queue[index].id !== videoId) return event('error', 'queue: the queue changed');
+    playAt(index, 0);
+  }
+
+  function removeQueued(index, videoId) {
+    if (index <= queueIndex || !queue[index] || queue[index].id !== videoId) return event('error', 'queue: the queue changed');
+    queue.splice(index, 1);
+    event('queue', 'removed ' + videoId + ', ' + (queue.length - queueIndex - 1) + ' after this track');
+    postQueue();
+    report();
+  }
+
+  // Puts a track right after the current one. Its radio's first item is
+  // the track itself, with its title, artwork and song version; without
+  // that, the title and artist the app's list had.
+  async function playNext(videoId, title, artist) {
+    if (queueIndex < 0) return event('error', 'play next: nothing plays');
+    let entry = null;
+    try {
+      const page = await fetchQueue({ videoId: videoId, playlistId: RADIO_PREFIX + videoId });
+      entry = page.tracks.find(function (item) { return item.versions.indexOf(videoId) !== -1; }) || null;
+    } catch (e) {
+      event('error', 'play next: ' + e);
+    }
+    if (!entry) entry = { id: videoId, versions: [videoId], audio: false, title: title, artist: artist };
+    queue.splice(queueIndex + 1, 0, entry);
+    event('queue', 'next is ' + videoId + (entry.audio ? ' (song)' : ''));
+    postQueue();
+    report();
   }
 
   // At the end of a track: the same one again, the next, or the first after
@@ -435,6 +485,7 @@
     // as small as the player allows.
     if (config.audioOnly && !queue[index].audio) player.setPlaybackQualityRange(LOWEST_QUALITY, LOWEST_QUALITY);
     if (index >= queue.length - REFILL_THRESHOLD) refill();
+    postQueue();
     return true;
   }
 
@@ -792,6 +843,9 @@
     findSongs(query) { return findSongs(query); },
     playlistsWith(videoId) { return playlistsWith(videoId); },
     removeVideo(playlistId, videoId) { removeVideo(playlistId, videoId); },
+    playQueued(index, videoId) { playQueued(index, videoId); },
+    removeQueued(index, videoId) { removeQueued(index, videoId); },
+    playNext(videoId, title, artist) { playNext(videoId, title, artist); },
     load(kind, id, startSeconds, options) {
       load(kind, id, startSeconds, options).catch(function (e) { event('error', 'load: ' + e); });
     },

@@ -212,6 +212,8 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
     var onArtist: ((_ id: String, _ page: ArtistPage?) -> Void)?
     var onCollection: ((_ id: String, _ page: CollectionPage?) -> Void)?
     var onLyrics: ((Lyrics) -> Void)?
+    /// What plays after the current track; `index` is the place in the queue.
+    var onUpNext: (([Track]) -> Void)?
     /// A playlist was created ("created"), or a track added to one ("added",
     /// or "already" when it was there).
     var onPlaylistEdit: ((_ action: String, _ playlistID: String, _ title: String, _ videoID: String) -> Void)?
@@ -326,6 +328,18 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
                              albumID: item["albumId"] as? String ?? "",
                              liked: item["like"] as? String == "LIKE")
             }, body["append"] as? Bool ?? false, body["more"] as? Bool ?? false)
+        case "upNext":
+            let items = body["items"] as? [[String: Any]] ?? []
+            onUpNext?(items.compactMap { item in
+                guard let video = item["videoId"] as? String, let index = (item["index"] as? NSNumber)?.intValue else { return nil }
+                return Track(index: index, videoID: video,
+                             title: item["title"] as? String ?? "",
+                             artist: item["artist"] as? String ?? "",
+                             artworkURL: (item["artwork"] as? String).flatMap { $0.isEmpty ? nil : URL(string: $0) },
+                             artistID: item["artistId"] as? String ?? "",
+                             albumID: item["albumId"] as? String ?? "",
+                             liked: item["like"] as? String == "LIKE")
+            })
         case "search":
             onSearch?(body["query"] as? String ?? "", SearchKind(rawValue: body["kind"] as? String ?? "") ?? .songs,
                       MusicItem.list(body["items"]))

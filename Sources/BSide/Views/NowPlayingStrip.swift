@@ -49,7 +49,8 @@ struct NowPlayingStrip: View {
 
     /// Right-click: the menu every track has.
     private var trackMenu: some View {
-        TrackMenu(videoID: player.state.isAd ? "" : player.state.videoID, artist: player.state.artist,
+        TrackMenu(videoID: player.state.isAd ? "" : player.state.videoID, title: player.state.title,
+                  artist: player.state.artist,
                   artistID: player.state.artistID, albumID: player.state.albumID, liked: player.state.isLiked)
     }
 
