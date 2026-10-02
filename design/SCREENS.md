@@ -67,7 +67,8 @@ way: the track's length, or the orange speaker on the one that plays.
 - User's job here: "start music for how I feel right now, in one click"
 - Primary action: click a tile
 - Under a tile's name: what it plays. For a vibe made from words, what it
-  was heard as ("slow jazz, rainy"); never the name again
+  was heard as ("slow jazz, rainy"), or "From words" for a tile made before
+  that was kept; never the words themselves, and never the name again
 - Secondary actions: add a tile (the "+" tile at the end); edit and remove in
   a tile's context menu; drag a tile to another's place, the others make
   room as it passes (also Move Earlier and Move Later in the menu)

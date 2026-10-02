@@ -77,11 +77,11 @@ struct Mood: Identifiable, Equatable, Codable {
             return shuffled ? "\(title), shuffled" : title
         case .radio:
             return "Radio"
-        case .described(let prompt, _):
+        case .described:
+            // Never the words themselves: they are a request, often long,
+            // and say less about the music than what was heard in them.
             if let heardAs, !heardAs.isEmpty { return heardAs }
-            // A name taken from the words would only be said twice.
-            let same = prompt.lowercased().hasPrefix(name.lowercased()) || name.lowercased().hasPrefix(prompt.lowercased())
-            return same ? "From words" : "“\(prompt)”"
+            return "From words"
         }
     }
 
