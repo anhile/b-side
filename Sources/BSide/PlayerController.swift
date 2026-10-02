@@ -24,6 +24,15 @@ enum PlayerPhase: Equatable {
     case failed(String)
 }
 
+/// How long the page has been starting, for the Welcome screen.
+enum StartWait: Equatable {
+    case short
+    /// Longer than usual: said so.
+    case long
+    /// Long enough to offer starting again.
+    case tooLong
+}
+
 enum Loadable: Equatable {
     case idle
     case loading
@@ -57,7 +66,11 @@ struct SourceLabel: Hashable {
 @MainActor
 final class PlayerController: NSObject, ObservableObject {
     @Published private(set) var state = PlayerState()
-    @Published private(set) var phase = PlayerPhase.starting
+    @Published private(set) var phase = PlayerPhase.starting {
+        didSet { if phase != .starting { startWaitTask?.cancel() } }
+    }
+    @Published private(set) var startWait = StartWait.short
+    private var startWaitTask: Task<Void, Never>?
     /// Chose to use B-Side without signing in. Cleared by signing in.
     @Published private(set) var isGuest = Settings.bool(Keys.guest) {
         didSet { Settings.defaults.set(isGuest, forKey: Keys.guest) }
@@ -172,7 +185,7 @@ final class PlayerController: NSObject, ObservableObject {
     /// For design snapshots (see Snapshots.swift): a controller that shows a
     /// given situation and never starts the web view.
     static func fixture(state: PlayerState = PlayerState(), account: Account = .signedIn(name: "", handle: "@bside"),
-                        phase: PlayerPhase = .ready, source: PlaySource? = nil,
+                        phase: PlayerPhase = .ready, startWait: StartWait = .short, source: PlaySource? = nil,
                         playlists: [Playlist] = [], playlistsState: Loadable = .loaded,
                         problem: String? = nil, volume: Double = 70,
                         moods: [Mood] = [.liked], isGuest: Bool = false, openPlaylist: Playlist? = nil,
@@ -187,6 +200,7 @@ final class PlayerController: NSObject, ObservableObject {
         controller.clock = PlaybackClock(state, at: Date())
         controller.account = account
         controller.phase = phase
+        controller.startWait = startWait
         controller.source = source
         controller.playlists = playlists
         controller.playlistsState = playlistsState
@@ -356,6 +370,17 @@ final class PlayerController: NSObject, ObservableObject {
     /// would fetch the base URL, the real home page.
     private func loadHome() {
         phase = .starting
+        startWait = .short
+        startWaitTask?.cancel()
+        startWaitTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(Tuning.startSlowSeconds))
+            guard !Task.isCancelled else { return }
+            self?.startWait = .long
+            try? await Task.sleep(for: .seconds(Tuning.startRetrySeconds - Tuning.startSlowSeconds))
+            guard !Task.isCancelled else { return }
+            self?.startWait = .tooLong
+            EventLog.write("error\tstart: the page is not ready after \(Int(Tuning.startRetrySeconds)) s")
+        }
         webView.loadHTMLString(Tuning.emptyPage, baseURL: Tuning.musicHome)
     }
 

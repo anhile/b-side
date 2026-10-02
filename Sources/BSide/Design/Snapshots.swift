@@ -69,6 +69,8 @@ enum Snapshots {
             ("vibe-guest", .vibe, .fixture(account: .signedOut, moods: moods, isGuest: true)),
             ("playlists-guest", .playlists, .fixture(account: .signedOut, isGuest: true)),
             ("welcome", .nowPlaying, .fixture(account: .unknown, phase: .asleep)),
+            ("welcome-long", .nowPlaying, .fixture(account: .unknown, phase: .starting, startWait: .long)),
+            ("welcome-toolong", .nowPlaying, .fixture(account: .unknown, phase: .starting, startWait: .tooLong)),
             ("nowplaying-failed", .nowPlaying, .fixture(phase: .failed("YouTube Music could not be loaded. Check the connection and try again."))),
             ("vibe-playing", .vibe, .fixture(state: track, source: .mood("focus"), playlists: lists, moods: moods)),
             ("vibe-one", .vibe, .fixture(playlists: lists)),

@@ -153,7 +153,11 @@ gained air under the title bar (16 and 12).
 - Attention order: 1) the turning record 2) "Welcome back" ("Hello" before
   the first sign-in) 3) "Getting the player ready"
 - States: shown while nothing plays and the page is asleep (after a start in
-  the menu bar) or starting; replaced by the pages with a cross-fade
+  the menu bar) or starting; replaced by the pages with a cross-fade. After
+  6 s the line reads "Taking longer than usual…"; after 15 s "Still not
+  ready. Check the connection." with Try Again where "Nothing
+  playing" has its buttons. With Reduce Motion a small spinner stands there
+  until then, since the record does not turn
 - Entry and exit: covers all three pages; the page icons are hidden. It ends
   when the page reports ready or fails
 

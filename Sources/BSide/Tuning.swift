@@ -7,6 +7,11 @@ import WebKit
 enum Tuning {
     /// Tracks whose playlists are remembered for Add to Playlist's checkmarks.
     static let holdingCacheSize = 200
+    /// The player page usually starts in one to three seconds. After the
+    /// first of these the Welcome screen says it is taking long; after the
+    /// second it offers to start again.
+    static let startSlowSeconds: Double = 6
+    static let startRetrySeconds: Double = 15
     /// How long the vibe maker waits for a sleeping player page to load.
     static let pageWaitSeconds: Double = 20
     /// Google sign-in tends to reject embedded web views ("This browser or app
