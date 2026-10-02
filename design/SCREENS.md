@@ -23,6 +23,10 @@ bar and under Command-comma. Starting music never switches the page.
   at a time) and is orange while the list shows. A click on a track jumps to
   it; its menu is a track's menu plus Remove from Up Next. The next 30
   tracks; "Nothing after this track." when there are none.
+- Ad: "Advertisement", and under it "Music back in 0:12", counted down
+  each second; in a run of ads all but the last say "Ad 1 of 2 · 0:12".
+  The same line is under "Advertisement" in the strip. Without a time from
+  the player, the ad's own title, as before.
 - What we removed or deferred: shuffle toggle, dragging tracks in Up Next
 - States: nothing playing (record alone, "Nothing playing", Play Vibe) /
   loading ("Loading…") / ad ("Advertisement", seek disabled) / long title (one

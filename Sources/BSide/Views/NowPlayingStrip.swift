@@ -18,7 +18,9 @@ struct NowPlayingStrip: View {
                     Artwork(url: player.state.artworkURL, size: Theme.Size.artworkStrip, radius: Theme.Radius.nested)
                     VStack(alignment: .leading, spacing: 0) {
                         MarqueeText(text: line, font: Theme.Text.body, color: Theme.Colors.text)
-                        if let label = player.sourceLabel {
+                        if player.state.isAd, player.state.adLeft >= 0 {
+                            AdCountdown(font: Theme.Text.caption)
+                        } else if let label = player.sourceLabel {
                             sourceLine(label)
                                 .id(label)
                                 .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))

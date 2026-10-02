@@ -85,6 +85,9 @@
   const PLAYER_ELEMENT = '#movie_player';
   const PLAYER_SIZE = 'width:320px;height:180px';
   const AD_CLASS = 'ad-showing';
+  // The player's own "1 of 2" over a run of ads; the numbers are read, the
+  // words are in the user's language.
+  const AD_COUNT_SELECTOR = '.ytp-ad-pod-index, .ytp-ad-simple-ad-badge';
   const REPORT_INTERVAL_MS = 5000;
   const BOOT_TIMEOUT_MS = 20000;
   const MEDIA_EVENTS = ['play', 'playing', 'pause', 'seeked', 'ended', 'durationchange', 'loadedmetadata', 'emptied'];
@@ -121,8 +124,29 @@
     event('version', videoId + (track.audio ? ' song' : ' video at quality ' + player.getPlaybackQuality()) + ', volume ' + player.getVolume());
   }
 
+  // How long the ad that plays still runs, and its place in a run of ads.
+  // The player's own times are the track's even then; the video element
+  // plays the ad itself, so its times are the ad's. -1 and 0 when unknown.
+  let adLogged = false;
+  function adState() {
+    const ad = { on: player.classList.contains(AD_CLASS), left: -1, index: 0, count: 0 };
+    if (!ad.on) { adLogged = false; return ad; }
+    const video = player.querySelector('video');
+    if (video && isFinite(video.duration) && video.duration > 0) ad.left = Math.max(0, video.duration - video.currentTime);
+    const badge = player.querySelector(AD_COUNT_SELECTOR);
+    const numbers = badge && (badge.textContent || '').match(/(\d+)\D+(\d+)/);
+    if (numbers) { ad.index = Number(numbers[1]); ad.count = Number(numbers[2]); }
+    if (!adLogged && ad.left >= 0) {
+      adLogged = true;
+      event('ad', Math.round(ad.left) + ' s left, ' + (ad.count ? ad.index + ' of ' + ad.count : 'no count')
+        + ', player says ' + Math.round(player.getCurrentTime() || 0) + ' of ' + Math.round(player.getDuration() || 0) + ' s');
+    }
+    return ad;
+  }
+
   function report() {
     if (!player) return;
+    const ad = adState();
     const data = player.getVideoData() || {};
     announce(data.video_id);
     const state = player.getPlayerState();
@@ -147,7 +171,10 @@
       position: player.getCurrentTime() || 0,
       duration: isFinite(duration) ? duration : 0,
       playing: state === PLAYING || state === BUFFERING,
-      ad: player.classList.contains(AD_CLASS),
+      ad: ad.on,
+      adLeft: ad.left,
+      adIndex: ad.index,
+      adCount: ad.count,
     });
   }
 

@@ -46,7 +46,8 @@ enum Snapshots {
         long.title = "Everything In Its Right Place (Live at Glastonbury 2003, Remastered)"
         long.artist = "Radiohead feat. Someone With A Very Long Name Indeed"
         var noArt = track; noArt.artworkURL = nil
-        var ad = track; ad.isAd = true; ad.title = ""
+        var ad = track; ad.isAd = true; ad.title = ""; ad.adLeft = 12; ad.adLeftAt = .distantFuture // stands still
+        var adRun = ad; adRun.adIndex = 1; adRun.adCount = 2
         var loading = PlayerState(); loading.videoID = "x"
         let lists = [
             Playlist(id: "1", title: "Focus", subtitle: "Emil • 12 tracks", artworkURL: artwork),
@@ -59,6 +60,8 @@ enum Snapshots {
             ("nowplaying-long", .nowPlaying, .fixture(state: long, source: .mood(Mood.liked.id), playlists: lists)),
             ("nowplaying-noart", .nowPlaying, .fixture(state: noArt, source: .mood(Mood.liked.id), playlists: lists)),
             ("nowplaying-ad", .nowPlaying, .fixture(state: ad, source: .mood(Mood.liked.id), playlists: lists)),
+            ("nowplaying-ad-run", .nowPlaying, .fixture(state: adRun, source: .mood(Mood.liked.id), playlists: lists)),
+            ("vibe-ad", .vibe, .fixture(state: ad, source: .mood(Mood.liked.id), playlists: lists)),
             ("nowplaying-loading", .nowPlaying, .fixture(state: loading, source: .mood(Mood.liked.id), playlists: lists)),
             ("nowplaying-empty", .nowPlaying, .fixture(playlists: lists)),
             ("nowplaying-signedout", .nowPlaying, .fixture(account: .signedOut)),

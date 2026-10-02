@@ -10,6 +10,12 @@ struct PlayerState: Equatable {
     var duration: Double = 0
     var isPlaying = false
     var isAd = false
+    /// Seconds the ad still ran when the page reported at `adLeftAt`, -1
+    /// when unknown; its place in a run of ads, 0 when the player shows none.
+    var adLeft: Double = -1
+    var adLeftAt = Date.distantPast
+    var adIndex = 0
+    var adCount = 0
     var queueIndex = -1
     var queueCount = 0
     /// The queue has more pages that are not loaded yet.
@@ -21,6 +27,15 @@ struct PlayerState: Equatable {
     var albumID = ""
 
     var isLiked: Bool { like == "LIKE" }
+
+    /// Seconds until the ad ends, nil when the page could not tell.
+    func adRemaining(at date: Date) -> Double? {
+        guard isAd, adLeft >= 0 else { return nil }
+        return isPlaying ? max(0, adLeft - max(0, date.timeIntervalSince(adLeftAt))) : adLeft
+    }
+
+    /// More ads follow this one, so its end is not the music's return.
+    var moreAdsFollow: Bool { adCount > 0 && adIndex < adCount }
 
     var hasPrevious: Bool { queueIndex > 0 }
     var hasNext: Bool { queueIndex >= 0 && (queueIndex < queueCount - 1 || queueHasMore) }
@@ -294,6 +309,12 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
             state.duration = (body["duration"] as? NSNumber)?.doubleValue ?? 0
             state.isPlaying = body["playing"] as? Bool ?? false
             state.isAd = body["ad"] as? Bool ?? false
+            if state.isAd {
+                state.adLeft = (body["adLeft"] as? NSNumber)?.doubleValue ?? -1
+                state.adLeftAt = Date()
+                state.adIndex = (body["adIndex"] as? NSNumber)?.intValue ?? 0
+                state.adCount = (body["adCount"] as? NSNumber)?.intValue ?? 0
+            }
             state.queueIndex = (body["queueIndex"] as? NSNumber)?.intValue ?? -1
             state.queueCount = (body["queueCount"] as? NSNumber)?.intValue ?? 0
             state.queueHasMore = body["queueHasMore"] as? Bool ?? false
