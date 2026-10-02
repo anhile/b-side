@@ -73,14 +73,11 @@ runtime.
 
 ## Before there is a certificate
 
-B-Side is released as source: the README tells people to build it with
-`./scripts/install.sh`. An app built on one's own Mac is not quarantined,
-so Gatekeeper does not ask about it.
-
-An `--adhoc` image can be put on GitHub as an unsigned download, but a
-downloaded copy is stopped by Gatekeeper ("Apple could not verify…"). The
-user has to allow it once in System Settings → Privacy & Security → Open
-Anyway. Say so next to the download if you publish one.
+Releases are `--adhoc` images: unsigned downloads. A downloaded copy is
+stopped by Gatekeeper ("Apple could not verify…"), and the user allows it
+once in System Settings → Privacy & Security → Open Anyway. The README and
+each release's text say so, and offer building from source instead: an app
+built on one's own Mac is not quarantined, so Gatekeeper does not ask.
 
 ## When the notary refuses
 
