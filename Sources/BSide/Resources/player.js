@@ -33,7 +33,7 @@
   const LOWEST_QUALITY = 'tiny';        // 144p, for videos that have no song version
   const RADIO_PREFIX = 'RDAMVM';        // playlist ID of the automatic radio for a track
   const SHUFFLE_PARAMS = 'wAEB8gECKAE%3D'; // `params` value that makes the server shuffle a playlist
-  const ARTWORK_MIN_WIDTH = 320;        // smallest thumbnail that still looks sharp at 160 pt
+  const ARTWORK_MIN_WIDTH = 480;        // smallest thumbnail that still looks sharp across the large artwork
   const ROW_ARTWORK_MIN_WIDTH = 96;     // the same for a 36 pt row in a track list
   const CONTINUATION = /"next(?:Radio)?ContinuationData":\{"continuation":"([^"]+)"/; // token for the next page
   const REFILL_THRESHOLD = 3;           // fetch the next page this many tracks before the end

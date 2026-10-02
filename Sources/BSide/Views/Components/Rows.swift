@@ -1,10 +1,11 @@
 import SwiftUI
 
 /// A row with a control at its end, over the row so the row's hover spans
-/// it, shown only under the pointer, or always while `pinned` (the playing
-/// one keeps its pause button).
+/// it, shown only under the pointer. The row that plays has the playing
+/// mark in the control's place until the pointer comes.
 struct HoverReveal<Content: View, Control: View>: View {
-    var pinned = false
+    /// Nil on a row that is not the one playing; else whether it plays now.
+    var playing: Bool?
     @ViewBuilder let content: Content
     @ViewBuilder let control: Control
 
@@ -13,18 +14,43 @@ struct HoverReveal<Content: View, Control: View>: View {
     var body: some View {
         content
             .overlay(alignment: .trailing) {
-                control
-                    .opacity(hovering || pinned ? 1 : 0)
-                    .allowsHitTesting(hovering || pinned)
+                ZStack {
+                    if let playing {
+                        PlayingMark(isPlaying: playing)
+                            .frame(width: Theme.Size.artworkSmall)
+                            .padding(.trailing, Theme.Space.xxs)
+                            .opacity(hovering ? 0 : 1)
+                    }
+                    control
+                        .opacity(hovering ? 1 : 0)
+                        .allowsHitTesting(hovering)
+                }
             }
             .onHover { hovering = $0 }
             .animation(.easeOut(duration: Theme.Motion.feedback), value: hovering)
     }
 }
 
-/// A list row that is a button: `surface` under the pointer and while
-/// pressed, nothing otherwise. No separators; the 44 rhythm groups them.
+/// The speaker on the row that plays, its waves moving while the music
+/// does and the page is in view.
+struct PlayingMark: View {
+    let isPlaying: Bool
+    @Environment(\.pageShown) private var pageShown
+
+    var body: some View {
+        Image(systemName: isPlaying ? "speaker.wave.2.fill" : "speaker.fill")
+            .symbolEffect(.variableColor.iterative, isActive: isPlaying && pageShown) // tokens-ok: an effect, not a colour
+            .font(Theme.Text.body)
+            .foregroundStyle(Theme.Colors.accentText)
+            .accessibilityLabel(isPlaying ? "Playing" : "Paused")
+    }
+}
+
+/// A list row that is a button: `surface` under the pointer, while pressed
+/// and while `selected` (the playlist that plays), nothing otherwise. No
+/// separators; the 44 rhythm groups them.
 struct RowButtonStyle: ButtonStyle {
+    var selected = false
     @State private var hovering = false
 
     func makeBody(configuration: Configuration) -> some View {
@@ -33,7 +59,7 @@ struct RowButtonStyle: ButtonStyle {
             .background(
                 RoundedRectangle(cornerRadius: Theme.Radius.s)
                     .fill(Theme.Colors.surface)
-                    .opacity(configuration.isPressed || hovering ? 1 : 0)
+                    .opacity(configuration.isPressed || hovering || selected ? 1 : 0)
             )
             .onHover { hovering = $0 }
             .animation(.easeOut(duration: Theme.Motion.feedback), value: hovering)
@@ -104,10 +130,7 @@ struct TrackRow: View {
             }
             Spacer(minLength: Theme.Space.xs)
             if isCurrent {
-                Image(systemName: isPlaying ? "speaker.wave.2.fill" : "speaker.fill")
-                    .font(Theme.Text.body)
-                    .foregroundStyle(Theme.Colors.accentText)
-                    .accessibilityLabel(isPlaying ? "Playing" : "Paused")
+                PlayingMark(isPlaying: isPlaying)
             } else if !track.length.isEmpty {
                 // As in an album's and a search's rows.
                 Text(track.length)

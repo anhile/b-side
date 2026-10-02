@@ -13,6 +13,7 @@ struct NowPlayingPage: View {
     @State private var hoveringArtwork = false
     @Environment(\.previewArtworkHover) private var previewArtworkHover
     @Environment(\.pageShown) private var pageShown
+    @ObservedObject private var outputs = AudioOutputs.shared
 
     var body: some View {
         if let blocked = blockingState(for: player) {
@@ -288,6 +289,7 @@ struct NowPlayingPage: View {
                     Label("Repeat", systemImage: player.repeatMode.symbol)
                 }
                 .pickerStyle(.menu)
+                soundOutput
             }
         } label: {
             Image(systemName: "ellipsis")
@@ -302,6 +304,32 @@ struct NowPlayingPage: View {
         .pointingHand()
         .help("More")
         .accessibilityLabel("More")
+    }
+
+    /// Where the Mac's sound goes: the outputs it has, the one in use
+    /// checked, then the paired Bluetooth devices that are not connected.
+    private var soundOutput: some View {
+        Menu {
+            ForEach(outputs.devices) { device in
+                Toggle(isOn: Binding(get: { device.id == outputs.current }, set: { _ in outputs.select(device) })) {
+                    Label(device.name, systemImage: device.symbol)
+                }
+            }
+            Divider()
+            if outputs.showsBluetooth {
+                ForEach(outputs.paired) { device in
+                    Button { outputs.connect(device) } label: {
+                        Label("Connect \(device.name)", systemImage: "headphones")
+                    }
+                }
+            } else {
+                Button { outputs.showBluetooth() } label: {
+                    Label("Show Bluetooth Devices", systemImage: "dot.radiowaves.left.and.right")
+                }
+            }
+        } label: {
+            Label("Sound Output", systemImage: "hifispeaker.2")
+        }
     }
 
     /// The speaker opens a small vertical slider above it, as in YouTube Music.

@@ -34,6 +34,18 @@ bar and under Command-comma. Starting music never switches the page.
   each second; in a run of ads all but the last say "Ad 1 of 2 · 0:12".
   The same line is under "Advertisement" in the strip. Without a time from
   the player, the ad's own title, as before.
+- The artwork of a video. A song's cover is square. A video's picture is
+  wide, and comes in two kinds: a cover in the middle with a colour or a
+  blur beside it, which is cut out and shown as the cover; and a real wide
+  picture, shown whole across the square over a blurred, darkened copy of
+  itself (since 2026-10-03; filling the square cut a fifth off each side,
+  and the words on it). Small artwork in rows and the strip still fills
+- Sound Output, in the "…" menu: the Mac's outputs with the one in use
+  checked; choosing one changes the system's output, as the Sound menu
+  does. Under them "Show Bluetooth Devices", which makes macOS ask about
+  Bluetooth once; after that, the paired speakers and headphones that are
+  not connected, as "Connect <name>": the device is connected and gets
+  the sound
 - What we removed or deferred: shuffle toggle, dragging tracks in Up Next
 - At launch: the track that played last, paused where it stopped (as Music
   and Spotify do); Play goes on from there, in the same playlist or vibe.
@@ -151,6 +163,12 @@ Research: [docs/research/vibe-from-prompt.md](../docs/research/vibe-from-prompt.
   asked for again whenever the page comes into view, at most twice a minute
 - Attention order: 1) rows with artwork 36 and the name 2) the playing row
   with the accent indicator 3) the strip
+- The playlist that plays: its name in the accent, the row filled as under
+  the pointer, and at its end the speaker with moving waves (still when
+  paused), as on a vibe's tile and a track's row. Under the pointer the
+  speaker gives way to Pause or Play (since 2026-10-03; before, the row
+  kept a Pause button, which read as a control, not as "this plays"). The
+  same on an album's or a playlist's row in Explore
 - States: signed out / loading (skeleton rows) / error with Try Again / no
   playlists (Liked Music only) / 200 playlists (scrolls) / long name (one
   line, truncation)

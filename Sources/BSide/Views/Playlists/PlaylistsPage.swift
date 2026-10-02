@@ -137,13 +137,13 @@ struct PlaylistsPage: View {
             LazyVStack(spacing: 0) {
                 ForEach(rows) { playlist in
                     let isCurrent = player.source == .playlist(playlist.id) && player.hasTrack
-                    HoverReveal(pinned: isCurrent) {
+                    HoverReveal(playing: isCurrent ? player.state.isPlaying : nil) {
                         Button {
                             player.open(playlist)
                         } label: {
                             PlaylistRow(playlist: playlist, isCurrent: isCurrent, subtitle: player.subtitle(of: playlist))
                         }
-                        .buttonStyle(RowButtonStyle())
+                        .buttonStyle(RowButtonStyle(selected: isCurrent))
                         .help("Show the tracks")
                     } control: {
                         playButton(for: playlist, isCurrent: isCurrent)

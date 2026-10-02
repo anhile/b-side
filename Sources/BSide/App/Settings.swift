@@ -11,6 +11,7 @@ enum Keys {
     static let guest = "guest"                   // chose to use B-Side without signing in
     static let notifyTrack = "notifyTrack"       // a notification when the next track starts
     static let menuBarTrack = "menuBarTrack"     // the track's name next to the record in the menu bar
+    static let bluetoothOutputs = "bluetoothOutputs" // asked to see paired Bluetooth devices in Sound Output
     static let theme = "theme"                   // ThemeMode: system, light or dark
     static let uiSize = "uiSize"                 // UISize: compact or large
     static let repeatMode = "repeatMode"         // RepeatMode: off, all or one
@@ -65,6 +66,7 @@ enum Settings {
             Keys.volume: 100.0,
             Keys.notifyTrack: false,
             Keys.menuBarTrack: false,
+            Keys.bluetoothOutputs: false,
         ])
     }
 

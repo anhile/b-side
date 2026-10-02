@@ -27,6 +27,7 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSApplicationCategoryType: public.app-category.music
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        NSBluetoothAlwaysUsageDescription: B-Side lists your paired Bluetooth speakers and headphones, so you can send the music to one of them.
     settings:
       base:
         # The bundle ID must stay stable: WKWebsiteDataStore.default() keys the

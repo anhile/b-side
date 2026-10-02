@@ -14,6 +14,9 @@ enum Tuning {
     static let startRetrySeconds: Double = 15
     /// The track's name in the menu bar is cut after this many characters:
     /// the menu bar is short of room, more so beside a notch.
+    /// How long a Bluetooth device asked for in Sound Output may take to
+    /// connect and still get the sound.
+    static let bluetoothConnectSeconds: Double = 20
     static let menuBarTrackLength = 32
     /// The list of playlists is not asked for again sooner than this when
     /// the Playlists page comes into view.

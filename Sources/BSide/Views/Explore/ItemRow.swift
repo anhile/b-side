@@ -14,12 +14,12 @@ struct ItemRowButton: View {
     @EnvironmentObject private var navigation: Navigation
 
     var body: some View {
-        HoverReveal(pinned: isCurrent) {
+        HoverReveal(playing: isCurrent && showsPlay ? player.state.isPlaying : nil) {
             Button(action: primary) {
                 ItemRow(item: item, isCurrent: isCurrent, isPlaying: player.state.isPlaying,
                         number: number, roomForPlay: showsPlay)
             }
-            .buttonStyle(RowButtonStyle())
+            .buttonStyle(RowButtonStyle(selected: isCurrent && showsPlay))
             .help(help)
         } control: {
             if showsPlay {
@@ -114,10 +114,7 @@ struct ItemRow: View {
             }
             Spacer(minLength: Theme.Space.xs)
             if isCurrent, !roomForPlay {
-                Image(systemName: isPlaying ? "speaker.wave.2.fill" : "speaker.fill")
-                    .font(Theme.Text.body)
-                    .foregroundStyle(Theme.Colors.accentText)
-                    .accessibilityLabel(isPlaying ? "Playing" : "Paused")
+                PlayingMark(isPlaying: isPlaying)
             } else if !item.detail.isEmpty {
                 Text(item.detail)
                     .font(Theme.Text.caption)
