@@ -7,6 +7,18 @@ with the step that failed.
 tail -40 "$HOME/Library/Application Support/B-Side/events.log"
 ```
 
+## The music cuts out
+
+When the player runs out of data and waits a second or more, the log has a
+`stall` line with the track, how long the wait was and where in the track:
+
+```bash
+grep "	stall	" "$HOME/Library/Application Support/B-Side/events.log" | tail
+```
+
+A stall is the network or YouTube. A gap with no `stall`, `paused` or
+`track` line next to it did not come from the player's data.
+
 ## The record is not in the menu bar
 
 **With Hidden Bar, Bartender, Ice or a similar menu bar manager.** A new

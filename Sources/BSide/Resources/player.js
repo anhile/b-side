@@ -91,6 +91,7 @@
   const REPORT_INTERVAL_MS = 5000;
   const BOOT_TIMEOUT_MS = 20000;
   const MEDIA_EVENTS = ['play', 'playing', 'pause', 'seeked', 'ended', 'durationchange', 'loadedmetadata', 'emptied'];
+  const STALL_LOG_MS = 1000;           // a wait for data this long is written to the log
   const ENDED = 0, PLAYING = 1, BUFFERING = 3; // getPlayerState() values
   // --------------------------------------------------------------------------
 
@@ -965,6 +966,21 @@
   MEDIA_EVENTS.forEach(function (name) {
     document.addEventListener(name, report, true);
   });
+
+  // The music stopping by itself for want of data: written to the log with
+  // how long it lasted, so a report of "it cut out" can be looked up.
+  let waitingSince = 0;
+  document.addEventListener('waiting', function () {
+    if (!waitingSince) waitingSince = Date.now();
+  }, true);
+  document.addEventListener('playing', function (e) {
+    const waited = waitingSince ? Date.now() - waitingSince : 0;
+    waitingSince = 0;
+    if (waited < STALL_LOG_MS) return;
+    const track = queue[queueIndex];
+    event('stall', (track ? track.id : '?') + ' waited ' + (waited / 1000).toFixed(1) + ' s at '
+      + Math.round(e.target.currentTime || 0) + ' s');
+  }, true);
   setInterval(report, REPORT_INTERVAL_MS);
 
   boot().catch(function (e) { event('error', 'boot: ' + e); });

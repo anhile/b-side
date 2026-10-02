@@ -80,8 +80,12 @@ way: the track's length, or the orange speaker on the one that plays.
   was heard as ("slow jazz, rainy"), or "From words" for a tile made before
   that was kept; never the words themselves, and never the name again
 - Secondary actions: add a tile (the "+" tile at the end); edit and remove in
-  a tile's context menu; drag a tile to another's place, the others make
-  room as it passes (also Move Earlier and Move Later in the menu)
+  a tile's context menu; drag a tile to another's place: the tile follows
+  the pointer at once, a little larger, the others make room as it passes,
+  and it glides into its place when let go (also Move Earlier and Move
+  Later in the menu). Our own gesture since 2026-10-03: the system's drag
+  and drop started late and moved in jumps. It does not scroll the page;
+  for a place out of view there is the menu
 - Attention order: 1) the grid of tiles 2) the playing tile, marked with the
   accent 3) the strip
 - What we removed or deferred: the big Play button, the "Vibe" headline;
