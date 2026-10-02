@@ -10,6 +10,9 @@ struct VibePage: View {
     /// The New Vibe sheet: a new tile from words, or one made from words
     /// made again.
     @State private var describing: Describing?
+    /// The tile being dragged to another place.
+    @State private var dragged: Mood.ID?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private struct Describing: Identifiable {
         let id = UUID()
@@ -20,6 +23,10 @@ struct VibePage: View {
         GridItem(.fixed(Theme.Size.tileWidth), spacing: Theme.Space.s),
         GridItem(.fixed(Theme.Size.tileWidth), spacing: Theme.Space.s),
     ]
+
+    private func move(_ mood: Mood, by step: Int) {
+        withAnimation(reduceMotion ? nil : .snappy(duration: Theme.Motion.page)) { player.move(mood, by: step) }
+    }
 
     var body: some View {
         if let blocked = blockingState(for: player) {
@@ -39,20 +46,38 @@ struct VibePage: View {
             LazyVGrid(columns: columns, spacing: Theme.Space.s) {
                 ForEach(player.moods) { mood in
                     let locked = mood.needsAccount && player.account == .signedOut
-                    Button {
-                        locked ? player.showSignIn() : player.play(mood)
-                    } label: {
-                        MoodTile(mood: mood, subtitle: locked ? "Sign in to play" : mood.subtitle(playlists: player.playlists),
-                                 isCurrent: player.source == .mood(mood.id), isPlaying: player.state.isPlaying)
-                    }
-                    .buttonStyle(TileButtonStyle())
-                    .help(mood.name)
-                    .contextMenu {
-                        Button("Edit…") {
-                            if case .described = mood.source { describing = Describing(replacing: mood) } else { editing = mood }
+                    let play = { locked ? player.showSignIn() : player.play(mood) }
+                    // A click plays, a drag moves the tile: not a Button,
+                    // which would keep the mouse and never let a drag start.
+                    MoodTile(mood: mood, subtitle: locked ? "Sign in to play" : mood.subtitle(playlists: player.playlists),
+                             isCurrent: player.source == .mood(mood.id), isPlaying: player.state.isPlaying)
+                        .modifier(TileLift())
+                        .onTapGesture(perform: play)
+                        .onDrag {
+                            dragged = mood.id
+                            return NSItemProvider(object: mood.id as NSString)
                         }
-                        Button("Remove", role: .destructive) { player.remove(mood) }
-                    }
+                        .onDrop(of: [.text], delegate: TileDrop(target: mood.id, dragged: $dragged) { id in
+                            withAnimation(reduceMotion ? nil : .snappy(duration: Theme.Motion.page)) {
+                                player.move(id, toPlaceOf: mood.id)
+                            }
+                        })
+                        .accessibilityElement(children: .combine)
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityAction(.default, play)
+                        .help(mood.name)
+                        .contextMenu {
+                            Button("Edit…") {
+                                if case .described = mood.source { describing = Describing(replacing: mood) } else { editing = mood }
+                            }
+                            Divider()
+                            Button("Move Earlier") { move(mood, by: -1) }
+                                .disabled(mood.id == player.moods.first?.id)
+                            Button("Move Later") { move(mood, by: 1) }
+                                .disabled(mood.id == player.moods.last?.id)
+                            Divider()
+                            Button("Remove", role: .destructive) { player.remove(mood) }
+                        }
                 }
                 Button {
                     describing = Describing()
@@ -70,6 +95,11 @@ struct VibePage: View {
         }
         .contentMargins(.bottom, footerRoom, for: .scrollContent)
         .contentMargins(.bottom, footerRoom, for: .scrollIndicators)
+        // A drop between the tiles ends the drag too.
+        .onDrop(of: [.text], isTargeted: nil) { _ in
+            defer { dragged = nil }
+            return dragged != nil
+        }
         .sheet(item: $describing) { describing in
             NewVibeSheet(replacing: describing.replacing) {
                 // After this sheet is gone: one sheet at a time.
@@ -81,6 +111,27 @@ struct VibePage: View {
                 player.save(saved)
             }
         }
+    }
+}
+
+/// Moves the dragged tile to the place of the tile it is over, as it gets
+/// there, so the others make room before the drop.
+private struct TileDrop: DropDelegate {
+    let target: Mood.ID
+    @Binding var dragged: Mood.ID?
+    let move: (Mood.ID) -> Void
+
+    func dropEntered(info: DropInfo) {
+        if let dragged, dragged != target { move(dragged) }
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: dragged == nil ? .cancel : .move)
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        defer { dragged = nil }
+        return dragged != nil
     }
 }
 
@@ -196,6 +247,20 @@ struct AddTile: View {
                 .strokeBorder(Theme.Colors.border, style: StrokeStyle(lineWidth: 1, dash: [Theme.Space.xxs]))
         )
         .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.m))
+    }
+}
+
+/// A tile that is not a button rises under the pointer the same way.
+struct TileLift: ViewModifier {
+    @State private var hovering = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(!reduceMotion && hovering ? Theme.Motion.tileHover : 1)
+            .onHover { hovering = $0 }
+            .pointingHand()
+            .animation(.snappy(duration: Theme.Motion.feedback * 2), value: hovering)
     }
 }
 

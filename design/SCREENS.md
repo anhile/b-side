@@ -49,7 +49,8 @@ since then win.
 - User's job here: "start music for how I feel right now, in one click"
 - Primary action: click a tile
 - Secondary actions: add a tile (the "+" tile at the end); edit and remove in
-  a tile's context menu
+  a tile's context menu; drag a tile to another's place, the others make
+  room as it passes (also Move Earlier and Move Later in the menu)
 - Attention order: 1) the grid of tiles 2) the playing tile, marked with the
   accent 3) the strip
 - What we removed or deferred: the big Play button, the "Vibe" headline;

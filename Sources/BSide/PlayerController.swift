@@ -412,6 +412,20 @@ final class PlayerController: NSObject, ObservableObject {
         moods.removeAll { $0.id == mood.id }
     }
 
+    /// Puts a tile where another one is; the tiles between move up by one.
+    func move(_ id: Mood.ID, toPlaceOf target: Mood.ID) {
+        guard let from = moods.firstIndex(where: { $0.id == id }),
+              let to = moods.firstIndex(where: { $0.id == target }), from != to else { return }
+        moods.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+    }
+
+    /// One place earlier (-1) or later (1), from a tile's menu.
+    func move(_ mood: Mood, by step: Int) {
+        guard let from = moods.firstIndex(where: { $0.id == mood.id }),
+              moods.indices.contains(from + step) else { return }
+        moods.swapAt(from, from + step)
+    }
+
     func play(_ playlist: Playlist) {
         load(PlayTarget(videoID: nil, listID: playlist.id), from: .playlist(playlist.id), startAt: nil)
     }
