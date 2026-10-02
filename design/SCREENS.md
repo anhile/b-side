@@ -60,7 +60,7 @@ result, an album's track, the strip, Now Playing's "…"), added 2026-10-02:
   without lyrics)
 - Play Next: right after the track that plays
 - Start Radio: the track, then its radio
-- Go to Artist, Go to Album (disabled when YouTube Music does not link them)
+- Go to Artist, Go to Album (left out when YouTube Music does not link them)
 - Copy Link
 
 A list knows a track's like as of when it was loaded; likes set in B-Side

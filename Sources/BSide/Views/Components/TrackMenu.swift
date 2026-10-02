@@ -13,7 +13,7 @@ struct TrackMenu<Extra: View>: View {
     var albumID = ""
     /// What the list said when it was loaded.
     var liked = false
-    /// Now Playing has its own Like, with the shortcut.
+    /// Now Playing has the heart next to its menu.
     var showsLike = true
     @ViewBuilder var extra: Extra
 
@@ -45,14 +45,18 @@ struct TrackMenu<Extra: View>: View {
             Label("Start Radio", systemImage: "dot.radiowaves.left.and.right")
         }
         .disabled(videoID.isEmpty)
-        Button { navigation.open(.artist(id: artistID, name: artist)) } label: {
-            Label("Go to Artist", systemImage: "person")
+        // YouTube Music does not link every track to an artist's page or an
+        // album; without the link there is no item.
+        if !artistID.isEmpty, !videoID.isEmpty {
+            Button { navigation.open(.artist(id: artistID, name: artist)) } label: {
+                Label("Go to Artist", systemImage: "person")
+            }
         }
-        .disabled(artistID.isEmpty || videoID.isEmpty)
-        Button { navigation.open(.collection(id: albumID, title: "Album")) } label: {
-            Label("Go to Album", systemImage: "square.stack")
+        if !albumID.isEmpty, !videoID.isEmpty {
+            Button { navigation.open(.collection(id: albumID, title: "Album")) } label: {
+                Label("Go to Album", systemImage: "square.stack")
+            }
         }
-        .disabled(albumID.isEmpty || videoID.isEmpty)
         Divider()
         Button {
             NSPasteboard.general.clearContents()
