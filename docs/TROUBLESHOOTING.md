@@ -18,7 +18,11 @@ manager's hidden section.
    the manager's divider).
 3. Collapse it again.
 
-**Hidden Bar 1.11 on macOS 27** needs one more thing known. It no longer
+**Hidden Bar 1.11 on macOS 27** needs two more things known. First, B-Side
+must run from `/Applications` (`./scripts/install.sh`). Hidden Bar tells
+macOS which apps may show by their identifier, and macOS takes the copy in
+`/Applications` for that app; a copy run from the build folder stays hidden
+even on the visible side of the arrow. Second, it no longer
 pushes icons off the screen: it gives macOS a list of the apps whose icons
 may show, and it makes that list at the moment it collapses, from the apps
 running then. An app that was not running at that moment stays hidden when it

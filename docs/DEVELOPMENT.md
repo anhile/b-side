@@ -21,6 +21,11 @@ Command Line Tools.
 open build/Build/Products/Release/B-Side.app
 ```
 
+`./scripts/install.sh` builds, replaces the copy in `/Applications` and opens
+it. Use that copy for everyday listening: a copy run from the build folder
+is not the app as far as macOS goes, so Open at login and menu bar managers
+(Hidden Bar on macOS 27 hides its icon) misbehave.
+
 To work in Xcode, run `xcodegen generate` and open `BSide.xcodeproj`. New
 files under `Sources/BSide` are picked up when the project is generated
 again.

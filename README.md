@@ -52,12 +52,12 @@ There are no ready-made downloads yet. Build it from source: you need Xcode
 and [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`).
 
 ```bash
-./scripts/build.sh
+./scripts/install.sh
 ```
 
-```bash
-open build/Build/Products/Release/B-Side.app
-```
+It builds B-Side, puts it in `/Applications` and opens it. Run it from
+there, not from the build folder: macOS treats the copy in `/Applications`
+as the app, and Open at login and menu bar managers depend on that.
 
 Click **Sign In…** and log in to Google in the window that appears. It closes
 by itself when Google sends you back to YouTube Music. Or choose **Continue
