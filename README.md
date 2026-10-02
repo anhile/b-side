@@ -205,3 +205,7 @@ its position did not advance for a minute.
 
 Playback goes through Google's own player in the web view. This project does
 not extract streams, decipher signatures, or reimplement any of that.
+
+## License
+
+MIT, see [LICENSE](LICENSE). The server in `server/` is under the same licence.
