@@ -5,6 +5,8 @@ import WebKit
 /// Page-side knobs (config keys, endpoints, player API names) live in
 /// Resources/player.js.
 enum Tuning {
+    /// Tracks whose playlists are remembered for Add to Playlist's checkmarks.
+    static let holdingCacheSize = 200
     /// How long the vibe maker waits for a sleeping player page to load.
     static let pageWaitSeconds: Double = 20
     /// Google sign-in tends to reject embedded web views ("This browser or app

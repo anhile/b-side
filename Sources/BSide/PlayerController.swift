@@ -86,6 +86,10 @@ final class PlayerController: NSObject, ObservableObject {
         didSet { if moods != oldValue { Mood.save(moods) } }
     }
     @Published private(set) var playlists: [Playlist] = []
+    /// The user's playlists that hold a track, by video ID: the checkmarks
+    /// in Add to Playlist. Asked again each time the menu opens.
+    @Published private(set) var playlistsHolding: [String: Set<String>] = [:]
+    private var askingHolding: Set<String> = []
     @Published private(set) var playlistsState = Loadable.idle
     /// Names of lists played from Explore, which are not in the library.
     private var listTitles: [String: (title: String, kind: SourceLabel.Kind)] = [:]
@@ -569,7 +573,32 @@ final class PlayerController: NSObject, ObservableObject {
         bridge.call("removeFromPlaylist", playlist.id, video, track.setVideoID)
     }
 
+    /// Asks YouTube Music which of the user's playlists hold the track.
+    func checkPlaylists(holding videoID: String) {
+        guard !videoID.isEmpty, pageReady, account.isSignedIn, askingHolding.insert(videoID).inserted else { return }
+        Task {
+            defer { askingHolding.remove(videoID) }
+            guard let ids = try? await bridge.value("playlistsWith", [videoID]) as? [String] else { return }
+            if playlistsHolding.count > Tuning.holdingCacheSize { playlistsHolding.removeAll() }
+            playlistsHolding[videoID] = Set(ids)
+        }
+    }
+
+    /// Takes a track out of a playlist by its video ID, for Add to Playlist's
+    /// checkmarks, where the entry in the playlist is not known.
+    func removeAnywhere(_ videoID: String, from playlist: Playlist) {
+        guard pageReady, account.isSignedIn, !videoID.isEmpty else { return }
+        bridge.call("removeVideo", playlist.id, videoID)
+    }
+
     private func playlistEdited(_ action: String, id: String, title: String, videoID: String) {
+        if !videoID.isEmpty {
+            if action == "removed" {
+                playlistsHolding[videoID]?.remove(id)
+            } else if playlistsHolding[videoID] != nil || action == "created" {
+                playlistsHolding[videoID, default: []].insert(id)
+            }
+        }
         let name = playlists.first { $0.id == id }?.title ?? title
         switch action {
         case "created": show(notice: videoID.isEmpty ? "Created “\(name)”" : "Added to new “\(name)”")
@@ -1013,7 +1042,10 @@ final class PlayerController: NSObject, ObservableObject {
         if !new.title.isEmpty, new.videoID != old.videoID || new.title != old.title {
             EventLog.write("track\t\(new.videoID)\t\(new.artist) - \(new.title)")
             TrackNotifier.shared.trackStarted(new)
-            if !new.isAd { loadLyrics() } // so Lyrics shows only for a track that has them
+            if !new.isAd {
+                loadLyrics() // so Lyrics shows only for a track that has them
+                checkPlaylists(holding: new.videoID) // ready before its menu opens
+            }
         }
         if new.isAd, !old.isAd {
             EventLog.write("ad")

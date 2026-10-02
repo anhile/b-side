@@ -69,6 +69,10 @@
   const UNLIKE_ENDPOINT = '/youtubei/v1/like/removelike?prettyPrint=false';
   const CREATE_PLAYLIST_ENDPOINT = '/youtubei/v1/playlist/create?prettyPrint=false';
   const EDIT_PLAYLIST_ENDPOINT = '/youtubei/v1/browse/edit_playlist?prettyPrint=false';
+  const ADD_TO_PLAYLIST_ENDPOINT = '/youtubei/v1/playlist/get_add_to_playlist?prettyPrint=false';
+  // YouTube's own web client: asked as YouTube Music, the Save dialog does
+  // not say which playlists hold the track; asked as YouTube, it does.
+  const WEB_CLIENT = { clientName: 'WEB', clientVersion: '2.20260928.00.00' };
   const REMOVE_ACTION = 'ACTION_REMOVE_VIDEO';
   const LIKE_KEY = 'likeStatus';        // inside a queue item: 'LIKE' or 'INDIFFERENT'
   const LIKED = 'LIKE';
@@ -716,6 +720,23 @@
     await playlists();
   }
 
+  // The user's playlists that already hold a track, from YouTube's Save
+  // dialog. It lists Watch Later and video playlists too; the app shows only
+  // its own. Returned to the caller.
+  async function playlistsWith(videoId) {
+    const context = Object.assign({}, ytcfg.get('INNERTUBE_CONTEXT'));
+    context.client = Object.assign({}, context.client, WEB_CLIENT);
+    const text = await api(ADD_TO_PLAYLIST_ENDPOINT, { context: context, videoIds: [videoId] });
+    const ids = [];
+    let seen = 0;
+    cut(text, ['playlistAddToOptionRenderer'], function (key, node) {
+      seen++;
+      if (node.containsSelectedVideos === 'ALL' && node.playlistId) ids.push(node.playlistId);
+    });
+    event('playlist', videoId + ' is in ' + ids.length + ' of ' + seen + ' playlists' + (ids.length ? ': ' + ids.join(' ') : ''));
+    return ids;
+  }
+
   // Adds a track at the end, as YouTube Music does, and skips it when it is
   // there already: an empty list of results then says so.
   async function addToPlaylist(playlistId, videoId) {
@@ -727,6 +748,22 @@
     post({ type: 'playlistEdit', action: added ? 'added' : 'already', playlistId: playlistId, title: '', videoId: videoId });
     event('playlist', (added ? 'added ' : 'already had ') + videoId);
     await playlists();
+  }
+
+  // Out of a playlist by video ID alone, as the Save dialog unchecks it.
+  async function removeVideo(playlistId, videoId) {
+    try {
+      const text = await api(EDIT_PLAYLIST_ENDPOINT, { playlistId: playlistId, actions: [
+        { action: 'ACTION_REMOVE_VIDEO_BY_VIDEO_ID', removedVideoId: videoId }] });
+      const reply = JSON.parse(text);
+      if (reply.status !== 'STATUS_SUCCEEDED') throw new Error('status ' + reply.status);
+      post({ type: 'playlistEdit', action: 'removed', playlistId: playlistId, title: '', videoId: videoId });
+      event('playlist', 'removed ' + videoId + ' by video ID');
+      if (listing && listing.id === playlistId) await tracks(playlistId);
+      await playlists();
+    } catch (e) {
+      event('error', 'removeVideo: ' + e);
+    }
   }
 
   // Takes one entry out of a playlist by its place there; the open list
@@ -747,6 +784,8 @@
 
   window.__bside = {
     findSongs(query) { return findSongs(query); },
+    playlistsWith(videoId) { return playlistsWith(videoId); },
+    removeVideo(playlistId, videoId) { removeVideo(playlistId, videoId); },
     load(kind, id, startSeconds, options) {
       load(kind, id, startSeconds, options).catch(function (e) { event('error', 'load: ' + e); });
     },

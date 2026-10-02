@@ -7,7 +7,8 @@ struct NewPlaylistRequest: Identifiable {
 }
 
 /// "Add to Playlist" in a track's menus: a new playlist, then the user's own
-/// playlists. A submenu wherever it is put.
+/// playlists, checked where the track already is. A submenu wherever it is
+/// put.
 struct AddToPlaylistMenu: View {
     let videoID: String
 
@@ -20,13 +21,19 @@ struct AddToPlaylistMenu: View {
             let own = player.ownPlaylists
             if !own.isEmpty {
                 Divider()
+                let holding = player.playlistsHolding[videoID] ?? []
                 ForEach(own) { playlist in
-                    Button(playlist.title) { player.add(videoID, to: playlist) }
+                    // A checkmark where the track already is; unchecking
+                    // takes it out, as YouTube Music's Save dialog does.
+                    Toggle(playlist.title, isOn: Binding(
+                        get: { holding.contains(playlist.id) },
+                        set: { $0 ? player.add(videoID, to: playlist) : player.removeAnywhere(videoID, from: playlist) }))
                 }
             }
         } label: {
             Label("Add to Playlist", systemImage: "text.badge.plus")
         }
+        .onAppear { player.checkPlaylists(holding: videoID) }
         .disabled(videoID.isEmpty || !player.account.isSignedIn)
     }
 }
