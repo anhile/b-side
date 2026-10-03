@@ -38,7 +38,7 @@ struct PlaylistTracks: View {
 
     private var list: some View {
         ScrollView {
-            LazyVStack(spacing: 0) {
+            LazyVStack(spacing: Theme.Space.xxs) { // air between the glass shapes of two rows
                 ForEach(player.tracks) { track in
                     Button {
                         player.playOpenPlaylist(from: track)

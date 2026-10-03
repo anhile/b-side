@@ -36,13 +36,18 @@ make them 15% and 30% bigger, and the window's least size with them.
   pair in balance).
 - Like: a heart, always in view; orange and filled once liked. Not on the
   artwork's hover, which keeps Lyrics and Repeat. Hidden during an ad.
+- Along the bottom of the page, a compact glass line (28) with what plays
+  from where, as the strip has it under the track on the other pages: a
+  vibe's name in its colour, a playlist, an album, an artist or a radio in
+  the accent (since 2026-10-03). Only while something plays from somewhere
 - Up Next: a list button in a glass circle at the end of the transport row,
   mirroring the speaker at its start; both open something. It
   puts what plays next in the artwork's place (as Lyrics do; one of the two
   at a time) and is orange while the list shows. A click on a track jumps to
   it; its menu is a track's menu plus Remove from Up Next. "Up Next" stands
   in the glass bar the list pages have under the title bar, and the rows run
-  under it (since 2026-10-03; before, a caption inside the list). The next 30
+  under it (since 2026-10-03; before, a caption inside the list); at the
+  bar's end, under the page's tab, an x closes the list. The next 30
   tracks; "Nothing after this track." when there are none.
 - Waiting for data: "Buffering…" in the artist's place after 1.5 s of
   waiting (not at the usual moment a track starts), and the time stands
@@ -201,7 +206,8 @@ Research: [docs/research/vibe-from-prompt.md](../docs/research/vibe-from-prompt.
 - A row under the pointer, and the one that plays, stands on glass (since
   2026-10-03; before, a flat `surface` fill): the one highlight the rows
   share with the controls. With Reduce Transparency, `surface` outlined.
-  The same shape under every row in the app (tracks, Explore, Up Next)
+  The same shape under every row in the app (tracks, Explore, Up Next),
+  with 4 of air between two rows, so the shapes of neighbours do not touch
 - The playlist that plays: its name in the accent, the row filled as under
   the pointer, and at its end the speaker with moving waves (still when
   paused), as on a vibe's tile and a track's row. Under the pointer the

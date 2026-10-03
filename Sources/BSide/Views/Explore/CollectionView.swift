@@ -14,7 +14,7 @@ struct CollectionView: View {
             ExploreScroll {
                 VStack(spacing: 0) {
                     header(page)
-                    LazyVStack(spacing: 0) {
+                    LazyVStack(spacing: Theme.Space.xxs) { // air between the glass shapes of two rows
                         ForEach(page.tracks) { track in
                             ItemRowButton(item: withoutAlbumArtist(track, of: page),
                                           playFromHere: { player.play(page, from: track.id) },

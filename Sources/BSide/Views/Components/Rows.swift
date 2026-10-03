@@ -48,7 +48,8 @@ struct PlayingMark: View {
 
 /// A list row that is a button: glass under the pointer, while pressed
 /// and while `selected` (the playlist that plays), nothing otherwise. No
-/// separators; the 44 rhythm groups them.
+/// separators; the 44 rhythm groups them, with 4 of air between the
+/// glass shapes of two rows (since 2026-10-03).
 struct RowButtonStyle: ButtonStyle {
     var selected = false
     @State private var hovering = false

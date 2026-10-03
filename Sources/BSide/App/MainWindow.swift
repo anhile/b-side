@@ -39,7 +39,9 @@ enum MainWindow {
         if Settings.isScratch { forgetFrame(window) }
         // The first time, or in a test run: the starting size. SwiftUI's
         // own guess is the pager's, as wide as the window may be.
-        if UserDefaults.standard.string(forKey: frameKey) == nil { window.setContentSize(Theme.Size.windowStart) }
+        if !Settings.isSnapshot, UserDefaults.standard.string(forKey: frameKey) == nil {
+            window.setContentSize(Theme.Size.windowStart)
+        }
         if hiddenAtLaunch { hide(window) }
         // Debug captures: the window stays off the screen (Capture).
         if Settings.defaults.string(forKey: Keys.captureTo) != nil { window.setFrameOrigin(NSPoint(x: -4000, y: -4000)) }

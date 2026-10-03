@@ -157,7 +157,7 @@ struct PlaylistsPage: View {
 
     private var list: some View {
         ScrollView {
-            LazyVStack(spacing: 0) {
+            LazyVStack(spacing: Theme.Space.xxs) { // air between the glass shapes of two rows
                 ForEach(rows) { playlist in
                     row(playlist)
                         .opacity(drag?.id == playlist.id ? 0 : 1)

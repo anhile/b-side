@@ -76,6 +76,22 @@ struct NowPlayingPage: View {
             transport
                 .padding(.horizontal, Theme.Space.m)
                 .padding(.bottom, Theme.Space.m) // as far from the bottom as from the sides
+            // Along the bottom, what it plays from: the strip's line, on a
+            // bar of its own, for the page that has no strip.
+            if let label = player.sourceLabel {
+                HStack {
+                    SourceLine(label: label)
+                        .id(label)
+                        .transition(.opacity)
+                    Spacer()
+                }
+                .padding(.horizontal, Theme.Space.m)
+                .frame(height: Theme.Size.sourceBar)
+                .frame(maxWidth: .infinity)
+                .barGlass(joined: .bottom)
+                .animation(.easeInOut(duration: Theme.Motion.page), value: player.sourceLabel)
+                .help("Playing from \(label.name)")
+            }
         }
     }
 

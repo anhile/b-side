@@ -29,7 +29,7 @@ struct NowPlayingStrip: View {
                                 .font(Theme.Text.caption)
                                 .foregroundStyle(Theme.Colors.textMuted)
                         } else if let label = player.sourceLabel {
-                            sourceLine(label)
+                            SourceLine(label: label)
                                 .id(label)
                                 .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
                         }
@@ -77,28 +77,6 @@ struct NowPlayingStrip: View {
                   artistID: player.state.artistID, albumID: player.state.albumID, liked: player.state.isLiked)
     }
 
-    private func sourceLine(_ label: SourceLabel) -> some View {
-        HStack(spacing: Theme.Space.xxs) {
-            Image(systemName: label.symbol)
-            Text(label.name)
-        }
-        .font(Theme.Text.caption)
-        .fontWeight(.medium)
-        .foregroundStyle(colour(of: label))
-        .lineLimit(1)
-    }
-
-    /// A vibe's deep colour on the light glass, its light one on the dark.
-    private func colour(of label: SourceLabel) -> Color {
-        switch label.kind {
-        case .vibe(let index):
-            let swatch = VibePalette.swatches[index]
-            return colorScheme == .dark ? swatch.light : swatch.deep
-        case .playlist, .album, .artist, .radio:
-            return Theme.Colors.accentText
-        }
-    }
-
     private var line: String {
         if player.state.isAd { return "Advertisement" }
         let title = player.state.title.isEmpty ? "Loading…" : player.state.title
@@ -120,5 +98,35 @@ struct NowPlayingStrip: View {
             .components(separatedBy: "\u{1F}")
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
+    }
+}
+
+/// What plays from where, in one line: a vibe's name in the vibe's colour,
+/// a playlist, an album, an artist or a radio in the accent. Under the
+/// track in the strip, and along the bottom of Now Playing.
+struct SourceLine: View {
+    let label: SourceLabel
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        HStack(spacing: Theme.Space.xxs) {
+            Image(systemName: label.symbol)
+            Text(label.name)
+        }
+        .font(Theme.Text.caption)
+        .fontWeight(.medium)
+        .foregroundStyle(colour)
+        .lineLimit(1)
+    }
+
+    /// A vibe's deep colour on the light glass, its light one on the dark.
+    private var colour: Color {
+        switch label.kind {
+        case .vibe(let index):
+            let swatch = VibePalette.swatches[index]
+            return colorScheme == .dark ? swatch.light : swatch.deep
+        case .playlist, .album, .artist, .radio:
+            return Theme.Colors.accentText
+        }
     }
 }

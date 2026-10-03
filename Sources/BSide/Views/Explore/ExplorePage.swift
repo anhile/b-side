@@ -202,7 +202,7 @@ struct ExplorePage: View {
 
     private var results: some View {
         ExploreScroll {
-            LazyVStack(spacing: 0) {
+            LazyVStack(spacing: Theme.Space.xxs) { // air between the glass shapes of two rows
                 ForEach(player.searchResults) { item in
                     ItemRowButton(item: item)
                 }
