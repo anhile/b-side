@@ -109,9 +109,14 @@ struct NowPlayingPage: View {
                 .frame(height: Theme.Size.sourceBar)
                 .frame(maxWidth: .infinity)
                 .barGlass(joined: .bottom)
-                // A wash of the source's colour over the glass, and a rule
-                // of it above: the line belongs to what plays.
-                .overlay { sourceColour.opacity(Theme.Opacity.sourceWash).allowsHitTesting(false) }
+                // A wash of the source's colour over the glass, fading
+                // downward from the rule above it, so the line belongs to
+                // what plays and does not sit on the page as a slab.
+                .overlay {
+                    LinearGradient(colors: [sourceColour.opacity(Theme.Opacity.sourceWash), sourceColour.opacity(0)],
+                                   startPoint: .top, endPoint: .bottom)
+                        .allowsHitTesting(false)
+                }
                 .overlay(alignment: .top) { sourceColour.opacity(Theme.Opacity.sourceRule).frame(height: Theme.Size.hairline) }
                 .animation(.easeInOut(duration: Theme.Motion.page), value: player.sourceLabel)
             }

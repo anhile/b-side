@@ -184,9 +184,10 @@ enum Theme {
 
     enum Opacity {
         static let pressed: Double = 0.7
-        /// The source's colour over the glass of Now Playing's bottom line,
-        /// and in the hairline above it.
-        static let sourceWash: Double = 0.1
+        /// The source's colour over the glass of Now Playing's bottom line:
+        /// a wash that is this strong under the rule and fades to nothing
+        /// at the window's edge, and the rule above it.
+        static let sourceWash: Double = 0.14
         static let sourceRule: Double = 0.25
         /// The dark veil over the album cover while its actions show.
         static let scrim: Double = 0.45
