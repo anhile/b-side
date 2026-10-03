@@ -23,6 +23,10 @@ struct BSideApp: App {
         .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .newItem) {}
+            CommandGroup(replacing: .appSettings) {
+                Button("Settings…") { SettingsWindow.show(player: player) }
+                    .keyboardShortcut(",", modifiers: .command)
+            }
             CommandGroup(before: .toolbar) {
                 ForEach(Page.allCases) { page in
                     Button(page.title) { navigation.page = page }
@@ -62,11 +66,6 @@ struct BSideApp: App {
                 Button(player.volume > 0 ? "Mute" : "Unmute") { player.toggleMute() }
                     .keyboardShortcut(.downArrow, modifiers: [.command, .option])
             }
-        }
-
-        SwiftUI.Settings {
-            SettingsView()
-                .environmentObject(player)
         }
     }
 }

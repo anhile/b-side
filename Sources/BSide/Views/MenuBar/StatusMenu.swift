@@ -120,9 +120,8 @@ final class StatusMenu: NSObject, NSMenuDelegate {
             self?.openMain?()
             NSApp.activate(ignoringOtherApps: true)
         })
-        menu.addItem(Self.item("Settings…", key: ",") {
-            NSApp.activate(ignoringOtherApps: true)
-            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        menu.addItem(Self.item("Settings…", key: ",") { [weak player] in
+            if let player { SettingsWindow.show(player: player) }
         })
         menu.addItem(.separator())
         menu.addItem(Self.item("Quit B-Side", key: "q") { NSApp.terminate(nil) })
