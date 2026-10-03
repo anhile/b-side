@@ -30,6 +30,16 @@ bar and under Command-comma. Starting music never switches the page.
   at a time) and is orange while the list shows. A click on a track jumps to
   it; its menu is a track's menu plus Remove from Up Next. The next 30
   tracks; "Nothing after this track." when there are none.
+- Waiting for data: "Buffering…" in the artist's place after 1.5 s of
+  waiting (not at the usual moment a track starts), and the time stands
+  still; the strip says it under the track too. Since 2026-10-03: before,
+  the clock ran on and the page looked as if it played
+- While a track or list is being asked for, the page shows it loading
+  ("Loading…", the artwork's placeholder) rather than "Nothing playing"
+- The track from last time: Next and Previous work on it too; its list is
+  loaded and the next (previous) track plays. Something that no longer
+  exists (a playlist deleted on the web) gives "Nothing playing" with the
+  reason in the footer, and is not brought back at the next launch
 - Ad: "Advertisement", and under it "Music back in 0:12", counted down
   each second; in a run of ads all but the last say "Ad 1 of 2 · 0:12".
   The same line is under "Advertisement" in the strip. Without a time from

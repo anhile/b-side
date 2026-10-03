@@ -21,6 +21,9 @@ enum Tuning {
     /// The list of playlists is not asked for again sooner than this when
     /// the Playlists page comes into view.
     static let playlistsFreshSeconds: Double = 30
+    /// Waiting for data this long is said on the screen; shorter waits, as
+    /// at the start of every track, are not.
+    static let bufferingNoticeSeconds: Double = 1.5
     /// A playlist made here is shown at once and the library is asked again
     /// this often until it lists it, for this long at most.
     static let newPlaylistRetrySeconds: Double = 15

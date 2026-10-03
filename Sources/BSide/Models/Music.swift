@@ -9,6 +9,8 @@ struct PlayerState: Equatable {
     var position: Double = 0
     var duration: Double = 0
     var isPlaying = false
+    /// Playing, but waiting for data: the clock stands.
+    var isBuffering = false
     var isAd = false
     /// Seconds the ad still ran when the page reported at `adLeftAt`, -1
     /// when unknown; its place in a run of ads, 0 when the player shows none.

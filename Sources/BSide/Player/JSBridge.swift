@@ -108,6 +108,7 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
             state.position = (body["position"] as? NSNumber)?.doubleValue ?? 0
             state.duration = (body["duration"] as? NSNumber)?.doubleValue ?? 0
             state.isPlaying = body["playing"] as? Bool ?? false
+            state.isBuffering = body["buffering"] as? Bool ?? false
             state.isAd = body["ad"] as? Bool ?? false
             if state.isAd {
                 state.adLeft = (body["adLeft"] as? NSNumber)?.doubleValue ?? -1

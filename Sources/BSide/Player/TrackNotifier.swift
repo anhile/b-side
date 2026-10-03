@@ -64,7 +64,7 @@ final class TrackNotifier: NSObject, UNUserNotificationCenterDelegate {
         guard let url else { return nil }
         var request = URLRequest(url: url)
         request.timeoutInterval = Tuning.notificationArtworkWait
-        guard let (data, _) = try? await URLSession.shared.data(for: request) else { return nil }
+        guard let (data, _) = try? await Net.session.data(for: request) else { return nil }
         let file = FileManager.default.temporaryDirectory
             .appendingPathComponent("bside-artwork-\(UUID().uuidString).jpg")
         guard (try? data.write(to: file)) != nil else { return nil }

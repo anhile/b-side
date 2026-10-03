@@ -143,7 +143,7 @@ enum ArtworkLoader {
         for attempt in 0..<2 {
             if attempt > 0 { try? await Task.sleep(for: .seconds(Tuning.artworkRetryDelay)) }
             do {
-                let (data, response) = try await URLSession.shared.data(from: url)
+                let (data, response) = try await Net.session.data(from: url)
                 let status = (response as? HTTPURLResponse)?.statusCode ?? 0
                 if status == 200, let image = decode(data) {
                     return image

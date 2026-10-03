@@ -34,6 +34,10 @@ enum Keys {
     static let resume = "resume"                 // debug: press Play on the restored track once the app has started
     static let snapshotOnly = "snapshotOnly"     // with snapshot: only the pages whose name has this in it
     static let snapshot = "snapshot"             // render the screens with sample data into this folder and quit
+    static let proxy = "proxy"                   // debug: host:port of an HTTP CONNECT proxy for all traffic
+    static let captureTo = "captureTo"           // debug: write pictures of the real window into this folder…
+    static let captureAt = "captureAt"           // …at these seconds after launch, "5,20,60"
+    static let scratch = "scratch"               // debug: settings and the last session in a throwaway domain
 }
 
 enum Settings {
@@ -41,9 +45,11 @@ enum Settings {
     /// user's own, that must not touch the player, the menu bar or the
     /// user's settings.
     static let isSnapshot = UserDefaults.standard.string(forKey: Keys.snapshot) != nil
+    /// A test run: it must not touch the user's settings or their last session.
+    private static let isScratch = isSnapshot || UserDefaults.standard.bool(forKey: Keys.scratch)
     /// The sample data a snapshot sets (volume, Vibe tiles) goes to a scratch
     /// domain, emptied before and after, instead of the user's settings.
-    static let defaults: UserDefaults = isSnapshot ? scratch : .standard
+    static let defaults: UserDefaults = isScratch ? scratch : .standard
 
     private static let scratchName = "\(Bundle.main.bundleIdentifier ?? "B-Side").snapshot"
     private static let scratch: UserDefaults = {

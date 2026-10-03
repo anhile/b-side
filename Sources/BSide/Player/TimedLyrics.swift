@@ -35,6 +35,7 @@ enum TimedLyrics {
         configuration.httpShouldSetCookies = false
         configuration.httpCookieAcceptPolicy = .never
         configuration.timeoutIntervalForRequest = Tuning.lyricsWait
+        configuration.connectionProxyDictionary = Net.session.configuration.connectionProxyDictionary
         return URLSession(configuration: configuration)
     }()
 

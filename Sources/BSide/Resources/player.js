@@ -90,7 +90,7 @@
   const AD_COUNT_SELECTOR = '.ytp-ad-pod-index, .ytp-ad-simple-ad-badge';
   const REPORT_INTERVAL_MS = 5000;
   const BOOT_TIMEOUT_MS = 20000;
-  const MEDIA_EVENTS = ['play', 'playing', 'pause', 'seeked', 'ended', 'durationchange', 'loadedmetadata', 'emptied'];
+  const MEDIA_EVENTS = ['play', 'playing', 'pause', 'waiting', 'seeked', 'ended', 'durationchange', 'loadedmetadata', 'emptied'];
   const STALL_LOG_MS = 1000;           // a wait for data this long is written to the log
   const ENDED = 0, PLAYING = 1, BUFFERING = 3; // getPlayerState() values
   // --------------------------------------------------------------------------
@@ -172,6 +172,7 @@
       position: player.getCurrentTime() || 0,
       duration: isFinite(duration) ? duration : 0,
       playing: state === PLAYING || state === BUFFERING,
+      buffering: state === BUFFERING, // playing, but waiting for data
       ad: ad.on,
       adLeft: ad.left,
       adIndex: ad.index,
@@ -540,8 +541,11 @@
                                 like: known.like || '', artistId: known.artistId || '', albumId: known.albumId || '' });
           at = 0;
         }
-        setQueue(page, 'playlist, resuming ' + wanted + ' at track ' + (at + 1));
-        playAt(at, startSeconds);
+        // Next or Previous pressed on the track before it was loaded.
+        const skip = (options && options.skip) || 0;
+        const to = Math.min(Math.max(at + skip, 0), page.tracks.length - 1);
+        setQueue(page, 'playlist, resuming ' + wanted + ' at track ' + (at + 1) + (skip ? ', skipping to ' + (to + 1) : ''));
+        playAt(to, to === at ? startSeconds : 0);
         return;
       }
       setQueue(page, shuffle ? 'shuffled playlist' : 'playlist');

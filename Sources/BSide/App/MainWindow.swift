@@ -34,6 +34,8 @@ enum MainWindow {
     static func attach(_ window: NSWindow) {
         self.window = window
         if hiddenAtLaunch { hide(window) }
+        // Debug captures: the window stays off the screen (Capture).
+        if Settings.defaults.string(forKey: Keys.captureTo) != nil { window.setFrameOrigin(NSPoint(x: -4000, y: -4000)) }
     }
 
     /// No Dock icon, no window: B-Side lives in the menu bar until shown.

@@ -9,8 +9,10 @@ tail -40 "$HOME/Library/Application Support/B-Side/events.log"
 
 ## The music cuts out
 
-When the player runs out of data and waits a second or more, the log has a
-`stall` line with the track, how long the wait was and where in the track:
+When the player runs out of data, Now Playing and the strip say
+"Buffering…" after a moment and the time stands still. The log has a
+`buffering` line when that is shown, and a `stall` line once the music
+goes on, with the track, how long the wait was and where in the track:
 
 ```bash
 grep "	stall	" "$HOME/Library/Application Support/B-Side/events.log" | tail

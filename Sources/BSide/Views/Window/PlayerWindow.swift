@@ -94,6 +94,7 @@ struct PlayerWindow: View {
                 if !MainWindow.show() { openWindow(id: "main") }
             }
             SpaceKey.install { player.togglePlayPause() }
+            Capture.schedule(navigation: navigation)
             TrackNotifier.shared.onOpen = {
                 if !MainWindow.show() { openWindow(id: "main") }
                 navigation.page = .nowPlaying
@@ -209,7 +210,7 @@ struct PlayerWindow: View {
     }
 
     private var showsFooter: Bool {
-        player.problem != nil || (player.hasTrack && navigation.page != .nowPlaying)
+        player.problem != nil || ((player.hasTrack || player.isLoading) && navigation.page != .nowPlaying)
     }
 
     /// The strip shows on Vibe and Playlists while something plays; Now
@@ -237,7 +238,7 @@ struct PlayerWindow: View {
                     .help(problem)
                     .padding(.leading, Theme.Space.xs)
                 Spacer(minLength: 0)
-            } else if player.hasTrack, navigation.page != .nowPlaying {
+            } else if player.hasTrack || player.isLoading, navigation.page != .nowPlaying {
                 NowPlayingStrip { navigation.page = .nowPlaying }
                     .padding(.horizontal, Theme.Space.xxs) // artwork and buttons fill the panel's height
             }

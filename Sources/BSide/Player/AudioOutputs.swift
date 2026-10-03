@@ -30,7 +30,8 @@ final class AudioOutputs: ObservableObject {
     @Published private(set) var devices: [AudioOutput] = []
     @Published private(set) var current: AudioDeviceID = kAudioObjectUnknown
     /// Empty until the user asks for them: reading the paired devices makes
-    /// macOS ask whether B-Side may use Bluetooth.
+    /// macOS ask whether B-Side may use Bluetooth. Read only while the menu
+    /// is open, never at launch.
     @Published private(set) var paired: [BluetoothOutput] = []
     @Published private(set) var showsBluetooth = Settings.bool(Keys.bluetoothOutputs)
 
@@ -63,7 +64,12 @@ final class AudioOutputs: ObservableObject {
     func showBluetooth() {
         Settings.defaults.set(true, forKey: Keys.bluetoothOutputs)
         showsBluetooth = true
-        read()
+        refreshPaired()
+    }
+
+    /// For the menu, as it opens.
+    func refreshPaired() {
+        paired = showsBluetooth ? Self.pairedAudio() : []
     }
 
     /// Connects the device; the sound goes to it when it has connected.
@@ -75,6 +81,7 @@ final class AudioOutputs: ObservableObject {
             Task { @MainActor in
                 EventLog.write("output\tconnecting \(name)" + (status == kIOReturnSuccess ? "" : "\tfailed, status \(status)"))
                 self.read()
+                self.refreshPaired()
             }
         }
     }
@@ -86,7 +93,6 @@ final class AudioOutputs: ObservableObject {
                                uid: Self.string(of: id, kAudioDevicePropertyDeviceUID) ?? "")
         }
         current = Self.value(of: Self.system, kAudioHardwarePropertyDefaultOutputDevice) ?? kAudioObjectUnknown
-        paired = showsBluetooth ? Self.pairedAudio() : []
         guard let wanted else { return }
         if Date().timeIntervalSince(wanted.since) > Tuning.bluetoothConnectSeconds {
             self.wanted = nil

@@ -18,7 +18,7 @@ struct PlaybackClock: Equatable, Sendable {
     init(_ state: PlayerState, at date: Date) {
         position = state.position
         self.date = date
-        isPlaying = state.isPlaying
+        isPlaying = state.isPlaying && !state.isBuffering
         duration = state.duration
     }
 

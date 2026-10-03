@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import Network
 import WebKit
 
 /// Owns the hidden WKWebView, its host window, and everything around playback.
@@ -11,6 +12,10 @@ final class PlayerController: NSObject, ObservableObject {
     /// Where playback is between the page's reports; see PlaybackClock.
     @Published private(set) var clock = PlaybackClock()
     @Published private(set) var source: PlaySource?
+    /// A track or list was asked for and the page has not answered yet.
+    @Published private(set) var isLoading = false
+    /// The music has waited for data for a while (Tuning.bufferingNoticeSeconds).
+    @Published private(set) var showsBuffering = false
     /// What plays after the current track, in order; a track's `index` is
     /// its place in the page's queue.
     @Published private(set) var upNext: [Track] = []
@@ -106,6 +111,11 @@ final class PlayerController: NSObject, ObservableObject {
     private var signingIn = false
     /// Set while the page is unloaded by "free memory when paused".
     private var unloaded: (target: PlayTarget, position: Double)?
+    /// Next (1) or Previous (-1) pressed on a track that waits for Play.
+    private var skipAfterLoad = 0
+    private var bufferingTask: Task<Void, Never>?
+    /// Starts the page again when the network comes back after a failed start.
+    private let pathMonitor = NWPathMonitor()
 
     /// What Play or Pause just asked for, and until when the page's reports
     /// may still say otherwise. The button and the record follow the click,
@@ -146,7 +156,7 @@ final class PlayerController: NSObject, ObservableObject {
     static func fixture(state: PlayerState = PlayerState(), account: Account = .signedIn(name: "", handle: "@bside"),
                         phase: PlayerPhase = .ready, startWait: StartWait = .short, source: PlaySource? = nil,
                         playlists: [Playlist] = [], playlistsState: Loadable = .loaded,
-                        problem: String? = nil, volume: Double = 70,
+                        problem: String? = nil, volume: Double = 70, buffering: Bool = false,
                         moods: [Mood] = [.liked], isGuest: Bool = false, openPlaylist: Playlist? = nil,
                         tracks: [Track] = [], tracksState: Loadable = .idle,
                         lyrics: Lyrics? = nil, upNext: [Track] = [], search: (String, [MusicItem])? = nil,
@@ -180,6 +190,7 @@ final class PlayerController: NSObject, ObservableObject {
         if let lyrics { controller.lyricsCache[lyrics.videoID] = lyrics }
         controller.problem = problem
         controller.volume = volume
+        controller.showsBuffering = buffering
         return controller
     }
 
@@ -191,10 +202,20 @@ final class PlayerController: NSObject, ObservableObject {
         let configuration = WKWebViewConfiguration()
         configuration.userContentController = contentController
         configuration.websiteDataStore = .default() // persistent cookies, so sign-in survives relaunch
+        Net.apply(to: configuration.websiteDataStore)
         configuration.mediaTypesRequiringUserActionForPlayback = []
         configuration.preferences.inactiveSchedulingPolicy = Tuning.inactiveScheduling
 
         bridge.onState = { [weak self] in self?.handle(state: $0) }
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            guard path.status == .satisfied else { return }
+            Task { @MainActor in
+                guard let self, case .failed = self.phase else { return }
+                EventLog.write("net\tback; starting the page again")
+                self.retry()
+            }
+        }
+        pathMonitor.start(queue: .global(qos: .utility))
         bridge.onEvent = { [weak self] in self?.handle(event: $0, detail: $1) }
         bridge.onAccount = { [weak self] in self?.handle(account: $0) }
         bridge.onLyrics = { [weak self] in self?.receive(lyrics: $0) }
@@ -415,9 +436,11 @@ final class PlayerController: NSObject, ObservableObject {
         restored.like = session.like
         restored.position = session.position
         restored.duration = session.duration
-        // Play, Next and Previous are the page's to answer once it plays.
+        // Play, Next and Previous are the page's to answer once it plays;
+        // in a list there is a next track to go to.
         restored.queueIndex = 0
         restored.queueCount = 1
+        restored.queueHasMore = session.listID != nil
         state = restored
         clock = PlaybackClock(restored, at: Date())
         currentListID = session.listID
@@ -573,8 +596,15 @@ final class PlayerController: NSObject, ObservableObject {
         nowPlaying.update(state)
         playingChanged(playing)
     }
-    func next() { bridge.call("next") }
-    func previous() { bridge.call("previous") }
+    /// On a track that waits for Play: its list is loaded, skipping to the
+    /// track after (or before) it.
+    func next() {
+        if unloaded != nil { skipAfterLoad = 1; play() } else { bridge.call("next") }
+    }
+
+    func previous() {
+        if unloaded != nil { skipAfterLoad = -1; play() } else { bridge.call("previous") }
+    }
 
     func seek(to seconds: Double) {
         bridge.call("seek", seconds)
@@ -1115,11 +1145,13 @@ final class PlayerController: NSObject, ObservableObject {
     }
 
     private func sendToPage(_ target: PlayTarget, startAt position: Double?) {
+        defer { skipAfterLoad = 0 }
+        isLoading = true
         if let video = target.videoID, let list = target.listID, let position {
             // Resuming: the same track at its position, and the list goes
             // on after it.
             bridge.call("load", "playlist", list, position, [
-                "shuffle": target.shuffle, "videoId": video,
+                "shuffle": target.shuffle, "videoId": video, "skip": skipAfterLoad,
                 // What is known of the track, for when the list's first
                 // page does not have it.
                 "track": ["title": state.title, "artist": state.artist, "like": state.like,
@@ -1222,8 +1254,10 @@ final class PlayerController: NSObject, ObservableObject {
         }
         let old = state
         state = new
+        if !new.videoID.isEmpty { isLoading = false }
         clock = clock.following(new, at: Date(), sameTrack: new.videoID == old.videoID)
         nowPlaying.update(new)
+        noteBuffering(new.isPlaying && new.isBuffering)
 
         // The title arrives a moment after the video ID, so wait for it.
         if !new.title.isEmpty, new.videoID != old.videoID || new.title != old.title {
@@ -1311,7 +1345,9 @@ final class PlayerController: NSObject, ObservableObject {
                 playlistsState = .failed("The list of playlists could not be loaded.")
             } else if detail.hasPrefix("load") {
                 problem = "This could not be played. It may be empty or unavailable."
+                forgetWhatWasAsked()
             } else if detail.hasPrefix("player error") {
+                isLoading = false
                 problem = "This track could not be played."
             } else if detail.hasPrefix("playlist edit") {
                 show(notice: "The playlist could not be changed. Try again.")
@@ -1320,6 +1356,39 @@ final class PlayerController: NSObject, ObservableObject {
             }
         default:
             EventLog.write("\(kind)\t\(detail)")
+        }
+    }
+
+    /// What was asked for does not exist any more (a playlist deleted on
+    /// the web, say): back to nothing playing, and it is not asked for
+    /// again at the next launch.
+    private func forgetWhatWasAsked() {
+        isLoading = false
+        unloaded = nil
+        source = nil
+        currentListID = nil
+        state = PlayerState()
+        clock = PlaybackClock()
+        nowPlaying.update(state)
+        savedSession = nil
+        LastSession.clear()
+    }
+
+    /// "Buffering…" is shown once a wait has lasted a while, so the usual
+    /// moment at the start of a track does not flash it.
+    private func noteBuffering(_ buffering: Bool) {
+        if buffering {
+            guard bufferingTask == nil else { return }
+            bufferingTask = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(Tuning.bufferingNoticeSeconds))
+                guard !Task.isCancelled, let self, self.state.isPlaying, self.state.isBuffering else { return }
+                self.showsBuffering = true
+                EventLog.write("buffering\t\(self.state.videoID) at \(Int(self.state.position)) s")
+            }
+        } else {
+            bufferingTask?.cancel()
+            bufferingTask = nil
+            if showsBuffering { showsBuffering = false }
         }
     }
 

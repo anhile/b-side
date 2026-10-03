@@ -107,7 +107,7 @@ final class NowPlaying {
         artwork = nil
         guard let url else { return }
         Task { [weak self] in
-            guard let (data, _) = try? await URLSession.shared.data(from: url),
+            guard let (data, _) = try? await Net.session.data(from: url),
                   let image = NSImage(data: data) else { return }
             guard let self, self.artworkURL == url else { return }
             self.artwork = MPMediaItemArtwork(boundsSize: image.size) { _ in image }

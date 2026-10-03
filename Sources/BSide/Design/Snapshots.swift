@@ -57,6 +57,8 @@ enum Snapshots {
         return [
             ("nowplaying-playing", .nowPlaying, .fixture(state: track, source: .mood(Mood.liked.id), playlists: lists)),
             ("nowplaying-paused", .nowPlaying, .fixture(state: paused, source: .mood(Mood.liked.id), playlists: lists)),
+            ("nowplaying-buffering", .nowPlaying, .fixture(state: track, source: .mood(Mood.liked.id), playlists: lists, buffering: true)),
+            ("vibe-buffering", .vibe, .fixture(state: track, source: .mood("focus"), playlists: lists, buffering: true, moods: moods)),
             ("nowplaying-long", .nowPlaying, .fixture(state: long, source: .mood(Mood.liked.id), playlists: lists)),
             ("nowplaying-noart", .nowPlaying, .fixture(state: noArt, source: .mood(Mood.liked.id), playlists: lists)),
             ("nowplaying-ad", .nowPlaying, .fixture(state: ad, source: .mood(Mood.liked.id), playlists: lists)),

@@ -98,10 +98,30 @@ exist only as arguments:
 | `-url <url>` | Loads this URL instead of the player page (`about:blank` measures the floor) |
 | `-snapshot <folder>` | Renders every page and state as PNG into the folder and quits |
 | `-snapshotOnly <words>` | With `-snapshot`: only the pages whose file name has the words in it |
+| `-proxy 127.0.0.1:8899` | Sends the page and every other request through an HTTP CONNECT proxy, for trying a slow or broken network |
+| `-captureTo <folder> -captureAt 5,20,60` | Writes pictures of the real window, every page, at those seconds after launch; the window is moved off the screen |
+| `-scratch YES` | Settings, vibes and the last session come from a throwaway domain, so a test run leaves yours alone (the Google session is shared either way) |
 | `-ApplePersistenceIgnoreState YES` | macOS: skips the "restore windows?" prompt after a killed run |
 
 The full list, with the stored settings, is in
 [Settings.swift](../Sources/BSide/App/Settings.swift).
+
+### A bad network
+
+`scripts/slowproxy.py` is an HTTP CONNECT proxy that makes the network slow
+or broken on purpose, and `-proxy` sends everything through it:
+
+```bash
+scripts/slowproxy.py 8899 --latency 1.5 --rate 40 &
+build/Build/Products/Release/B-Side.app/Contents/MacOS/B-Side -muted YES -scratch YES -proxy 127.0.0.1:8899 -play LM -captureTo /tmp/slow -captureAt 5,20,60
+```
+
+`--stall-after 30` stops all traffic after 30 s (the music waits for
+data), `--refuse-after 30` refuses new connections after 30 s (the
+connection is lost), `--fail-hosts googlevideo.com` lets the page load but
+not the music, and a port nobody listens on is no network at all. The
+captures show what the user would see; the event log has `buffering` and
+`stall` lines.
 
 ## Files the app writes
 

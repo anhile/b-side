@@ -20,6 +20,10 @@ struct NowPlayingStrip: View {
                         MarqueeText(text: line, font: Theme.Text.body, color: Theme.Colors.text)
                         if player.state.isAd, player.state.adLeft >= 0 {
                             AdCountdown(font: Theme.Text.caption)
+                        } else if player.showsBuffering {
+                            Text("Buffering…")
+                                .font(Theme.Text.caption)
+                                .foregroundStyle(Theme.Colors.textMuted)
                         } else if let label = player.sourceLabel {
                             sourceLine(label)
                                 .id(label)

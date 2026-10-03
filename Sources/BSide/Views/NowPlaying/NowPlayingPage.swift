@@ -18,7 +18,7 @@ struct NowPlayingPage: View {
     var body: some View {
         if let blocked = blockingState(for: player) {
             blocked
-        } else if player.hasTrack {
+        } else if player.hasTrack || player.isLoading {
             content
         } else {
             nothingPlaying
@@ -38,6 +38,10 @@ struct NowPlayingPage: View {
                         .help(title)
                     if player.state.isAd, player.state.adLeft >= 0 {
                         AdCountdown(font: Theme.Text.body)
+                    } else if player.showsBuffering {
+                        Text("Buffering…")
+                            .font(Theme.Text.body)
+                            .foregroundStyle(Theme.Colors.textMuted)
                     } else if player.state.artistID.isEmpty || player.state.isAd {
                         Text(subtitle)
                             .font(Theme.Text.body)
@@ -315,6 +319,7 @@ struct NowPlayingPage: View {
                     Label(device.name, systemImage: device.symbol)
                 }
             }
+            .onAppear { outputs.refreshPaired() }
             Divider()
             if outputs.showsBluetooth {
                 ForEach(outputs.paired) { device in

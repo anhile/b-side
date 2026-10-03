@@ -57,7 +57,7 @@ enum VibeServer {
         request.httpBody = try JSONSerialization.data(withJSONObject: ["words": words, "mix": mix.key, "install": installID])
         let (data, response): (Data, URLResponse)
         do {
-            (data, response) = try await URLSession.shared.data(for: request)
+            (data, response) = try await Net.session.data(for: request)
         } catch {
             EventLog.write("vibe\tserver unreachable: \(error.localizedDescription) (\((error as NSError).code))")
             throw Failure.unreachable
@@ -92,7 +92,7 @@ enum VibeServer {
         request.setValue(installID, forHTTPHeaderField: "X-BSide-Install")
         let data: Data, response: URLResponse
         do {
-            (data, response) = try await URLSession.shared.data(for: request)
+            (data, response) = try await Net.session.data(for: request)
         } catch {
             EventLog.write("vibe\tserver health: \(request.url?.absoluteString ?? "-"): \(error.localizedDescription) (\((error as NSError).code))")
             return nil
