@@ -76,7 +76,8 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     /// asked for it and something is loaded.
     private func show(track line: String) {
         guard let item else { return }
-        let title = Settings.bool(Keys.menuBarTrack) ? line : ""
+        // A space keeps the name off the record; the button has no gap of its own.
+        let title = Settings.bool(Keys.menuBarTrack) && !line.isEmpty ? " " + line : ""
         guard item.button?.title != title else { return }
         item.button?.title = title
         item.length = title.isEmpty ? NSStatusItem.squareLength : NSStatusItem.variableLength
@@ -152,6 +153,17 @@ private struct StatusMenuHead: View {
                 MarqueeText(text: title, font: Theme.Text.body, color: .primary, centered: true) // tokens-ok: system menu
                 if !artist.isEmpty {
                     MarqueeText(text: artist, font: Theme.Text.caption, color: .secondary, centered: true) // tokens-ok: system menu
+                }
+                // What it plays from, as under the track in the strip.
+                if let label = player.sourceLabel {
+                    HStack(spacing: Theme.Space.xxs) {
+                        Image(systemName: label.symbol)
+                        Text(label.name)
+                    }
+                    .font(Theme.Text.caption)
+                    .foregroundStyle(.secondary) // tokens-ok: system menu
+                    .lineLimit(1)
+                    .padding(.top, Theme.Space.xxs)
                 }
             }
             HStack(spacing: Theme.Space.l) {
