@@ -82,10 +82,18 @@ struct NowPlayingPage: View {
             if player.sourceLabel != nil || outputs.elsewhere != nil {
                 HStack(spacing: Theme.Space.xs) {
                     if let label = player.sourceLabel {
-                        SourceLine(label: label, font: Theme.Text.label)
-                            .id(label)
-                            .transition(.opacity)
-                            .help("Playing from \(label.name)")
+                        // A click goes to the source; a radio has no page.
+                        let goes = label.kind != .radio && !label.destination.isEmpty
+                        Button { navigation.open(source: label, player: player) } label: {
+                            SourceLine(label: label, font: Theme.Text.label)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .pointingHand(goes)
+                        .disabled(!goes)
+                        .id(label)
+                        .transition(.opacity)
+                        .help(goes ? "Show \(label.name)" : label.text)
                     }
                     Spacer(minLength: 0)
                     if let device = outputs.elsewhere {
@@ -100,6 +108,7 @@ struct NowPlayingPage: View {
                 .frame(height: Theme.Size.sourceBar)
                 .frame(maxWidth: .infinity)
                 .barGlass(joined: .bottom)
+                .overlay(alignment: .top) { Divider() } // a line between the controls and the bar
                 .animation(.easeInOut(duration: Theme.Motion.page), value: player.sourceLabel)
             }
         }

@@ -63,4 +63,21 @@ struct SourceLabel: Hashable {
     let kind: Kind
     let name: String
     let symbol: String
+    /// Where a click leads: a playlist's ID, an album's browse ID, an
+    /// artist's channel ID; empty when there is nowhere to go.
+    var destination = ""
+
+    /// What the kind is called before the name: "Vibe: Focus".
+    var kindName: String {
+        switch kind {
+        case .vibe: return "Vibe"
+        case .playlist: return "Playlist"
+        case .album: return "Album"
+        case .artist: return "Artist"
+        case .radio: return "Radio"
+        }
+    }
+
+    /// The whole line: "Playlist: Focus".
+    var text: String { "\(kindName): \(name)" }
 }

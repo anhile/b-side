@@ -60,7 +60,7 @@ enum WidgetFeed {
         state.isPlaying = player.state.isPlaying
         state.title = player.state.title
         state.artist = player.state.artist
-        state.source = player.sourceLabel?.name ?? ""
+        state.source = player.sourceLabel?.text ?? ""
         state.sourceSymbol = player.sourceLabel?.symbol ?? ""
         if state.hasTrack, let url = player.state.artworkURL {
             state.artwork = url == artworkFor ? current.artwork : await png(of: url)

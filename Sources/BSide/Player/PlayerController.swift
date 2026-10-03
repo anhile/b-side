@@ -138,7 +138,9 @@ final class PlayerController: NSObject, ObservableObject {
     private var currentShuffle = false
     private var savedSession: LastSession?
     /// Names of lists played from Explore, which are not in the library.
-    private var listTitles: [String: (title: String, kind: SourceLabel.Kind)] = [:]
+    /// What a list ID stands for, for the source line: its title and kind,
+    /// and where its page is (an album's browse ID, an artist's channel).
+    private var listTitles: [String: (title: String, kind: SourceLabel.Kind, page: String)] = [:]
     private var playlistsAsked = Date.distantPast
     private var askingHolding: Set<String> = []
     private var tracksHaveMore = false
@@ -463,7 +465,7 @@ final class PlayerController: NSObject, ObservableObject {
             case "artist": .artist
             default: .playlist
             }
-            listTitles[list] = (title, kind)
+            listTitles[list] = (title, kind, "")
         }
         unloaded = (currentTarget, session.position)
         nowPlaying.update(restored)
@@ -673,13 +675,14 @@ final class PlayerController: NSObject, ObservableObject {
         switch source {
         case .mood(let id):
             guard let mood = moods.first(where: { $0.id == id }) else { return nil }
-            return SourceLabel(kind: .vibe(colour: VibePalette.index(for: mood)), name: mood.name, symbol: mood.symbol)
+            return SourceLabel(kind: .vibe(colour: VibePalette.index(for: mood)), name: mood.name, symbol: mood.symbol,
+                               destination: mood.id)
         case .playlist(let id):
             if id == Tuning.likedMusicID {
-                return SourceLabel(kind: .playlist, name: "Liked Music", symbol: "heart.fill")
+                return SourceLabel(kind: .playlist, name: "Liked Music", symbol: "heart.fill", destination: id)
             }
             if let playlist = playlists.first(where: { $0.id == id }) {
-                return SourceLabel(kind: .playlist, name: playlist.title, symbol: "music.note.list")
+                return SourceLabel(kind: .playlist, name: playlist.title, symbol: "music.note.list", destination: id)
             }
             guard let known = listTitles[id] else { return nil }
             let symbol = switch known.kind {
@@ -687,10 +690,9 @@ final class PlayerController: NSObject, ObservableObject {
             case .artist: "music.mic"
             default: "music.note.list"
             }
-            return SourceLabel(kind: known.kind, name: known.title, symbol: symbol)
+            return SourceLabel(kind: known.kind, name: known.title, symbol: symbol, destination: known.page)
         case .radio(let title):
-            return SourceLabel(kind: .radio, name: title.isEmpty ? "Radio" : "Radio: \(title)",
-                               symbol: "dot.radiowaves.left.and.right")
+            return SourceLabel(kind: .radio, name: title.isEmpty ? "a track" : title, symbol: "dot.radiowaves.left.and.right")
         case .other, nil:
             return nil
         }
@@ -1040,7 +1042,7 @@ final class PlayerController: NSObject, ObservableObject {
 
     /// All of an artist's songs, from the first: their page's Play.
     func play(artist page: ArtistPage) {
-        play(list: page.songsPlaylistID, from: 0, title: page.name, kind: .artist)
+        play(list: page.songsPlaylistID, from: 0, title: page.name, kind: .artist, page: page.id)
     }
 
     /// A song plays with its radio after it, as in YouTube Music; an album
@@ -1049,7 +1051,7 @@ final class PlayerController: NSObject, ObservableObject {
         if !item.videoID.isEmpty {
             load(PlayTarget(videoID: item.videoID, listID: nil), from: .other, startAt: nil)
         } else if !item.playlistID.isEmpty {
-            listTitles[item.playlistID] = (item.title, item.kind == .album ? .album : .playlist)
+            listTitles[item.playlistID] = (item.title, item.kind == .album ? .album : .playlist, item.browseID)
             load(PlayTarget(videoID: nil, listID: item.playlistID), from: .playlist(item.playlistID), startAt: nil)
         }
     }
@@ -1062,9 +1064,9 @@ final class PlayerController: NSObject, ObservableObject {
 
     /// A playlist from one of its tracks on: an album, or all of an artist's
     /// songs, which their top songs are the start of.
-    func play(list id: String, from index: Int, title: String = "", kind: SourceLabel.Kind = .playlist) {
+    func play(list id: String, from index: Int, title: String = "", kind: SourceLabel.Kind = .playlist, page: String = "") {
         guard !id.isEmpty else { return }
-        if !title.isEmpty { listTitles[id] = (title, kind) }
+        if !title.isEmpty { listTitles[id] = (title, kind, page) }
         load(PlayTarget(videoID: nil, listID: id, startIndex: index), from: .playlist(id), startAt: nil)
     }
 

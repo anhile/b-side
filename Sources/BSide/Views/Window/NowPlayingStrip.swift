@@ -44,7 +44,7 @@ struct NowPlayingStrip: View {
             .pointingHand()
             .help("Now Playing")
             .contextMenu { trackMenu }
-            .accessibilityLabel("Now Playing: \(line)" + (player.sourceLabel.map { ", from \($0.name)" } ?? ""))
+            .accessibilityLabel("Now Playing: \(line)" + (player.sourceLabel.map { ", \($0.text)" } ?? ""))
 
             // As tall as the artwork, 4 inside the panel, like it. The
             // transport buttons stand together; Like, which is not one of
@@ -107,9 +107,10 @@ struct NowPlayingStrip: View {
     }
 }
 
-/// What plays from where, in one line: a vibe's name in the vibe's colour,
-/// a playlist, an album, an artist or a radio in the accent. Under the
-/// track in the strip, and along the bottom of Now Playing.
+/// What plays from where, in one line, the kind first ("Vibe: Focus"): a
+/// vibe in the vibe's colour, a playlist, an album, an artist or a radio in
+/// the accent. Under the track in the strip, and along the bottom of Now
+/// Playing.
 struct SourceLine: View {
     let label: SourceLabel
     /// The caption under the track in the strip; the label on its own line.
@@ -119,7 +120,7 @@ struct SourceLine: View {
     var body: some View {
         HStack(spacing: Theme.Space.xxs) {
             Image(systemName: label.symbol)
-            Text(label.name)
+            Text(label.text)
         }
         .font(font)
         .fontWeight(.medium)
@@ -135,6 +136,32 @@ struct SourceLine: View {
             return colorScheme == .dark ? swatch.light : swatch.deep
         case .playlist, .album, .artist, .radio:
             return Theme.Colors.accentText
+        }
+    }
+}
+
+extension Navigation {
+    /// Goes where the music comes from: the Vibe page, the playlist's
+    /// tracks, an album's or an artist's page. A radio has no page.
+    @MainActor
+    func open(source label: SourceLabel, player: PlayerController) {
+        switch label.kind {
+        case .vibe:
+            page = .vibe
+        case .playlist:
+            guard !label.destination.isEmpty else { return }
+            let playlist = player.playlists.first { $0.id == label.destination }
+                ?? Playlist(id: label.destination, title: label.name, subtitle: label.destination == Tuning.likedMusicID ? "Auto playlist" : "")
+            player.open(playlist)
+            page = .playlists
+        case .album:
+            guard !label.destination.isEmpty else { return }
+            open(.collection(id: label.destination, title: label.name))
+        case .artist:
+            guard !label.destination.isEmpty else { return }
+            open(.artist(id: label.destination, name: label.name))
+        case .radio:
+            break
         }
     }
 }

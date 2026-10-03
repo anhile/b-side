@@ -109,7 +109,11 @@ struct VibePage: View {
             LazyVGrid(columns: columns, spacing: Theme.Space.s) {
                 ForEach(player.moods) { mood in
                     let locked = mood.needsAccount && player.account == .signedOut
-                    let play = { locked ? player.showSignIn() : player.play(mood) }
+                    // A click on the tile that plays does nothing: it plays
+                    // on, not again from the start.
+                    let play = {
+                        if locked { player.showSignIn() } else if player.source != .mood(mood.id) { player.play(mood) }
+                    }
                     // A click plays, a drag moves the tile: not a Button,
                     // which would keep the mouse and never let a drag start.
                     tile(mood)

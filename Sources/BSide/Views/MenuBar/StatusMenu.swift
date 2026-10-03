@@ -158,7 +158,7 @@ private struct StatusMenuHead: View {
                 if let label = player.sourceLabel {
                     HStack(spacing: Theme.Space.xxs) {
                         Image(systemName: label.symbol)
-                        Text(label.name)
+                        Text(label.text)
                     }
                     .font(Theme.Text.caption)
                     .foregroundStyle(.secondary) // tokens-ok: system menu
