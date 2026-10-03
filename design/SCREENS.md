@@ -8,10 +8,10 @@ strip with the current track above them. The page's name stands after the
 window buttons, in the text colour, where a window has its title; the icons
 at the other end are the buttons (since 2026-10-02). No gear: Settings are in the menu
 bar and under Command-comma. Starting music never switches the page.
-The window starts at 320 by 440 and drags to any size up to twice that
-(since 2026-10-03); the pages fill it, and `wide-*.png` show them at 560
-by 640. Text and controls keep their size; Large in Settings makes them
-30% bigger, and the window's least size with them.
+The window starts at 432 by 600, is never smaller than 320 by 440, and
+drags to any size up to twice that (since 2026-10-03); the pages fill it,
+and `wide-*.png` show them at 560 by 640. Text and controls keep their size; Medium and Large in Settings
+make them 15% and 30% bigger, and the window's least size with them.
 
 ## Screen: Now Playing
 
@@ -25,8 +25,9 @@ by 640. Text and controls keep their size; Large in Settings makes them
   edge as the artist is above the progress line: 24 each. Before, 17 and 24,
   and the title read as stuck to the colour. In a bigger window the
   artwork grows as far as the width lets it, and the room left goes
-  around it; Up Next and the lyrics get the whole of that room The time shown over the bar under the pointer
-  reaches up to the artist's name, so it stands on a glass capsule.
+  around it; Up Next and the lyrics get the whole of that room.
+- The time shown over the bar under the pointer reaches up to the artist's
+  name, so it stands on a glass capsule.
 - Title and artist start at the left edge, in line with the progress bar; a
   long title scrolls. What can be done with the track comes after them:
   Like, then the track's menu ("…"). Both are muted and without glass, so
@@ -39,7 +40,9 @@ by 640. Text and controls keep their size; Large in Settings makes them
   mirroring the speaker at its start; both open something. It
   puts what plays next in the artwork's place (as Lyrics do; one of the two
   at a time) and is orange while the list shows. A click on a track jumps to
-  it; its menu is a track's menu plus Remove from Up Next. The next 30
+  it; its menu is a track's menu plus Remove from Up Next. "Up Next" stands
+  in the glass bar the list pages have under the title bar, and the rows run
+  under it (since 2026-10-03; before, a caption inside the list). The next 30
   tracks; "Nothing after this track." when there are none.
 - Waiting for data: "Buffering…" in the artist's place after 1.5 s of
   waiting (not at the usual moment a track starts), and the time stands
@@ -126,8 +129,8 @@ way: the track's length, or the orange speaker on the one that plays.
 - Tiles: two columns at the least window width, 138 by 96, growing with
   the window until a third column fits; `surface`, radius 12; name in the title
   role, source in the caption role. Sources: a playlist (in order or
-  shuffled), Liked Music shuffled, a track's radio. Default: one tile,
-  "Liked, shuffled"
+  shuffled; Liked Music is one of them), a track's radio. Default: one
+  tile, "Liked, shuffled"
 - States: signed out / playlists loading (skeleton tiles) / all tiles removed
   (one "Add a mood" tile) / error / long name (two lines, then truncation)
 - Entry and exit: first dot, Command-1, the page the app opens on
@@ -148,7 +151,8 @@ Research: [docs/research/vibe-from-prompt.md](../docs/research/vibe-from-prompt.
 - Primary action: Make, then Add Vibe
 - Secondary actions: an example chip fills the words; Try It plays the first
   songs; a chip's x leaves that part out; Back returns to the words; "A
-  playlist, Liked Music or a track's radio…" opens the editor it replaced
+  playlist or a track's radio…" opens the editor it replaced. Three example
+  chips, on one line (since 2026-10-03; four took three lines)
 - Attention order: 1) the words field 2) the example chips 3) Make. In the
   preview: 1) the tile as it will look 2) Vocals and Artists 3) "Heard as"
   4) the first songs in one line
@@ -216,9 +220,10 @@ a `Skeleton` list while loading.
 
 ## Strip (Vibe and Playlists, while music plays)
 
-Artwork 24, "Title — Artist" in the caption role, Pause or Play, Next. The
-line opens Now Playing. When something failed, the panel shows the message
-instead.
+Artwork 24, "Title — Artist" in the caption role, Pause or Play, Next. In a
+strip 400 or wider (the window dragged out), Previous comes before them and
+Like after (since 2026-10-03). The line opens Now Playing. When something
+failed, the panel shows the message instead.
 
 Under the track, what it plays from: a vibe's name in the vibe's colour; a
 playlist, an album or an artist in the accent; "Radio: <track>" after Start

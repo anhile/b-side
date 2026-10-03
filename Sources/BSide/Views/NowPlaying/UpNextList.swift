@@ -14,14 +14,10 @@ struct UpNextList: View {
                 .foregroundStyle(Theme.Colors.textMuted)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
+            // The bar the pages with a list have under the title bar, so
+            // the list reads as one of them; the rows run under it.
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
-                    Text("Up Next")
-                        .font(Theme.Text.caption)
-                        .fontWeight(.medium)
-                        .foregroundStyle(Theme.Colors.textMuted)
-                        .padding(.horizontal, Theme.Space.xs)
-                        .padding(.bottom, Theme.Space.xxs)
                     ForEach(player.upNext) { track in
                         Button { player.playUpNext(track) } label: {
                             TrackRow(track: track, isCurrent: false, isPlaying: false)
@@ -39,8 +35,22 @@ struct UpNextList: View {
                     }
                 }
                 .padding(.horizontal, Theme.Space.xs)
-                .padding(.vertical, Theme.Space.xs)
+                .padding(.vertical, Theme.Space.xxs)
                 .background(OverlayScrollers())
+            }
+            .contentMargins(.top, Theme.Size.pageBar, for: .scrollContent)
+            .contentMargins(.top, Theme.Size.pageBar, for: .scrollIndicators)
+            .overlay(alignment: .top) {
+                HStack {
+                    Text("Up Next")
+                        .font(Theme.Text.label)
+                        .foregroundStyle(Theme.Colors.textMuted)
+                    Spacer()
+                }
+                .padding(.leading, Theme.Space.m)
+                .frame(height: Theme.Size.pageBar)
+                .frame(maxWidth: .infinity)
+                .barGlass(joined: .top)
             }
         }
     }

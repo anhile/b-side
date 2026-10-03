@@ -38,7 +38,7 @@ The pictures are rendered by the app itself with sample data.
 - **The last track is back** when you open B-Side again, paused where it
   stopped.
 - Light and dark; the window drags to any size up to twice the smallest;
-  a Large setting for reading at a distance; Reduce Motion and Reduce
+  Medium and Large text sizes for reading at a distance; Reduce Motion and Reduce
   Transparency are respected.
 - Works without an account for search and radios; your library needs you to
   sign in to Google.

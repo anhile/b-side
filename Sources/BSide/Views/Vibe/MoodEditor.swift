@@ -5,8 +5,9 @@ import SwiftUI
 struct MoodEditor: View {
     @Environment(\.dismiss) private var dismiss
 
+    /// Liked Music is one of the playlists (since 2026-10-03; before, a
+    /// kind of its own, which said the same thing twice).
     private enum Kind: String, CaseIterable, Identifiable {
-        case liked = "Liked Music, shuffled"
         case playlist = "A playlist"
         case radio = "Radio from a track"
         var id: String { rawValue }
@@ -27,8 +28,8 @@ struct MoodEditor: View {
         _mood = State(initialValue: mood)
         switch mood.source {
         case .likedShuffled:
-            _kind = State(initialValue: .liked)
-            _playlistID = State(initialValue: playlists.first?.id ?? Tuning.likedMusicID)
+            _kind = State(initialValue: .playlist)
+            _playlistID = State(initialValue: Tuning.likedMusicID)
             _shuffled = State(initialValue: true)
             _track = State(initialValue: "")
         case .playlist(let id, let isShuffled):
@@ -67,8 +68,6 @@ struct MoodEditor: View {
                     ForEach(Kind.allCases) { Text($0.rawValue).tag($0) }
                 }
                 switch kind {
-                case .liked:
-                    EmptyView()
                 case .playlist:
                     Picker("Playlist", selection: $playlistID) {
                         Text("Liked Music").tag(Tuning.likedMusicID)
@@ -115,7 +114,8 @@ struct MoodEditor: View {
 
     private var source: Mood.Source? {
         switch kind {
-        case .liked: return .likedShuffled
+        // Liked Music shuffled keeps its own source: the default tile's.
+        case .playlist where playlistID == Tuning.likedMusicID && shuffled: return .likedShuffled
         case .playlist: return .playlist(id: playlistID, shuffled: shuffled)
         case .radio: return PlayTarget(track)?.videoID.map { .radio(videoID: $0) }
         }

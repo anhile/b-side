@@ -318,7 +318,7 @@ enum Snapshots {
                          name: "large-vibe", appearance: .aqua, into: folder, reduceTransparency: true)
         await renderPage(.playlists, player: .fixture(state: track, source: .playlist("1"), playlists: largeLists),
                          name: "large-playlists", appearance: .darkAqua, into: folder, reduceTransparency: true)
-        Theme.scale = UISize.compact.scale
+        Theme.scale = UISize.small.scale
         // Glass does not draw offscreen; these show the strip's panel shape.
         let many = (1...20).map { Playlist(id: "\($0)", title: "Playlist \($0)", subtitle: "\($0 * 3) tracks", artworkURL: nil) }
         await renderPage(.playlists, player: .fixture(state: track, source: .playlist("1"), playlists: many),

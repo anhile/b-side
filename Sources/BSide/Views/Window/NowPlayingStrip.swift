@@ -1,15 +1,19 @@
 import SwiftUI
 
-/// One line under Vibe and Playlists: what plays, Pause and Next. The line
-/// itself leads to the Now Playing page. When a vibe or a playlist plays, its
-/// name slides up under the track: a vibe in its own colour, a playlist, an
-/// album or a track's radio in the accent.
+/// One line under Vibe and Playlists: what plays, Pause and Next; in a
+/// window wide enough, Previous before them and Like after. The line
+/// itself leads to the Now Playing page. When a vibe or a playlist plays,
+/// its name slides up under the track: a vibe in its own colour, a
+/// playlist, an album or a track's radio in the accent.
 struct NowPlayingStrip: View {
     @EnvironmentObject private var player: PlayerController
     @EnvironmentObject private var navigation: Navigation
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let open: () -> Void
+    @State private var width: CGFloat = 0
+
+    private var wide: Bool { width >= Theme.Size.stripWide }
 
     var body: some View {
         HStack(spacing: Theme.Space.xs) {
@@ -43,6 +47,10 @@ struct NowPlayingStrip: View {
             .accessibilityLabel("Now Playing: \(line)" + (player.sourceLabel.map { ", from \($0.name)" } ?? ""))
 
             // As tall as the artwork, 4 inside the panel, like it.
+            if wide {
+                TransportButton(symbol: "backward.fill", label: "Previous", target: Theme.Size.artworkStrip) { player.previous() }
+                    .disabled(!player.hasTrack)
+            }
             TransportButton(symbol: player.state.isPlaying ? "pause.fill" : "play.fill",
                             label: player.state.isPlaying ? "Pause" : "Play",
                             glyph: Theme.Size.stripPlayGlyph, target: Theme.Size.artworkStrip) {
@@ -50,7 +58,16 @@ struct NowPlayingStrip: View {
             }
             TransportButton(symbol: "forward.fill", label: "Next", target: Theme.Size.artworkStrip) { player.next() }
                 .disabled(!player.state.hasNext)
+            if wide, !player.state.isAd {
+                TransportButton(symbol: player.state.isLiked ? "heart.fill" : "heart",
+                                label: player.state.isLiked ? "Remove Like" : "Like", target: Theme.Size.artworkStrip,
+                                color: player.state.isLiked ? Theme.Colors.accentText : Theme.Colors.textMuted) {
+                    player.toggleLike()
+                }
+                .disabled(!player.hasTrack)
+            }
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
     }
 
     /// Right-click: the menu every track has.

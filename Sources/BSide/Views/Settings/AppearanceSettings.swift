@@ -47,7 +47,7 @@ struct AppearanceSettings: View {
                 }
                 .pickerStyle(.segmented)
             } footer: {
-                Text("Large makes the text and the buttons 30% bigger, for reading at a distance or with low vision. The window itself can be dragged to any size.")
+                Text("Medium and Large make the text and the buttons 15% and 30% bigger, for reading at a distance or with low vision. The window itself can be dragged to any size.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

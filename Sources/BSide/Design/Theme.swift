@@ -4,13 +4,11 @@ import SwiftUI
 /// sizes from here and nowhere else; scripts/check-design.sh enforces it.
 ///
 /// Type, spacing, radii and sizes are multiplied by `scale`: 1 at the
-/// Compact size, 1.3 at Large, and whatever the window was dragged to in
-/// between. Colours, opacities, ratios and timings are not.
+/// Small size, 1.15 at Medium, 1.3 at Large (Settings, Appearance).
+/// Colours, opacities, ratios and timings are not.
 enum Theme {
     /// Set by WindowSize before the window is built again; see UISize.
     static var scale: CGFloat = UISize.currentScale
-    /// Compact and Large.
-    static let scaleRange: ClosedRange<CGFloat> = 1...1.3
 
     /// Semantic colours. Light and dark values live in the asset catalog
     /// (Assets.xcassets/Colors) and follow the system appearance.
@@ -71,9 +69,11 @@ enum Theme {
     }
 
     enum Size {
-        /// The window's least size, and where it starts.
+        /// The window's least size.
         static var window: CGSize { CGSize(width: windowBase.width * scale, height: windowBase.height * scale) }
-        /// The window drags to any size up to twice that, in either direction.
+        /// Where it starts: room for Up Next and a few more rows.
+        static var windowStart: CGSize { CGSize(width: 432 * scale, height: 600 * scale) }
+        /// The window drags to any size up to twice the least, in either direction.
         static var windowMax: CGSize { CGSize(width: window.width * 2, height: window.height * 2) }
         static let windowBase = CGSize(width: 320, height: 440)
         /// The system's title bar; the bar with the page tabs grows with the
@@ -111,6 +111,8 @@ enum Theme {
         static let recordGrooveStep: CGFloat = 0.045
         static var rowHeight: CGFloat { (44) * scale }
         static var stripHeight: CGFloat { (44) * scale }
+        /// A strip at least this wide has Previous and Like as well.
+        static var stripWide: CGFloat { (400) * scale }
         static var transportTarget: CGFloat { (32) * scale }
         static var transportGlyph: CGFloat { (15) * scale }
         static var playGlyph: CGFloat { (22) * scale }

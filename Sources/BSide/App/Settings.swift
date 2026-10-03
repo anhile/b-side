@@ -14,8 +14,8 @@ enum Keys {
     static let bluetoothOutputs = "bluetoothOutputs" // asked to see paired Bluetooth devices in Sound Output
     static let playlistOrder = "playlistOrder"   // the user's order of the playlists, by ID
     static let theme = "theme"                   // ThemeMode: system, light or dark
-    static let uiSize = "uiSize"                 // UISize: compact or large (before 0.2; see uiScale)
-    static let uiScale = "uiScale"               // what Theme multiplies sizes by: 1 (Compact) or 1.3 (Large)
+    static let uiSize = "uiSize"                 // "compact" or "large" (before 0.2; see uiScale)
+    static let uiScale = "uiScale"               // what Theme multiplies sizes by: UISize.scale
     static let repeatMode = "repeatMode"         // RepeatMode: off, all or one
     static let vibeServer = "vibeServer"         // read vibe words on the B-Side server (off by default)
     static let vibeServerAddress = "vibeServerAddress" // that server's address
@@ -111,28 +111,34 @@ enum ThemeMode: String, CaseIterable, Identifiable {
     }
 }
 
-/// Settings, Appearance: the size of everything in the window and the menu.
-/// Large is for reading at a distance or with low vision. The window
-/// itself is dragged to any size; this sets its text and controls.
+/// Settings, Appearance: the size of the text and the controls in the
+/// window and the menu. Medium and Large are for reading at a distance or
+/// with low vision. The window itself is dragged to any size.
 enum UISize: String, CaseIterable, Identifiable {
-    case compact, large
+    case small, medium, large
 
     var id: String { rawValue }
-    var title: String { self == .compact ? "Compact" : "Large" }
+    var title: String { rawValue.capitalized }
     /// What Theme multiplies type, spacing and sizes by.
-    var scale: CGFloat { self == .compact ? Theme.scaleRange.lowerBound : Theme.scaleRange.upperBound }
+    var scale: CGFloat {
+        switch self {
+        case .small: return 1
+        case .medium: return 1.15
+        case .large: return 1.3
+        }
+    }
 
-    /// The end the window is nearer to.
+    /// The size whose scale this is, or the nearest.
     static func nearest(_ scale: CGFloat) -> UISize {
-        scale < (UISize.compact.scale + UISize.large.scale) / 2 ? .compact : .large
+        allCases.min { abs($0.scale - scale) < abs($1.scale - scale) } ?? .small
     }
 
     /// The scale kept in the defaults, or the Compact / Large setting
     /// from before 0.2, which kept a name.
     static var currentScale: CGFloat {
         let kept = Settings.defaults.double(forKey: Keys.uiScale)
-        if kept > 0 { return min(max(kept, Theme.scaleRange.lowerBound), Theme.scaleRange.upperBound) }
-        return (UISize(rawValue: Settings.defaults.string(forKey: Keys.uiSize) ?? "") ?? .compact).scale
+        if kept > 0 { return nearest(kept).scale }
+        return Settings.defaults.string(forKey: Keys.uiSize) == "large" ? UISize.large.scale : UISize.small.scale
     }
 }
 

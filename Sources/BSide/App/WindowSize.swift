@@ -1,6 +1,6 @@
 import AppKit
 
-/// The size of everything in the window: Compact or Large (Settings,
+/// The size of everything in the window: Small, Medium or Large (Settings,
 /// Appearance), as Theme.scale. The window itself is dragged to any size
 /// between Theme.Size.window and Theme.Size.windowMax; its text and
 /// controls keep the size set here.

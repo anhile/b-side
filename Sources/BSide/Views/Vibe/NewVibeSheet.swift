@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The sheet behind the "+" tile: a vibe from the user's own words. Three
-/// steps in one sheet: describe, making, preview. A playlist, Liked Music or
+/// steps in one sheet: describe, making, preview. A playlist or
 /// a track's radio are one click away, in the editor it replaced.
 struct NewVibeSheet: View {
     enum Step: Equatable {
@@ -20,7 +20,7 @@ struct NewVibeSheet: View {
     @State var step: Step
     /// The tile being made again, whose id and colour stay.
     let replacing: Mood?
-    /// Opens the old editor: a playlist, Liked Music or a track's radio.
+    /// Opens the old editor: a playlist or a track's radio.
     let pickSource: () -> Void
 
     @EnvironmentObject private var player: PlayerController
@@ -31,7 +31,8 @@ struct NewVibeSheet: View {
     /// With the server on: how many vibes this Mac has left this month.
     @State private var quota: VibeServer.Health?
 
-    static let examples = ["Rainy Sunday morning", "Night drive", "Deep focus, no lyrics", "Dinner with friends"]
+    /// Three, so they stay on one line.
+    static let examples = ["Rainy day", "Night drive", "Focus"]
 
     init(replacing: Mood? = nil, step: Step = .describe, prompt: String? = nil, quota: VibeServer.Health? = nil,
          pickSource: @escaping () -> Void = {}) {
@@ -171,10 +172,10 @@ struct NewVibeSheet: View {
                         Label(reason, systemImage: "exclamationmark.triangle")
                     default:
                         Text(VibeServer.isOn
-                             ? "In any language. The B-Side server reads the words; they are not stored. B-Side finds songs that fit and keeps playing more like them."
+                             ? "Any language works. B-Side finds songs that fit and keeps more coming. The words go to the B-Side server and are not kept."
                              : VibeMaker.hasModel
-                             ? "In any language. B-Side finds songs that fit and keeps playing more like them."
-                             : "B-Side matches the words to YouTube Music\u{2019}s moods and searches for them. Turn on Apple Intelligence for a closer match.")
+                             ? "Any language works. B-Side finds songs that fit and keeps more coming."
+                             : "B-Side matches the words to YouTube Music\u{2019}s moods. Turn on Apple Intelligence for a closer match.")
                         if let quotaText {
                             Text(quotaText)
                                 .padding(.top, Theme.Space.xxs)
@@ -200,7 +201,7 @@ struct NewVibeSheet: View {
                         pickSource()
                     } label: {
                         HStack(spacing: Theme.Space.xs) {
-                            Label("A playlist, Liked Music or a track\u{2019}s radio", systemImage: "music.note.list")
+                            Label("A playlist or a track\u{2019}s radio", systemImage: "music.note.list")
                                 .foregroundStyle(Theme.Colors.text)
                             Spacer(minLength: 0)
                             Image(systemName: "chevron.right")

@@ -37,6 +37,9 @@ enum MainWindow {
         // test run must leave alone: its window is moved off the screen and
         // resized, and the user's window would open there next time.
         if Settings.isScratch { forgetFrame(window) }
+        // The first time, or in a test run: the starting size. SwiftUI's
+        // own guess is the pager's, as wide as the window may be.
+        if UserDefaults.standard.string(forKey: frameKey) == nil { window.setContentSize(Theme.Size.windowStart) }
         if hiddenAtLaunch { hide(window) }
         // Debug captures: the window stays off the screen (Capture).
         if Settings.defaults.string(forKey: Keys.captureTo) != nil { window.setFrameOrigin(NSPoint(x: -4000, y: -4000)) }
@@ -45,8 +48,11 @@ enum MainWindow {
     /// SwiftUI names the frame for saving again after the window is up,
     /// so the name is cleared, and the saved frame removed, whenever the
     /// window moves or resizes.
+    /// Where SwiftUI keeps the window's frame.
+    private static let frameKey = "NSWindow Frame main"
+
     private static func forgetFrame(_ window: NSWindow) {
-        let key = "NSWindow Frame main"
+        let key = frameKey
         window.setFrameAutosaveName("")
         UserDefaults.standard.removeObject(forKey: key)
         for name in [NSWindow.didResizeNotification, NSWindow.didMoveNotification, NSWindow.willCloseNotification] {

@@ -125,8 +125,8 @@ The window is three pages side by side in a paging scroll view, a glass bar
 on top and the strip with the current track at the bottom.
 [design/SCREENS.md](../design/SCREENS.md) has one spec per screen.
 
-Every size in Theme is multiplied by `Theme.scale`: 1 for Compact, 1.3
-for Large (Settings, Appearance). A layout exists for one scale only, so
+Every size in Theme is multiplied by `Theme.scale`: 1 for Small, 1.15 for
+Medium, 1.3 for Large (Settings, Appearance). A layout exists for one scale only, so
 changing it builds the window's content again (`WindowSize`, `.id` in
 BSideApp). The window itself is dragged to any size from
 `Theme.Size.window` to twice that; the pages fill it: the pager's pages

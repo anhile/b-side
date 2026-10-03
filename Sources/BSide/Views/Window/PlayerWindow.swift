@@ -87,9 +87,9 @@ struct PlayerWindow: View {
         .coordinateSpace(name: "window")
         .onPreferenceChange(TintBottomKey.self) { tintBottom = $0; Self.lastTintBottom = $0 / Theme.scale }
         .ignoresSafeArea(edges: .top)
-        // Dragged to any size between the two; starts at the least.
-        .frame(minWidth: Theme.Size.window.width, idealWidth: Theme.Size.window.width, maxWidth: Theme.Size.windowMax.width,
-               minHeight: Theme.Size.window.height - topInset, idealHeight: Theme.Size.window.height - topInset,
+        // Dragged to any size between the two; starts in between.
+        .frame(minWidth: Theme.Size.window.width, idealWidth: Theme.Size.windowStart.width, maxWidth: Theme.Size.windowMax.width,
+               minHeight: Theme.Size.window.height - topInset, idealHeight: Theme.Size.windowStart.height - topInset,
                maxHeight: Theme.Size.windowMax.height - topInset)
         .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.top } action: { topInset = $0 }
         .background(WindowSetup())
