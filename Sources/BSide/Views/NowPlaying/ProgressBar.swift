@@ -107,7 +107,7 @@ struct ProgressBar: View {
         GeometryReader { proxy in
             let width = proxy.size.width
             let half = Theme.Size.timeLabel / 2
-            if active, let pointer = pointer ?? previewHover.map { $0 * width } {
+            if active, let pointer = pointer ?? previewHover.map({ $0 * width }) {
                 Text(time(seconds(at: pointer, width: width)))
                     .font(Theme.Text.caption)
                     .monospacedDigit()
