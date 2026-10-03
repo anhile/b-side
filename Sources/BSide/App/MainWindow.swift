@@ -47,14 +47,15 @@ enum MainWindow {
     /// window moves or resizes.
     private static func forgetFrame(_ window: NSWindow) {
         let key = "NSWindow Frame main"
-        let forget = { (_: Notification) in
-            window.setFrameAutosaveName("")
-            UserDefaults.standard.removeObject(forKey: key)
-        }
         window.setFrameAutosaveName("")
         UserDefaults.standard.removeObject(forKey: key)
         for name in [NSWindow.didResizeNotification, NSWindow.didMoveNotification, NSWindow.willCloseNotification] {
-            NotificationCenter.default.addObserver(forName: name, object: window, queue: .main, using: forget)
+            NotificationCenter.default.addObserver(forName: name, object: window, queue: .main) { note in
+                MainActor.assumeIsolated {
+                    (note.object as? NSWindow)?.setFrameAutosaveName("")
+                    UserDefaults.standard.removeObject(forKey: key)
+                }
+            }
         }
     }
 
