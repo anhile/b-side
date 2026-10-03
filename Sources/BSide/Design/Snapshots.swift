@@ -107,18 +107,16 @@ enum Snapshots {
         ]
         for tab in SettingsView.Tab.allCases {
             for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
-                let hosting = NSHostingController(rootView: SettingsView(tab: tab).environmentObject(player))
-                let window = NSWindow(contentViewController: hosting)
-                window.styleMask = [NSWindow.StyleMask.titled, .closable]
-                window.title = "B-Side Settings"
+                // The real window, toolbar and all: the whole frame is captured.
+                let (window, keep) = SettingsWindow.make(player: player, tab: tab)
                 window.appearance = NSAppearance(named: appearance)
-                window.isReleasedWhenClosed = false
                 window.setFrameOrigin(NSPoint(x: -4000, y: -4000))
                 window.orderFrontRegardless()
                 try? await Task.sleep(for: .seconds(0.8))
-                window.setContentSize(hosting.view.fittingSize)
+                if let contentView = window.contentView { window.setContentSize(contentView.fittingSize) }
                 try? await Task.sleep(for: .seconds(0.4))
-                if let image = capture(window) {
+                withExtendedLifetime(keep) {}
+                if let image = capture(window, frame: true) {
                     try? image.write(to: folder.appendingPathComponent("settings-\(tab.rawValue)-\(suffix).png"))
                 }
                 window.close()
@@ -363,8 +361,8 @@ enum Snapshots {
         window.close()
     }
 
-    private static func capture(_ window: NSWindow) -> Data? {
-        guard let view = window.contentView,
+    private static func capture(_ window: NSWindow, frame: Bool = false) -> Data? {
+        guard let view = frame ? window.contentView?.superview : window.contentView,
               let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return nil }
         view.cacheDisplay(in: view.bounds, to: rep)
         return rep.representation(using: .png, properties: [:])

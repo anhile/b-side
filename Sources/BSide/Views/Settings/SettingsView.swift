@@ -1,44 +1,43 @@
 import ServiceManagement
 import SwiftUI
 
-/// The standard macOS settings window: Command-comma, tabs, grouped forms,
-/// system controls in B-Side's orange, and each setting with a small icon in
-/// one of the Vibe colours, as System Settings has them.
+/// The standard macOS settings window: Command-comma, tabs in the toolbar
+/// (SettingsWindow puts them there), grouped forms, system controls in
+/// B-Side's orange, and each setting with a small icon in one of the Vibe
+/// colours, as System Settings has them. This is one tab's pane.
 struct SettingsView: View {
     enum Tab: String, CaseIterable {
         case general, appearance, playback, vibes, account, diagnostics
+
+        var title: String { rawValue.capitalized }
+
+        var symbol: String {
+            switch self {
+            case .general: "gearshape"
+            case .appearance: "paintpalette"
+            case .playback: "play.circle"
+            case .vibes: "text.bubble"
+            case .account: "person.crop.circle"
+            case .diagnostics: "gauge.with.dots.needle.33percent"
+            }
+        }
     }
 
-    @State private var tab: Tab
-
-    init(tab: Tab = .general) {
-        _tab = State(initialValue: tab)
-    }
+    var tab: Tab = .general
 
     var body: some View {
-        TabView(selection: $tab) {
-            GeneralSettings()
-                .tabItem { Label("General", systemImage: "gearshape") }
-                .tag(Tab.general)
-            AppearanceSettings()
-                .tabItem { Label("Appearance", systemImage: "paintpalette") }
-                .tag(Tab.appearance)
-            PlaybackSettings()
-                .tabItem { Label("Playback", systemImage: "play.circle") }
-                .tag(Tab.playback)
-            VibeSettings()
-                .tabItem { Label("Vibes", systemImage: "text.bubble") }
-                .tag(Tab.vibes)
-            AccountSettings()
-                .tabItem { Label("Account", systemImage: "person.crop.circle") }
-                .tag(Tab.account)
-            DiagnosticsSettings()
-                .tabItem { Label("Diagnostics", systemImage: "gauge.with.dots.needle.33percent") }
-                .tag(Tab.diagnostics)
+        Group {
+            switch tab {
+            case .general: GeneralSettings()
+            case .appearance: AppearanceSettings()
+            case .playback: PlaybackSettings()
+            case .vibes: VibeSettings()
+            case .account: AccountSettings()
+            case .diagnostics: DiagnosticsSettings()
+            }
         }
         .frame(width: Theme.Size.settingsWidth)
         .tint(Theme.Colors.accent)
-        .background(SettingsTitle())
     }
 }
 
@@ -69,30 +68,6 @@ struct ThinScrollers: NSViewRepresentable {
 
 /// "B-Side Settings" as the window's title on every tab: SwiftUI's settings
 /// window would repeat the tab's name there.
-private struct SettingsTitle: NSViewRepresentable {
-    static let title = "B-Side Settings"
-
-    func makeNSView(context: Context) -> NSView { TitleKeeper() }
-    func updateNSView(_ view: NSView, context: Context) {}
-
-    private final class TitleKeeper: NSView {
-        private var watch: NSKeyValueObservation?
-
-        override func viewDidMoveToWindow() {
-            super.viewDidMoveToWindow()
-            guard let window else { return watch = nil }
-            (window.contentViewController as? NSTabViewController)?.canPropagateSelectedChildViewControllerTitle = false
-            window.title = SettingsTitle.title
-            // A tab change may still set it; set it back.
-            watch = window.observe(\.title, options: [.new]) { window, _ in
-                MainActor.assumeIsolated {
-                    if window.title != SettingsTitle.title { window.title = SettingsTitle.title }
-                }
-            }
-        }
-    }
-}
-
 /// A setting's name with its icon: a white symbol on a small rounded square
 /// in one of VibePalette's gradients.
 struct SettingLabel: View {
