@@ -33,6 +33,11 @@ enum MainWindow {
     /// Called when the window's content is attached to it.
     static func attach(_ window: NSWindow) {
         self.window = window
+        window.aspectRatio = Theme.Size.windowBase // the frame: the hidden title bar is inside the content
+        // SwiftUI keeps the window's frame in the standard defaults, which a
+        // test run must leave alone: its window is moved off the screen and
+        // resized, and the user's window would open there next time.
+        if Settings.isScratch { window.setFrameAutosaveName("") }
         if hiddenAtLaunch { hide(window) }
         // Debug captures: the window stays off the screen (Capture).
         if Settings.defaults.string(forKey: Keys.captureTo) != nil { window.setFrameOrigin(NSPoint(x: -4000, y: -4000)) }

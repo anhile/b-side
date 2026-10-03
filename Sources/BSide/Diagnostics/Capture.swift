@@ -5,10 +5,18 @@ import SwiftUI
 /// under a bad network without a screen. `-captureTo <folder>` with
 /// `-captureAt 5,20,60` writes every page at those seconds after launch;
 /// the window is moved off the screen first. Works with `-proxy`.
+/// `-captureWidth 400` resizes the window first, as a drag of its corner
+/// does; `-captureWidth "400 end"` also ends the drag, so the layout is
+/// made again at that size.
 @MainActor
 enum Capture {
+    private static var scheduled = false
+
+    /// Once: the window's content is built again at a new size, and its
+    /// task with it.
     static func schedule(navigation: Navigation) {
-        guard let folder = Settings.defaults.string(forKey: Keys.captureTo) else { return }
+        guard let folder = Settings.defaults.string(forKey: Keys.captureTo), !scheduled else { return }
+        scheduled = true
         let seconds = (Settings.defaults.string(forKey: Keys.captureAt) ?? "5")
             .split(separator: ",").compactMap { Double($0.trimmingCharacters(in: .whitespaces)) }
         try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
@@ -29,6 +37,14 @@ enum Capture {
             window.setFrameOrigin(NSPoint(x: -4000, y: -4000))
             window.alphaValue = 1
             window.orderFrontRegardless()
+        }
+        if let words = Settings.defaults.string(forKey: Keys.captureWidth)?.split(separator: " "), let width = Double(words[0]) {
+            var frame = window.frame
+            frame.size = CGSize(width: width, height: width / Theme.Size.windowBase.width * Theme.Size.windowBase.height)
+            window.setFrame(frame, display: true)
+            try? await Task.sleep(for: .seconds(0.5))
+            if words.last == "end" { WindowSize.resized(window) }
+            try? await Task.sleep(for: .seconds(1))
         }
         let shown = navigation.page
         for page in Page.allCases {

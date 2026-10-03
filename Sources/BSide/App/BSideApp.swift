@@ -6,7 +6,7 @@ struct BSideApp: App {
     @StateObject private var player = PlayerController()
     @StateObject private var navigation = Navigation()
     /// Changing the size builds the window again, at the new size.
-    @AppStorage(Keys.uiSize) private var uiSize = UISize.compact.rawValue
+    @AppStorage(Keys.uiScale, store: Settings.defaults) private var uiScale = 0.0
 
     init() {
         Settings.register()
@@ -17,7 +17,7 @@ struct BSideApp: App {
             PlayerWindow()
                 .environmentObject(player)
                 .environmentObject(navigation)
-                .id(uiSize)
+                .id(uiScale)
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)

@@ -100,6 +100,7 @@ exist only as arguments:
 | `-snapshotOnly <words>` | With `-snapshot`: only the pages whose file name has the words in it |
 | `-proxy 127.0.0.1:8899` | Sends the page and every other request through an HTTP CONNECT proxy, for trying a slow or broken network |
 | `-captureTo <folder> -captureAt 5,20,60` | Writes pictures of the real window, every page, at those seconds after launch; the window is moved off the screen |
+| `-captureWidth 400` | With `-captureTo`: the window at that width first, scaled as while its corner is dragged; `"400 end"` lays it out again at that size, as the end of the drag does |
 | `-scratch YES` | Settings, vibes and the last session come from a throwaway domain, so a test run leaves yours alone (the Google session is shared either way) |
 | `-ApplePersistenceIgnoreState YES` | macOS: skips the "restore windows?" prompt after a killed run |
 

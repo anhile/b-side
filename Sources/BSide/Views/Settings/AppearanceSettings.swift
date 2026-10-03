@@ -4,7 +4,7 @@ import SwiftUI
 /// Light or dark, and the size of everything in the window.
 struct AppearanceSettings: View {
     @AppStorage(Keys.theme) private var theme = ThemeMode.system.rawValue
-    @AppStorage(Keys.uiSize) private var size = UISize.compact.rawValue
+    @AppStorage(Keys.uiScale, store: Settings.defaults) private var scale = 0.0
 
     private var themeMode: Binding<ThemeMode> {
         Binding {
@@ -15,13 +15,13 @@ struct AppearanceSettings: View {
         }
     }
 
-    /// Theme's scale changes first, so the window is built again at the new size.
+    /// The end the window is nearer to; choosing one takes the window there.
     private var uiSize: Binding<UISize> {
         Binding {
-            UISize(rawValue: size) ?? .compact
+            _ = scale // read, so the picker follows a change of the size
+            return UISize.nearest(Theme.scale)
         } set: { new in
-            Theme.scale = new.scale
-            size = new.rawValue
+            WindowSize.set(new.scale)
         }
     }
 
@@ -47,7 +47,7 @@ struct AppearanceSettings: View {
                 }
                 .pickerStyle(.segmented)
             } footer: {
-                Text("Large makes the window, its text and its buttons 30% bigger, for reading at a distance or with low vision.")
+                Text("Large makes the window, its text and its buttons 30% bigger, for reading at a distance or with low vision. Dragging the window's corner gives any size between.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

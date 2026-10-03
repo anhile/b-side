@@ -19,6 +19,10 @@ struct PlayerWindow: View {
     @State private var pageDipped = false
     /// Not hidden, minimised or covered by other windows.
     @State private var windowVisible = true
+    /// The window's width while its corner is dragged. Over the width the
+    /// content is laid out at, it scales the content until the drag ends
+    /// and the layout is made again (WindowSize).
+    @State private var windowWidth: CGFloat = Theme.Size.window.width
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openWindow) private var openWindow
 
@@ -85,8 +89,23 @@ struct PlayerWindow: View {
         .onPreferenceChange(TintBottomKey.self) { tintBottom = $0 }
         .ignoresSafeArea(edges: .top)
         .frame(width: Theme.Size.window.width, height: Theme.Size.window.height - topInset)
+        .scaleEffect(windowWidth / Theme.Size.window.width, anchor: .top)
+        .frame(minWidth: Theme.Size.windowBase.width * Theme.scaleRange.lowerBound,
+               maxWidth: Theme.Size.windowBase.width * Theme.scaleRange.upperBound,
+               minHeight: Theme.Size.windowBase.height * Theme.scaleRange.lowerBound - topInset,
+               maxHeight: Theme.Size.windowBase.height * Theme.scaleRange.upperBound - topInset,
+               alignment: .top)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { windowWidth = $0 }
         .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.top } action: { topInset = $0 }
         .background(WindowSetup())
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didEndLiveResizeNotification)) { note in
+            guard let window = note.object as? NSWindow, window === MainWindow.window else { return }
+            WindowSize.resized(window)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResizeNotification)) { note in
+            guard let window = note.object as? NSWindow, window === MainWindow.window else { return }
+            WindowSize.resized(window)
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didChangeOcclusionStateNotification)) { note in
             guard let window = note.object as? NSWindow, window === MainWindow.window else { return }
             windowVisible = window.occlusionState.contains(.visible)

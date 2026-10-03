@@ -3,12 +3,14 @@ import SwiftUI
 /// The tokens from DESIGN.md. Screens take colours, type, spacing, radii and
 /// sizes from here and nowhere else; scripts/check-design.sh enforces it.
 ///
-/// Type, spacing, radii and sizes are multiplied by `scale`: 1 for the
-/// Compact size, 1.3 for Large (Settings, Appearance). Colours, opacities,
-/// ratios and timings are not.
+/// Type, spacing, radii and sizes are multiplied by `scale`: 1 at the
+/// Compact size, 1.3 at Large, and whatever the window was dragged to in
+/// between. Colours, opacities, ratios and timings are not.
 enum Theme {
-    /// Set from Settings before the window is built again; see UISize.
-    static var scale: CGFloat = UISize.current.scale
+    /// Set by WindowSize before the window is built again; see UISize.
+    static var scale: CGFloat = UISize.currentScale
+    /// From Compact to Large: the window resizes between the two.
+    static let scaleRange: ClosedRange<CGFloat> = 1...1.3
 
     /// Semantic colours. Light and dark values live in the asset catalog
     /// (Assets.xcassets/Colors) and follow the system appearance.
@@ -69,7 +71,9 @@ enum Theme {
     }
 
     enum Size {
-        static var window: CGSize { CGSize(width: 320 * scale, height: 440 * scale) }
+        static var window: CGSize { CGSize(width: windowBase.width * scale, height: windowBase.height * scale) }
+        /// The window at scale 1; the window keeps this shape at every size.
+        static let windowBase = CGSize(width: 320, height: 440)
         /// The system's title bar; the bar with the page tabs grows with the
         /// size, the system's does not.
         static let titleBar: CGFloat = 28

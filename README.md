@@ -37,8 +37,8 @@ The pictures are rendered by the app itself with sample data.
   "Open at login" on, the Play key starts B-Side instead of Apple Music.
 - **The last track is back** when you open B-Side again, paused where it
   stopped.
-- Light and dark, a larger size for reading at a distance, Reduce Motion and
-  Reduce Transparency are respected.
+- Light and dark; the window drags to any size up to 30% larger, for
+  reading at a distance; Reduce Motion and Reduce Transparency are respected.
 - Works without an account for search and radios; your library needs you to
   sign in to Google.
 

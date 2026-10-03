@@ -14,7 +14,8 @@ enum Keys {
     static let bluetoothOutputs = "bluetoothOutputs" // asked to see paired Bluetooth devices in Sound Output
     static let playlistOrder = "playlistOrder"   // the user's order of the playlists, by ID
     static let theme = "theme"                   // ThemeMode: system, light or dark
-    static let uiSize = "uiSize"                 // UISize: compact or large
+    static let uiSize = "uiSize"                 // UISize: compact or large (before 0.2; see uiScale)
+    static let uiScale = "uiScale"               // what Theme multiplies sizes by: 1 to 1.3, from the window's size
     static let repeatMode = "repeatMode"         // RepeatMode: off, all or one
     static let vibeServer = "vibeServer"         // read vibe words on the B-Side server (off by default)
     static let vibeServerAddress = "vibeServerAddress" // that server's address
@@ -38,6 +39,7 @@ enum Keys {
     static let proxy = "proxy"                   // debug: host:port of an HTTP CONNECT proxy for all traffic
     static let captureTo = "captureTo"           // debug: write pictures of the real window into this folder…
     static let captureAt = "captureAt"           // …at these seconds after launch, "5,20,60"
+    static let captureWidth = "captureWidth"     // debug: the window's width before the pictures; "400" scaled as while dragged, "400 end" laid out again
     static let scratch = "scratch"               // debug: settings and the last session in a throwaway domain
 }
 
@@ -47,7 +49,7 @@ enum Settings {
     /// user's settings.
     static let isSnapshot = UserDefaults.standard.string(forKey: Keys.snapshot) != nil
     /// A test run: it must not touch the user's settings or their last session.
-    private static let isScratch = isSnapshot || UserDefaults.standard.bool(forKey: Keys.scratch)
+    static let isScratch = isSnapshot || UserDefaults.standard.bool(forKey: Keys.scratch)
     /// The sample data a snapshot sets (volume, Vibe tiles) goes to a scratch
     /// domain, emptied before and after, instead of the user's settings.
     static let defaults: UserDefaults = isScratch ? scratch : .standard
@@ -109,18 +111,28 @@ enum ThemeMode: String, CaseIterable, Identifiable {
     }
 }
 
-/// Settings, Appearance: the size of everything in the window and the menu.
-/// Large is for reading at a distance or with low vision.
+/// Settings, Appearance: the two ends of the window's size. Large is for
+/// reading at a distance or with low vision; the window is dragged to any
+/// size between the two (Theme.scale).
 enum UISize: String, CaseIterable, Identifiable {
     case compact, large
 
     var id: String { rawValue }
     var title: String { self == .compact ? "Compact" : "Large" }
     /// What Theme multiplies type, spacing and sizes by.
-    var scale: CGFloat { self == .compact ? 1 : 1.3 }
+    var scale: CGFloat { self == .compact ? Theme.scaleRange.lowerBound : Theme.scaleRange.upperBound }
 
-    static var current: UISize {
-        UISize(rawValue: Settings.defaults.string(forKey: Keys.uiSize) ?? "") ?? .compact
+    /// The end the window is nearer to.
+    static func nearest(_ scale: CGFloat) -> UISize {
+        scale < (UISize.compact.scale + UISize.large.scale) / 2 ? .compact : .large
+    }
+
+    /// The scale kept in the defaults: the window's last size, or the
+    /// Compact / Large setting from before the window could be dragged.
+    static var currentScale: CGFloat {
+        let kept = Settings.defaults.double(forKey: Keys.uiScale)
+        if kept > 0 { return min(max(kept, Theme.scaleRange.lowerBound), Theme.scaleRange.upperBound) }
+        return (UISize(rawValue: Settings.defaults.string(forKey: Keys.uiSize) ?? "") ?? .compact).scale
     }
 }
 
