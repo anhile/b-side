@@ -16,8 +16,9 @@ struct ProgressBar: View {
     @State private var pointer: CGFloat?
     @State private var dragging = false
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.previewProgressHover) private var previewHover
 
-    private var active: Bool { isEnabled && (pointer != nil || dragging) }
+    private var active: Bool { isEnabled && (pointer != nil || dragging || previewHover != nil) }
 
     var body: some View {
         let length = max(duration, 1)
@@ -100,18 +101,22 @@ struct ProgressBar: View {
     }
 
     /// While the pointer is over the bar, the time under it, just above
-    /// the line, where the pointer does not cover it.
+    /// the line, where the pointer does not cover it. On a glass capsule:
+    /// it reaches up to the artist's name.
     private var pointerTime: some View {
         GeometryReader { proxy in
             let width = proxy.size.width
             let half = Theme.Size.timeLabel / 2
-            if active, let pointer {
+            if active, let pointer = pointer ?? previewHover.map { $0 * width } {
                 Text(time(seconds(at: pointer, width: width)))
                     .font(Theme.Text.caption)
                     .monospacedDigit()
                     .foregroundStyle(Theme.Colors.accentText)
                     .fixedSize()
-                    .position(x: min(max(pointer, half), width - half), y: -Theme.Space.xxs)
+                    .padding(.horizontal, Theme.Space.xs)
+                    .frame(height: Theme.Size.pageDotTarget)
+                    .glass(in: Capsule())
+                    .position(x: min(max(pointer, half), width - half), y: -Theme.Size.pageDotTarget / 2)
                     .transition(.opacity)
             }
         }

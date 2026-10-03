@@ -29,7 +29,9 @@ struct NowPlayingPage: View {
         VStack(spacing: 0) {
             artworkZone
                 .layoutPriority(1) // the record takes the free height, not the gaps
-            Spacer(minLength: Theme.Space.s)
+            // With the zone's own bottom, m: the title sits as far from
+            // the artwork as from the progress bar.
+            Spacer(minLength: Theme.Space.xxs)
             // The track's name from the left edge, and what can be done
             // with the track after it: Like and the menu, always in view.
             HStack(spacing: 0) {

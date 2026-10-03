@@ -23,6 +23,9 @@ struct PlayerWindow: View {
     /// content is laid out at, it scales the content until the drag ends
     /// and the layout is made again (WindowSize).
     @State private var windowWidth: CGFloat = Theme.Size.window.width
+    /// The corner is being dragged: the scaled content is blurred, so the
+    /// picture of it reads as one in motion, not as a layout gone wrong.
+    @State private var resizing = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openWindow) private var openWindow
 
@@ -89,6 +92,8 @@ struct PlayerWindow: View {
         .onPreferenceChange(TintBottomKey.self) { tintBottom = $0 }
         .ignoresSafeArea(edges: .top)
         .frame(width: Theme.Size.window.width, height: Theme.Size.window.height - topInset)
+        .blur(radius: resizing ? Theme.Size.resizeBlur : 0)
+        .animation(.easeOut(duration: Theme.Motion.feedback), value: resizing)
         .scaleEffect(windowWidth / Theme.Size.window.width, anchor: .top)
         .frame(minWidth: Theme.Size.windowBase.width * Theme.scaleRange.lowerBound,
                maxWidth: Theme.Size.windowBase.width * Theme.scaleRange.upperBound,
@@ -98,8 +103,13 @@ struct PlayerWindow: View {
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { windowWidth = $0 }
         .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.top } action: { topInset = $0 }
         .background(WindowSetup())
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.willStartLiveResizeNotification)) { note in
+            guard let window = note.object as? NSWindow, window === MainWindow.window else { return }
+            resizing = true
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didEndLiveResizeNotification)) { note in
             guard let window = note.object as? NSWindow, window === MainWindow.window else { return }
+            resizing = false
             WindowSize.resized(window)
         }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResizeNotification)) { note in

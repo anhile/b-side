@@ -129,6 +129,8 @@ enum Theme {
         static var progressTarget: CGFloat { (20) * scale }
         static var progressTick: CGFloat { (2) * scale }
         static var timeLabel: CGFloat { (36) * scale }
+        /// How much the content blurs while the window's corner is dragged.
+        static var resizeBlur: CGFloat { (6) * scale }
         static let settingsWidth: CGFloat = 460
         static var menuWidth: CGFloat { (260) * scale }
         static let logHeight: CGFloat = 200

@@ -219,6 +219,9 @@ enum Snapshots {
         await renderPage(.nowPlaying, player: .fixture(state: track, source: .mood(Mood.liked.id)),
                          name: "nowplaying-hover", appearance: .aqua, into: folder,
                          reduceTransparency: true, artworkHover: true)
+        await renderPage(.nowPlaying, player: .fixture(state: track, source: .mood(Mood.liked.id)),
+                         name: "nowplaying-hover-time", appearance: .darkAqua, into: folder,
+                         reduceTransparency: true, progressHover: 0.1) // glass does not draw offscreen
         var pausedTrack = track; pausedTrack.isPlaying = false
         await renderPage(.nowPlaying, player: .fixture(state: pausedTrack, source: .mood(Mood.liked.id)),
                          name: "nowplaying-hover-paused", appearance: .darkAqua, into: folder,
@@ -365,7 +368,7 @@ enum Snapshots {
     /// One page in one appearance, with the accessibility settings given.
     private static func renderPage(_ page: Page, player: PlayerController, name: String,
                                    appearance: NSAppearance.Name, into folder: URL,
-                                   reduceTransparency: Bool = false, artworkHover: Bool = false,
+                                   reduceTransparency: Bool = false, artworkHover: Bool = false, progressHover: CGFloat? = nil,
                                    showsLyrics: Bool = false, showsQueue: Bool = false,
                                    explorePath: [ExploreRoute] = []) async {
         if let only = UserDefaults.standard.string(forKey: Keys.snapshotOnly), !name.contains(only) { return }
@@ -385,7 +388,8 @@ enum Snapshots {
             .environmentObject(player)
             .environmentObject(navigation)
             .environment(\.previewReduceTransparency, reduceTransparency)
-            .environment(\.previewArtworkHover, artworkHover))
+            .environment(\.previewArtworkHover, artworkHover)
+            .environment(\.previewProgressHover, progressHover))
         hosting.sizingOptions = []
         hosting.frame = NSRect(origin: .zero, size: Theme.Size.window)
         window.contentView = hosting

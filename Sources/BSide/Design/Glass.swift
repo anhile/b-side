@@ -109,3 +109,16 @@ extension EnvironmentValues {
         set { self[PreviewArtworkHoverKey.self] = newValue }
     }
 }
+
+/// Snapshots only: the pointer over the progress bar, at this fraction of
+/// its width, so the time under it shows.
+private struct PreviewProgressHoverKey: EnvironmentKey {
+    static let defaultValue: CGFloat? = nil
+}
+
+extension EnvironmentValues {
+    var previewProgressHover: CGFloat? {
+        get { self[PreviewProgressHoverKey.self] }
+        set { self[PreviewProgressHoverKey.self] = newValue }
+    }
+}
