@@ -187,7 +187,7 @@ enum Theme {
         /// The source's colour over the glass of Now Playing's bottom line,
         /// and in the hairline above it.
         static let sourceWash: Double = 0.1
-        static let sourceRule: Double = 0.5
+        static let sourceRule: Double = 0.25
         /// The dark veil over the album cover while its actions show.
         static let scrim: Double = 0.45
         /// The hover circle under icon buttons, in the text colour.

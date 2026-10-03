@@ -41,7 +41,7 @@ make them 15% and 30% bigger, and the window's least size with them.
   Night drive", "Album: …", "Artist: …", "Radio: <track>"), as the strip
   has it under the track on the other pages: a vibe in its colour, the
   rest in the accent (since 2026-10-03). The glass carries a wash of that
-  colour (10%) and a hairline of it (50%) above, so the line belongs to
+  colour (10%) and a hairline of it (25%) above, so the line belongs to
   what plays. A click goes to the source: the Vibe page, the
   playlist's tracks, the album's or the artist's page; a radio has no
   page. At its other end, muted, the device the sound goes to when it is
