@@ -213,9 +213,11 @@ enum Snapshots {
         await renderWidgets(into: folder)
         await renderNewVibe(into: folder)
         await renderSettings(into: folder)
+        AudioOutputs.shared.sampleElsewhere = AudioOutput(id: 0, name: "AirPods Pro", symbol: "headphones", uid: "")
         await renderPage(.nowPlaying, player: .fixture(state: track, source: .mood(Mood.liked.id)),
                          name: "nowplaying-reduce-transparency", appearance: .aqua, into: folder,
                          reduceTransparency: true)
+        AudioOutputs.shared.sampleElsewhere = nil
         await renderPage(.nowPlaying, player: .fixture(state: track, source: .mood(Mood.liked.id)),
                          name: "nowplaying-hover", appearance: .aqua, into: folder,
                          reduceTransparency: true, artworkHover: true)

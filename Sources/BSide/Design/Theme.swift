@@ -88,8 +88,9 @@ enum Theme {
         /// The Playlists page's bar under the title bar: one line, the
         /// compact filled button with 6 above and below.
         static var pageBar: CGFloat { (36) * scale }
-        /// The line along the bottom of Now Playing with the source.
-        static var sourceBar: CGFloat { (28) * scale }
+        /// The line along the bottom of Now Playing with the source and the
+        /// output device.
+        static var sourceBar: CGFloat { (32) * scale }
         /// Two columns inside the window padding, with one gutter.
         /// A tile's least width: two in the window at its least size. In a
         /// wider window the tiles grow, then a third column comes.

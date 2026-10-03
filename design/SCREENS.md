@@ -36,10 +36,13 @@ make them 15% and 30% bigger, and the window's least size with them.
   pair in balance).
 - Like: a heart, always in view; orange and filled once liked. Not on the
   artwork's hover, which keeps Lyrics and Repeat. Hidden during an ad.
-- Along the bottom of the page, a compact glass line (28) with what plays
-  from where, as the strip has it under the track on the other pages: a
-  vibe's name in its colour, a playlist, an album, an artist or a radio in
-  the accent (since 2026-10-03). Only while something plays from somewhere
+- Along the bottom of the page, a glass line (32) with what plays from
+  where, in the label role, as the strip has it under the track on the
+  other pages: a vibe's name in its colour, a playlist, an album, an artist
+  or a radio in the accent (since 2026-10-03). At its other end, muted,
+  the device the sound goes to when it is not the Mac's own speakers
+  ("AirPods Pro"), so headphones left on are no mystery. The line shows
+  while either is there
 - Up Next: a list button in a glass circle at the end of the transport row,
   mirroring the speaker at its start; both open something. It
   puts what plays next in the artwork's place (as Lyrics do; one of the two
@@ -71,10 +74,11 @@ make them 15% and 30% bigger, and the window's least size with them.
   and the words on it). Small artwork in rows and the strip still fills
 - Sound Output, in the "…" menu: the Mac's outputs with the one in use
   checked; choosing one changes the system's output, as the Sound menu
-  does. Under them "Show Bluetooth Devices", which makes macOS ask about
-  Bluetooth once; after that, the paired speakers and headphones that are
-  not connected, as "Connect <name>": the device is connected and gets
-  the sound
+  does. Under them "Connect a Bluetooth Device…", the one place that makes
+  macOS ask about Bluetooth (since 2026-10-03; before, the menu opening
+  asked, once the setting was on); after that, the paired speakers and
+  headphones that are not connected, as "Connect <name>": the device is
+  connected and gets the sound
 - What we removed or deferred: shuffle toggle, dragging tracks in Up Next
 - At launch: the track that played last, paused where it stopped (as Music
   and Spotify do); Play goes on from there, in the same playlist or vibe.
@@ -228,7 +232,9 @@ a `Skeleton` list while loading.
 
 Artwork 24, "Title — Artist" in the caption role, Pause or Play, Next. In a
 strip 400 or wider (the window dragged out), Previous comes before them and
-Like after (since 2026-10-03). The line opens Now Playing. When something
+Like after (since 2026-10-03): the three transport buttons stand together
+with no gap, Like 16 apart and muted, as it is not one of them. Command-L
+likes from anywhere. The line opens Now Playing. When something
 failed, the panel shows the message instead.
 
 Under the track, what it plays from: a vibe's name in the vibe's colour; a

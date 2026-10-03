@@ -1,5 +1,6 @@
 import Combine
 import CoreAudio
+import CoreBluetooth
 import IOBluetooth
 
 /// Where the Mac's sound can go: the speakers, headphones, a display, an
@@ -10,6 +11,8 @@ struct AudioOutput: Identifiable, Equatable {
     let symbol: String
     /// The system's lasting name for it; a Bluetooth device's has its address.
     let uid: String
+    /// The Mac's own speakers or headphone jack.
+    var isBuiltIn = false
 }
 
 /// A paired Bluetooth speaker or pair of headphones that is not connected.
@@ -34,6 +37,17 @@ final class AudioOutputs: ObservableObject {
     /// is open, never at launch.
     @Published private(set) var paired: [BluetoothOutput] = []
     @Published private(set) var showsBluetooth = Settings.bool(Keys.bluetoothOutputs)
+    /// Snapshots: the device Now Playing says the sound goes to.
+    var sampleElsewhere: AudioOutput?
+
+    /// The device the sound goes to when it is not the Mac's own: named on
+    /// Now Playing, so a pair of headphones left on in another room is not
+    /// a mystery.
+    var elsewhere: AudioOutput? {
+        if let sampleElsewhere { return sampleElsewhere }
+        guard let device = devices.first(where: { $0.id == current }), !device.isBuiltIn else { return nil }
+        return device
+    }
 
     /// The Bluetooth device being connected, to get the sound once it is there.
     private var wanted: (address: String, since: Date)?
@@ -59,18 +73,26 @@ final class AudioOutputs: ObservableObject {
         read()
     }
 
-    /// From the menu, once: macOS asks about Bluetooth, and the paired
-    /// devices are listed from then on.
+    /// macOS has been asked about Bluetooth and said yes. Read without
+    /// asking: the question is asked only from "Connect a Bluetooth
+    /// Device…", never by a menu opening (as it was until 2026-10-03).
+    private static var allowed: Bool { CBManager.authorization == .allowedAlways }
+
+    /// From the menu item, once: macOS asks about Bluetooth, and the
+    /// paired devices are listed from then on.
     func showBluetooth() {
         Settings.defaults.set(true, forKey: Keys.bluetoothOutputs)
         showsBluetooth = true
-        refreshPaired()
+        paired = Self.pairedAudio()
     }
 
-    /// For the menu, as it opens.
+    /// For the menu, as it opens: only once allowed, so no question pops.
     func refreshPaired() {
-        paired = showsBluetooth ? Self.pairedAudio() : []
+        paired = showsBluetooth && Self.allowed ? Self.pairedAudio() : []
     }
+
+    /// The paired devices are listed; else the item that asks.
+    var listsPaired: Bool { showsBluetooth && Self.allowed }
 
     /// Connects the device; the sound goes to it when it has connected.
     func connect(_ device: BluetoothOutput) {
@@ -90,7 +112,8 @@ final class AudioOutputs: ObservableObject {
         devices = Self.ids().compactMap { id in
             guard Self.canBeOutput(id), let name = Self.string(of: id, kAudioObjectPropertyName) else { return nil }
             return AudioOutput(id: id, name: name, symbol: Self.symbol(of: id),
-                               uid: Self.string(of: id, kAudioDevicePropertyDeviceUID) ?? "")
+                               uid: Self.string(of: id, kAudioDevicePropertyDeviceUID) ?? "",
+                               isBuiltIn: Self.value(of: id, kAudioDevicePropertyTransportType) == kAudioDeviceTransportTypeBuiltIn)
         }
         current = Self.value(of: Self.system, kAudioHardwarePropertyDefaultOutputDevice) ?? kAudioObjectUnknown
         guard let wanted else { return }

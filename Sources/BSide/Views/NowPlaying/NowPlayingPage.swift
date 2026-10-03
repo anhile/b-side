@@ -77,20 +77,30 @@ struct NowPlayingPage: View {
                 .padding(.horizontal, Theme.Space.m)
                 .padding(.bottom, Theme.Space.m) // as far from the bottom as from the sides
             // Along the bottom, what it plays from: the strip's line, on a
-            // bar of its own, for the page that has no strip.
-            if let label = player.sourceLabel {
-                HStack {
-                    SourceLine(label: label)
-                        .id(label)
-                        .transition(.opacity)
-                    Spacer()
+            // bar of its own, for the page that has no strip. At the other
+            // end, where the sound goes when not to the Mac's own speakers.
+            if player.sourceLabel != nil || outputs.elsewhere != nil {
+                HStack(spacing: Theme.Space.xs) {
+                    if let label = player.sourceLabel {
+                        SourceLine(label: label, font: Theme.Text.label)
+                            .id(label)
+                            .transition(.opacity)
+                            .help("Playing from \(label.name)")
+                    }
+                    Spacer(minLength: 0)
+                    if let device = outputs.elsewhere {
+                        Label(device.name, systemImage: device.symbol)
+                            .font(Theme.Text.label)
+                            .foregroundStyle(Theme.Colors.textMuted)
+                            .lineLimit(1)
+                            .help("Playing on \(device.name)")
+                    }
                 }
                 .padding(.horizontal, Theme.Space.m)
                 .frame(height: Theme.Size.sourceBar)
                 .frame(maxWidth: .infinity)
                 .barGlass(joined: .bottom)
                 .animation(.easeInOut(duration: Theme.Motion.page), value: player.sourceLabel)
-                .help("Playing from \(label.name)")
             }
         }
     }
@@ -344,15 +354,16 @@ struct NowPlayingPage: View {
             }
             .onAppear { outputs.refreshPaired() }
             Divider()
-            if outputs.showsBluetooth {
+            if outputs.listsPaired {
                 ForEach(outputs.paired) { device in
                     Button { outputs.connect(device) } label: {
                         Label("Connect \(device.name)", systemImage: "headphones")
                     }
                 }
             } else {
+                // The one place macOS asks about Bluetooth.
                 Button { outputs.showBluetooth() } label: {
-                    Label("Show Bluetooth Devices", systemImage: "dot.radiowaves.left.and.right")
+                    Label("Connect a Bluetooth Device…", systemImage: "dot.radiowaves.left.and.right")
                 }
             }
         } label: {

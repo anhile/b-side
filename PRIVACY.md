@@ -47,8 +47,8 @@ app, `~/Library/Application Support/B-Side` and
 
 - **Notifications**, only if you turn on "Notify when a track starts".
 - **Login item**, only if you turn on "Open at login".
-- **Bluetooth**, only if you choose "Show Bluetooth Devices" under Sound
-  Output. B-Side then reads the names of your paired speakers and
+- **Bluetooth**, only if you choose "Connect a Bluetooth Device…" under
+  Sound Output. B-Side then reads the names of your paired speakers and
   headphones, to list them and to connect the one you pick. Nothing about
   them leaves your Mac.
 

@@ -46,18 +46,22 @@ struct NowPlayingStrip: View {
             .contextMenu { trackMenu }
             .accessibilityLabel("Now Playing: \(line)" + (player.sourceLabel.map { ", from \($0.name)" } ?? ""))
 
-            // As tall as the artwork, 4 inside the panel, like it.
-            if wide {
-                TransportButton(symbol: "backward.fill", label: "Previous", target: Theme.Size.artworkStrip) { player.previous() }
-                    .disabled(!player.hasTrack)
+            // As tall as the artwork, 4 inside the panel, like it. The
+            // transport buttons stand together; Like, which is not one of
+            // them, a step apart and muted, as on Now Playing.
+            HStack(spacing: 0) {
+                if wide {
+                    TransportButton(symbol: "backward.fill", label: "Previous", target: Theme.Size.artworkStrip) { player.previous() }
+                        .disabled(!player.hasTrack)
+                }
+                TransportButton(symbol: player.state.isPlaying ? "pause.fill" : "play.fill",
+                                label: player.state.isPlaying ? "Pause" : "Play",
+                                glyph: Theme.Size.stripPlayGlyph, target: Theme.Size.artworkStrip) {
+                    player.togglePlayPause()
+                }
+                TransportButton(symbol: "forward.fill", label: "Next", target: Theme.Size.artworkStrip) { player.next() }
+                    .disabled(!player.state.hasNext)
             }
-            TransportButton(symbol: player.state.isPlaying ? "pause.fill" : "play.fill",
-                            label: player.state.isPlaying ? "Pause" : "Play",
-                            glyph: Theme.Size.stripPlayGlyph, target: Theme.Size.artworkStrip) {
-                player.togglePlayPause()
-            }
-            TransportButton(symbol: "forward.fill", label: "Next", target: Theme.Size.artworkStrip) { player.next() }
-                .disabled(!player.state.hasNext)
             if wide, !player.state.isAd {
                 TransportButton(symbol: player.state.isLiked ? "heart.fill" : "heart",
                                 label: player.state.isLiked ? "Remove Like" : "Like", target: Theme.Size.artworkStrip,
@@ -65,6 +69,8 @@ struct NowPlayingStrip: View {
                     player.toggleLike()
                 }
                 .disabled(!player.hasTrack)
+                .padding(.leading, Theme.Space.xs)
+                .help("Like (⌘L)")
             }
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
@@ -106,6 +112,8 @@ struct NowPlayingStrip: View {
 /// track in the strip, and along the bottom of Now Playing.
 struct SourceLine: View {
     let label: SourceLabel
+    /// The caption under the track in the strip; the label on its own line.
+    var font: Font = Theme.Text.caption
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -113,7 +121,7 @@ struct SourceLine: View {
             Image(systemName: label.symbol)
             Text(label.name)
         }
-        .font(Theme.Text.caption)
+        .font(font)
         .fontWeight(.medium)
         .foregroundStyle(colour)
         .lineLimit(1)
