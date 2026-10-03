@@ -16,9 +16,10 @@ bar and under Command-comma. Starting music never switches the page.
 - Secondary actions: Next, Previous, seek, volume (speaker opens a popover)
 - Attention order: 1) artwork 160 with the record showing from behind on the
   right 2) title and artist 3) progress 4) transport
-- Title and artist sit as far below the artwork as above the progress bar
-  (16 each, since 2026-10-03; before, 24 above and 16 below, which read as a
-  block stuck to the bar). The time shown over the bar under the pointer
+- The artwork's colour ends just under the artwork (since 2026-10-03;
+  before, half way to the title), and the title sits as far below that
+  edge as the artist is above the progress line: 24 each. Before, 17 and 24,
+  and the title read as stuck to the colour. The time shown over the bar under the pointer
   reaches up to the artist's name, so it stands on a glass capsule.
 - Title and artist start at the left edge, in line with the progress bar; a
   long title scrolls. What can be done with the track comes after them:

@@ -31,12 +31,25 @@ enum WindowSize {
     }
 
     private static var settingFrame = false
+    /// Debug: a capture plays a drag of the corner (Capture), which a
+    /// window resized by code cannot tell from the zoom button.
+    static var dragPlayed = false
+
+    /// The window's content as it is, for stretching while the corner is
+    /// dragged.
+    static func picture(of window: NSWindow) -> NSImage? {
+        guard let view = window.contentView, let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return nil }
+        view.cacheDisplay(in: view.bounds, to: rep)
+        let image = NSImage(size: view.bounds.size)
+        image.addRepresentation(rep)
+        return image
+    }
 
     /// The window's size changed: the end of a drag of its corner, or the
     /// zoom button, or Settings. The layout catches up once the size has
     /// settled (not on every step of a drag, and not on our own resize).
     static func resized(_ window: NSWindow) {
-        guard !window.inLiveResize, !settingFrame, !Settings.isSnapshot else { return }
+        guard !window.inLiveResize, !settingFrame, !dragPlayed, !Settings.isSnapshot else { return }
         set(scale(forWidth: window.frame.width))
     }
 }

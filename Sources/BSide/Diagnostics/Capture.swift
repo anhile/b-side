@@ -41,9 +41,16 @@ enum Capture {
         if let words = Settings.defaults.string(forKey: Keys.captureWidth)?.split(separator: " "), let width = Double(words[0]) {
             var frame = window.frame
             frame.size = CGSize(width: width, height: width / Theme.Size.windowBase.width * Theme.Size.windowBase.height)
+            // As a drag of the corner: the window says it starts, resizes, and says it ended.
+            WindowSize.dragPlayed = true
+            NotificationCenter.default.post(name: NSWindow.willStartLiveResizeNotification, object: window)
+            try? await Task.sleep(for: .seconds(0.2)) // the picture is taken on the next turn
             window.setFrame(frame, display: true)
             try? await Task.sleep(for: .seconds(0.5))
-            if words.last == "end" { WindowSize.resized(window) }
+            if words.last == "end" {
+                WindowSize.dragPlayed = false
+                NotificationCenter.default.post(name: NSWindow.didEndLiveResizeNotification, object: window)
+            }
             try? await Task.sleep(for: .seconds(1))
         }
         let shown = navigation.page

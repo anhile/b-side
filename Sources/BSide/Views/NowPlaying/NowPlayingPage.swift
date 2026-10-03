@@ -29,9 +29,9 @@ struct NowPlayingPage: View {
         VStack(spacing: 0) {
             artworkZone
                 .layoutPriority(1) // the record takes the free height, not the gaps
-            // With the zone's own bottom, m: the title sits as far from
-            // the artwork as from the progress bar.
-            Spacer(minLength: Theme.Space.xxs)
+            // The title as far below the colour's edge as the artist is
+            // above the progress line (the bar's frame reaches 8 past it).
+            Spacer(minLength: Theme.Space.l)
             // The track's name from the left edge, and what can be done
             // with the track after it: Like and the menu, always in view.
             HStack(spacing: 0) {
@@ -67,7 +67,9 @@ struct NowPlayingPage: View {
             .padding(.leading, Theme.Space.m)
             // The menu's dots sit over the middle of the Up Next circle.
             .padding(.trailing, Theme.Space.m + (Theme.Size.transportBar - Theme.Size.transportTarget) / 2)
-            Spacer(minLength: Theme.Space.m)
+            // s to the bar's frame, which reaches 8 past the line: as far
+            // from the artist to the line as from the colour to the title.
+            Spacer(minLength: Theme.Space.s)
             progress
                 .padding(.horizontal, Theme.Space.m)
             Spacer(minLength: Theme.Space.m)
@@ -101,16 +103,15 @@ struct NowPlayingPage: View {
         .disabled(player.state.isAd)
     }
 
-    /// The zone the artwork's colour fills: from the top of the page to half
-    /// way to the title. While the pointer is over it, a dark veil covers all
-    /// of it, with Lyrics and Repeat in the middle. Lyrics take the artwork's
-    /// place, in the same frame, so nothing else moves.
+    /// The zone the artwork's colour fills: from the top of the page to just
+    /// under the artwork. While the pointer is over it, a dark veil covers
+    /// all of it, with Lyrics and Repeat in the middle. Lyrics take the
+    /// artwork's place, in the same frame, so nothing else moves.
     private var artworkZone: some View {
         VStack(spacing: 0) {
             Spacer(minLength: Theme.Space.m)
             ArtworkWithRecord(url: player.state.artworkURL, spinning: player.state.isPlaying && pageShown)
                 .opacity(showsLyrics || showsQueue ? 0 : 1)
-            Spacer(minLength: Theme.Space.s)
         }
         .overlay {
             if showsQueue {
