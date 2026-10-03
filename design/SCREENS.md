@@ -194,6 +194,10 @@ Research: [docs/research/vibe-from-prompt.md](../docs/research/vibe-from-prompt.
   sheet, with the name filled in
 - Attention order: 1) rows with artwork 36 and the name 2) the playing row
   with the accent indicator 3) the strip
+- A row under the pointer, and the one that plays, stands on glass (since
+  2026-10-03; before, a flat `surface` fill): the one highlight the rows
+  share with the controls. With Reduce Transparency, `surface` outlined.
+  The same shape under every row in the app (tracks, Explore, Up Next)
 - The playlist that plays: its name in the accent, the row filled as under
   the pointer, and at its end the speaker with moving waves (still when
   paused), as on a vibe's tile and a track's row. Under the pointer the
@@ -207,7 +211,7 @@ Research: [docs/research/vibe-from-prompt.md](../docs/research/vibe-from-prompt.
 
 Status: passed the rubric on 2026-09-30, iteration 1. Liked Music uses the
 `Record` graphic at 36 in place of artwork; rows are plain views (not
-buttons, so a drag can start) with a `surface` hover shape, no separators;
+buttons, so a drag can start) with a glass hover shape, no separators;
 a `Skeleton` list while loading.
 
 ## Strip (Vibe and Playlists, while music plays)

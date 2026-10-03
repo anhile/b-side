@@ -46,7 +46,7 @@ struct PlayingMark: View {
     }
 }
 
-/// A list row that is a button: `surface` under the pointer, while pressed
+/// A list row that is a button: glass under the pointer, while pressed
 /// and while `selected` (the playlist that plays), nothing otherwise. No
 /// separators; the 44 rhythm groups them.
 struct RowButtonStyle: ButtonStyle {
@@ -56,18 +56,27 @@ struct RowButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .pointingHand()
-            .background(
-                RoundedRectangle(cornerRadius: Theme.Radius.s)
-                    .fill(Theme.Colors.surface)
-                    .opacity(configuration.isPressed || hovering || selected ? 1 : 0)
-            )
+            .background(RowGlass(shown: configuration.isPressed || hovering || selected))
             .onHover { hovering = $0 }
             .animation(.easeOut(duration: Theme.Motion.feedback), value: hovering)
     }
 }
 
-/// The look of RowButtonStyle on a row that is not a Button: `surface`
-/// under it while the pointer is over it, or while it is selected.
+/// The shape under a row while the pointer is over it, or while it is the
+/// one that plays: glass (since 2026-10-03; before, a flat `surface` fill),
+/// as the controls stand on. With Reduce Transparency, `surface` outlined.
+struct RowGlass: View {
+    let shown: Bool
+
+    var body: some View {
+        Color.clear // tokens-ok: the glass is the modifier's
+            .glass(in: RoundedRectangle(cornerRadius: Theme.Radius.s))
+            .opacity(shown ? 1 : 0)
+    }
+}
+
+/// The look of RowButtonStyle on a row that is not a Button: glass under
+/// it while the pointer is over it, or while it is selected.
 struct RowHighlight: ViewModifier {
     var selected = false
     @State private var hovering = false
@@ -75,11 +84,7 @@ struct RowHighlight: ViewModifier {
     func body(content: Content) -> some View {
         content
             .pointingHand()
-            .background(
-                RoundedRectangle(cornerRadius: Theme.Radius.s)
-                    .fill(Theme.Colors.surface)
-                    .opacity(hovering || selected ? 1 : 0)
-            )
+            .background(RowGlass(shown: hovering || selected))
             .onHover { hovering = $0 }
             .animation(.easeOut(duration: Theme.Motion.feedback), value: hovering)
     }

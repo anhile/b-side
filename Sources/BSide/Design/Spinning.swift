@@ -57,6 +57,9 @@ final class SpinningView: NSView {
 
     override func layout() {
         super.layout()
+        CATransaction.begin() // not animated: see SleeveAndRecordView.layout
+        CATransaction.setDisableActions(true)
+        defer { CATransaction.commit() }
         disc.bounds = bounds
         disc.position = CGPoint(x: bounds.midX, y: bounds.midY)
         if drawnFor != bounds.size, bounds.width > 0 {

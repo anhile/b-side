@@ -69,6 +69,11 @@ final class SleeveAndRecordView: NSView {
 
     override func layout() {
         super.layout()
+        // Not animated: while the window is resized, a layer that eases to
+        // its new size runs behind the window and over the title.
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        defer { CATransaction.commit() }
         let square = CGRect(x: 0, y: 0, width: side, height: side)
         // A record is a little smaller than its sleeve, so no edge of it
         // shows above or below the sleeve.

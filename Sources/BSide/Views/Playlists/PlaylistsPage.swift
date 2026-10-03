@@ -270,7 +270,7 @@ extension PlaylistsPage {
             let home = drag.slots[place] ?? drag.start
             row(rows[place])
                 .frame(width: drag.start.width, height: drag.start.height)
-                .background(RoundedRectangle(cornerRadius: Theme.Radius.s).fill(Theme.Colors.surface))
+                .background(RowGlass(shown: true))
                 .offset(x: drag.start.minX, y: drag.settling ? home.minY : drag.start.minY + drag.translation)
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
