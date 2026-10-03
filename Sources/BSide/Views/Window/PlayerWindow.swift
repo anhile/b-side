@@ -72,7 +72,11 @@ struct PlayerWindow: View {
                     .animation(.snappy(duration: Theme.Motion.page), value: player.notice)
                 }
                 .sheet(item: $navigation.newPlaylist) { request in
-                    NewPlaylistSheet(request: request)
+                    PlaylistNameSheet(request: request)
+                        .environmentObject(player)
+                }
+                .sheet(item: $navigation.renamingPlaylist) { playlist in
+                    PlaylistNameSheet(renaming: playlist)
                         .environmentObject(player)
                 }
         }

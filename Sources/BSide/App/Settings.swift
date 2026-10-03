@@ -12,6 +12,7 @@ enum Keys {
     static let notifyTrack = "notifyTrack"       // a notification when the next track starts
     static let menuBarTrack = "menuBarTrack"     // the track's name next to the record in the menu bar
     static let bluetoothOutputs = "bluetoothOutputs" // asked to see paired Bluetooth devices in Sound Output
+    static let playlistOrder = "playlistOrder"   // the user's order of the playlists, by ID
     static let theme = "theme"                   // ThemeMode: system, light or dark
     static let uiSize = "uiSize"                 // UISize: compact or large
     static let repeatMode = "repeatMode"         // RepeatMode: off, all or one

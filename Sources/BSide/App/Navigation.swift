@@ -50,6 +50,8 @@ final class Navigation: ObservableObject {
     }
     /// The New Playlist sheet, and the track to put in it, if any.
     @Published var newPlaylist: NewPlaylistRequest?
+    /// The Rename sheet, for this playlist.
+    @Published var renamingPlaylist: Playlist?
     /// The pages opened on Explore over the search, the last one showing.
     @Published private(set) var explorePath: [ExploreRoute] = []
     /// The page an Explore page was opened from, where Back returns from

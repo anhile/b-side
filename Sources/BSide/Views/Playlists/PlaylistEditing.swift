@@ -42,39 +42,62 @@ struct AddToPlaylistMenu: View {
     }
 }
 
-/// Names a new playlist. Private, as YouTube Music makes them; the privacy
-/// can be changed there. System controls, as in the Vibe editor.
-struct NewPlaylistSheet: View {
-    let request: NewPlaylistRequest
+/// Names a new playlist, or renames one of the user's. A new one is
+/// private, as YouTube Music makes them; the privacy can be changed there.
+/// System controls, as in the Vibe editor.
+struct PlaylistNameSheet: View {
+    private let request: NewPlaylistRequest?
+    private let renaming: Playlist?
     @EnvironmentObject private var player: PlayerController
     @Environment(\.dismiss) private var dismiss
-    @State private var title = ""
+    @State private var title: String
+
+    init(request: NewPlaylistRequest) {
+        self.request = request
+        renaming = nil
+        _title = State(initialValue: "")
+    }
+
+    init(renaming: Playlist) {
+        request = nil
+        self.renaming = renaming
+        _title = State(initialValue: renaming.title)
+    }
+
+    private var trimmed: String { title.trimmingCharacters(in: .whitespaces) }
+
+    private var note: String {
+        if renaming != nil { return "The name changes in your YouTube Music library too." }
+        return request?.videoID != nil ? "The track goes into it. The playlist is private." : "The playlist is private."
+    }
+
+    private var canSave: Bool {
+        !trimmed.isEmpty && trimmed != renaming?.title
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             Form {
                 TextField("Name", text: $title, prompt: Text("Road trip"))
-                if request.videoID != nil {
-                    Text("The track goes into it. The playlist is private.")
-                        .font(Theme.Text.caption)
-                        .foregroundStyle(Theme.Colors.textMuted)
-                } else {
-                    Text("The playlist is private.")
-                        .font(Theme.Text.caption)
-                        .foregroundStyle(Theme.Colors.textMuted)
-                }
+                Text(note)
+                    .font(Theme.Text.caption)
+                    .foregroundStyle(Theme.Colors.textMuted)
             }
             .formStyle(.grouped)
             HStack {
                 Spacer()
                 Button("Cancel") { dismiss() }
                     .keyboardShortcut(.cancelAction)
-                Button("Create") {
-                    player.createPlaylist(title: title, adding: request.videoID)
+                Button(renaming == nil ? "Create" : "Rename") {
+                    if let renaming {
+                        player.renamePlaylist(renaming, to: trimmed)
+                    } else {
+                        player.createPlaylist(title: title, adding: request?.videoID)
+                    }
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(!canSave)
             }
             .padding(Theme.Space.m)
         }

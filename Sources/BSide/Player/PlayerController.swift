@@ -716,6 +716,54 @@ final class PlayerController: NSObject, ObservableObject {
         bridge.call("createPlaylist", title, videoID ?? "")
     }
 
+    func renamePlaylist(_ playlist: Playlist, to title: String) {
+        let title = title.trimmingCharacters(in: .whitespaces)
+        guard pageReady, account.isSignedIn, !title.isEmpty, title != playlist.title else { return }
+        bridge.call("renamePlaylist", playlist.id, title)
+    }
+
+    func deletePlaylist(_ playlist: Playlist) {
+        guard pageReady, account.isSignedIn else { return }
+        bridge.call("deletePlaylist", playlist.id)
+    }
+
+    // MARK: The user's order of the playlists
+
+    /// YouTube Music lists the library by its own rules; the user's order,
+    /// made by dragging, is kept here and laid over every list that comes.
+    /// Playlists not in it yet (new ones) go first, as the library has them.
+    private var playlistOrder: [String] {
+        get { Settings.defaults.stringArray(forKey: Keys.playlistOrder) ?? [] }
+        set { Settings.defaults.set(newValue, forKey: Keys.playlistOrder) }
+    }
+
+    private func ordered(_ listed: [Playlist]) -> [Playlist] {
+        let order = playlistOrder
+        guard !order.isEmpty else { return listed }
+        let place = Dictionary(uniqueKeysWithValues: order.enumerated().map { ($1, $0) })
+        let known = listed.filter { place[$0.id] != nil }.sorted { place[$0.id]! < place[$1.id]! }
+        let new = listed.filter { place[$0.id] == nil && $0.id != Tuning.likedMusicID }
+        let liked = listed.filter { $0.id == Tuning.likedMusicID }
+        return liked + new + known.filter { $0.id != Tuning.likedMusicID }
+    }
+
+    /// Puts a playlist where another one is; the ones between move by one.
+    func movePlaylist(_ id: String, toPlaceOf target: String) {
+        guard let from = playlists.firstIndex(where: { $0.id == id }),
+              let to = playlists.firstIndex(where: { $0.id == target }), from != to,
+              id != Tuning.likedMusicID, target != Tuning.likedMusicID else { return }
+        playlists.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+        playlistOrder = playlists.map(\.id).filter { $0 != Tuning.likedMusicID }
+    }
+
+    /// One place up (-1) or down (1), from a row's menu.
+    func movePlaylist(_ playlist: Playlist, by step: Int) {
+        guard let from = playlists.firstIndex(where: { $0.id == playlist.id }),
+              playlists.indices.contains(from + step), playlists[from + step].id != Tuning.likedMusicID else { return }
+        playlists.swapAt(from, from + step)
+        playlistOrder = playlists.map(\.id).filter { $0 != Tuning.likedMusicID }
+    }
+
     func add(_ videoID: String, to playlist: Playlist) {
         guard pageReady, account.isSignedIn, !videoID.isEmpty else { return }
         bridge.call("addToPlaylist", playlist.id, videoID)
@@ -736,7 +784,7 @@ final class PlayerController: NSObject, ObservableObject {
             listed.contains { $0.id == new.playlist.id }
                 || now.timeIntervalSince(new.made) > Tuning.newPlaylistWaitSeconds
         }
-        playlists = withNew(listed)
+        playlists = ordered(withNew(listed))
         playlistsState = .loaded
         guard !newPlaylists.isEmpty else { return }
         // Ask again until the library has them.
@@ -790,7 +838,19 @@ final class PlayerController: NSObject, ObservableObject {
     private func playlistEdited(_ action: String, id: String, title: String, videoID: String) {
         if action == "created", !playlists.contains(where: { $0.id == id }) {
             newPlaylists.append((Playlist(id: id, title: title, isOwn: true), Date()))
-            playlists = withNew(playlists)
+            playlists = ordered(withNew(playlists))
+        }
+        // Shown at once; the library's next list confirms it.
+        if action == "renamed", let index = playlists.firstIndex(where: { $0.id == id }) {
+            let old = playlists[index]
+            playlists[index] = Playlist(id: old.id, title: title, subtitle: old.subtitle, artworkURL: old.artworkURL, isOwn: old.isOwn)
+            if openPlaylist?.id == id { openPlaylist = playlists[index] }
+        }
+        if action == "deleted" {
+            playlists.removeAll { $0.id == id }
+            newPlaylists.removeAll { $0.playlist.id == id }
+            if openPlaylist?.id == id { closePlaylist() }
+            if source == .playlist(id) { source = .other } // the queue plays on
         }
         if !videoID.isEmpty {
             if action == "removed" {
@@ -801,6 +861,8 @@ final class PlayerController: NSObject, ObservableObject {
         }
         let name = playlists.first { $0.id == id }?.title ?? title
         switch action {
+        case "renamed": show(notice: "Renamed to “\(title)”")
+        case "deleted": show(notice: "Deleted the playlist")
         case "created": show(notice: videoID.isEmpty ? "Created “\(name)”" : "Added to new “\(name)”")
         case "added": show(notice: "Added to “\(name)”")
         case "removed": show(notice: "Removed from “\(name)”")

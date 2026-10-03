@@ -70,6 +70,7 @@
   const UNLIKE_ENDPOINT = '/youtubei/v1/like/removelike?prettyPrint=false';
   const CREATE_PLAYLIST_ENDPOINT = '/youtubei/v1/playlist/create?prettyPrint=false';
   const EDIT_PLAYLIST_ENDPOINT = '/youtubei/v1/browse/edit_playlist?prettyPrint=false';
+  const DELETE_PLAYLIST_ENDPOINT = '/youtubei/v1/playlist/delete?prettyPrint=false';
   const ADD_TO_PLAYLIST_ENDPOINT = '/youtubei/v1/playlist/get_add_to_playlist?prettyPrint=false';
   // YouTube's own web client: asked as YouTube Music, the Save dialog does
   // not say which playlists hold the track; asked as YouTube, it does.
@@ -864,6 +865,23 @@
     await playlists();
   }
 
+  async function renamePlaylist(playlistId, title) {
+    const text = await api(EDIT_PLAYLIST_ENDPOINT, { playlistId: playlistId, actions: [
+      { action: 'ACTION_SET_PLAYLIST_NAME', playlistName: title }] });
+    const reply = JSON.parse(text);
+    if (reply.status !== 'STATUS_SUCCEEDED') throw new Error('status ' + reply.status);
+    post({ type: 'playlistEdit', action: 'renamed', playlistId: playlistId, title: title, videoId: '' });
+    event('playlist', 'renamed ' + playlistId);
+    await playlists();
+  }
+
+  async function deletePlaylist(playlistId) {
+    await api(DELETE_PLAYLIST_ENDPOINT, { playlistId: playlistId });
+    post({ type: 'playlistEdit', action: 'deleted', playlistId: playlistId, title: '', videoId: '' });
+    event('playlist', 'deleted ' + playlistId);
+    await playlists();
+  }
+
   // Out of a playlist by video ID alone, as the Save dialog unchecks it.
   async function removeVideo(playlistId, videoId) {
     try {
@@ -900,6 +918,12 @@
     findSongs(query) { return findSongs(query); },
     playlistsWith(videoId) { return playlistsWith(videoId); },
     removeVideo(playlistId, videoId) { removeVideo(playlistId, videoId); },
+    renamePlaylist(playlistId, title) {
+      renamePlaylist(playlistId, title).catch(function (e) { event('error', 'playlist edit: ' + e); });
+    },
+    deletePlaylist(playlistId) {
+      deletePlaylist(playlistId).catch(function (e) { event('error', 'playlist edit: ' + e); });
+    },
     playQueued(index, videoId) { playQueued(index, videoId); },
     removeQueued(index, videoId) { removeQueued(index, videoId); },
     playNext(videoId, title, artist) { playNext(videoId, title, artist); },

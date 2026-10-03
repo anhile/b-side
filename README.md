@@ -24,8 +24,8 @@ The pictures are rendered by the app itself with sample data.
 - **Vibes.** Tiles that start music in one click: a playlist, Liked Music
   shuffled, a track's radio, or a vibe made from your own words ("rainy
   Sunday, slow jazz, no vocals"). Drag the tiles into your order.
-- **Playlists.** Your library, private playlists included. Make playlists,
-  add and remove tracks.
+- **Playlists.** Your library, private playlists included. Make, rename and
+  delete playlists, add and remove tracks, drag the rows into your order.
 - **Explore.** Search songs, albums, artists and playlists; artist and album
   pages.
 - **A desktop widget** with the artwork, the names and Play, Pause and Next;

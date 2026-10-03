@@ -171,6 +171,15 @@ Research: [docs/research/vibe-from-prompt.md](../docs/research/vibe-from-prompt.
 - Primary action: click a row
 - Secondary actions: a new playlist ("+"). No refresh button: the list is
   asked for again whenever the page comes into view, at most twice a minute
+- The rows can be dragged into the user's own order (since 2026-10-03), as
+  the vibe tiles can: a copy of the row follows the pointer while the
+  others make room. YouTube Music has no order of its own to keep, so the
+  order lives in B-Side; playlists it has not seen yet go first, as the
+  library lists them. Liked Music stays first and does not move
+- A row's context menu: Play; Rename… and Delete… on the user's own
+  playlists (both change the YouTube Music library; Delete asks first);
+  Move Up and Move Down for the keyboard. Rename shares the New Playlist
+  sheet, with the name filled in
 - Attention order: 1) rows with artwork 36 and the name 2) the playing row
   with the accent indicator 3) the strip
 - The playlist that plays: its name in the accent, the row filled as under
@@ -185,8 +194,9 @@ Research: [docs/research/vibe-from-prompt.md](../docs/research/vibe-from-prompt.
 - Entry and exit: second dot, Command-2
 
 Status: passed the rubric on 2026-09-30, iteration 1. Liked Music uses the
-`Record` graphic at 36 in place of artwork; rows are custom buttons with a
-`surface` hover shape, no separators; a `Skeleton` list while loading.
+`Record` graphic at 36 in place of artwork; rows are plain views (not
+buttons, so a drag can start) with a `surface` hover shape, no separators;
+a `Skeleton` list while loading.
 
 ## Strip (Vibe and Playlists, while music plays)
 

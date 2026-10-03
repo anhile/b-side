@@ -66,6 +66,25 @@ struct RowButtonStyle: ButtonStyle {
     }
 }
 
+/// The look of RowButtonStyle on a row that is not a Button: `surface`
+/// under it while the pointer is over it, or while it is selected.
+struct RowHighlight: ViewModifier {
+    var selected = false
+    @State private var hovering = false
+
+    func body(content: Content) -> some View {
+        content
+            .pointingHand()
+            .background(
+                RoundedRectangle(cornerRadius: Theme.Radius.s)
+                    .fill(Theme.Colors.surface)
+                    .opacity(hovering || selected ? 1 : 0)
+            )
+            .onHover { hovering = $0 }
+            .animation(.easeOut(duration: Theme.Motion.feedback), value: hovering)
+    }
+}
+
 /// Rows while the list loads: shapes in `surface` where artwork and text will
 /// be, breathing slowly. Still with Reduce Motion.
 struct SkeletonList: View {
