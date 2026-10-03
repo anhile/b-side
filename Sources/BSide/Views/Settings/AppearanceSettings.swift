@@ -15,7 +15,7 @@ struct AppearanceSettings: View {
         }
     }
 
-    /// The end the window is nearer to; choosing one takes the window there.
+    /// Theme's scale changes first, so the window is built again at the new size.
     private var uiSize: Binding<UISize> {
         Binding {
             _ = scale // read, so the picker follows a change of the size
@@ -47,7 +47,7 @@ struct AppearanceSettings: View {
                 }
                 .pickerStyle(.segmented)
             } footer: {
-                Text("Large makes the window, its text and its buttons 30% bigger, for reading at a distance or with low vision. Dragging the window's corner gives any size between.")
+                Text("Large makes the text and the buttons 30% bigger, for reading at a distance or with low vision. The window itself can be dragged to any size.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

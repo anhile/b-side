@@ -33,14 +33,29 @@ enum MainWindow {
     /// Called when the window's content is attached to it.
     static func attach(_ window: NSWindow) {
         self.window = window
-        window.aspectRatio = Theme.Size.windowBase // the frame: the hidden title bar is inside the content
         // SwiftUI keeps the window's frame in the standard defaults, which a
         // test run must leave alone: its window is moved off the screen and
         // resized, and the user's window would open there next time.
-        if Settings.isScratch { window.setFrameAutosaveName("") }
+        if Settings.isScratch { forgetFrame(window) }
         if hiddenAtLaunch { hide(window) }
         // Debug captures: the window stays off the screen (Capture).
         if Settings.defaults.string(forKey: Keys.captureTo) != nil { window.setFrameOrigin(NSPoint(x: -4000, y: -4000)) }
+    }
+
+    /// SwiftUI names the frame for saving again after the window is up,
+    /// so the name is cleared, and the saved frame removed, whenever the
+    /// window moves or resizes.
+    private static func forgetFrame(_ window: NSWindow) {
+        let key = "NSWindow Frame main"
+        let forget = { (_: Notification) in
+            window.setFrameAutosaveName("")
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+        window.setFrameAutosaveName("")
+        UserDefaults.standard.removeObject(forKey: key)
+        for name in [NSWindow.didResizeNotification, NSWindow.didMoveNotification, NSWindow.willCloseNotification] {
+            NotificationCenter.default.addObserver(forName: name, object: window, queue: .main, using: forget)
+        }
     }
 
     /// No Dock icon, no window: B-Side lives in the menu bar until shown.

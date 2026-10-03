@@ -8,6 +8,10 @@ strip with the current track above them. The page's name stands after the
 window buttons, in the text colour, where a window has its title; the icons
 at the other end are the buttons (since 2026-10-02). No gear: Settings are in the menu
 bar and under Command-comma. Starting music never switches the page.
+The window starts at 320 by 440 and drags to any size up to twice that
+(since 2026-10-03); the pages fill it, and `wide-*.png` show them at 560
+by 640. Text and controls keep their size; Large in Settings makes them
+30% bigger, and the window's least size with them.
 
 ## Screen: Now Playing
 
@@ -19,7 +23,9 @@ bar and under Command-comma. Starting music never switches the page.
 - The artwork's colour ends just under the artwork (since 2026-10-03;
   before, half way to the title), and the title sits as far below that
   edge as the artist is above the progress line: 24 each. Before, 17 and 24,
-  and the title read as stuck to the colour. The time shown over the bar under the pointer
+  and the title read as stuck to the colour. In a bigger window the
+  artwork grows as far as the width lets it, and the room left goes
+  around it; Up Next and the lyrics get the whole of that room The time shown over the bar under the pointer
   reaches up to the artist's name, so it stands on a glass capsule.
 - Title and artist start at the left edge, in line with the progress bar; a
   long title scrolls. What can be done with the track comes after them:
@@ -117,7 +123,8 @@ way: the track's length, or the orange speaker on the one that plays.
   accent 3) the strip
 - What we removed or deferred: the big Play button, the "Vibe" headline;
   YouTube Music's own moods as a tile source
-- Tiles: two columns, 138 by 96, `surface`, radius 12; name in the title
+- Tiles: two columns at the least window width, 138 by 96, growing with
+  the window until a third column fits; `surface`, radius 12; name in the title
   role, source in the caption role. Sources: a playlist (in order or
   shuffled), Liked Music shuffled, a track's radio. Default: one tile,
   "Liked, shuffled"

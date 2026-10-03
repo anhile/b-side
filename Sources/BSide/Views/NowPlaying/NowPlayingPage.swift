@@ -106,12 +106,17 @@ struct NowPlayingPage: View {
     /// The zone the artwork's colour fills: from the top of the page to just
     /// under the artwork. While the pointer is over it, a dark veil covers
     /// all of it, with Lyrics and Repeat in the middle. Lyrics take the
-    /// artwork's place, in the same frame, so nothing else moves.
+    /// artwork's place, in the same frame, so nothing else moves. In a tall
+    /// window the artwork can grow no further than the width lets it, and
+    /// the room left goes around it.
     private var artworkZone: some View {
         VStack(spacing: 0) {
             Spacer(minLength: Theme.Space.m)
             ArtworkWithRecord(url: player.state.artworkURL, spinning: player.state.isPlaying && pageShown)
                 .opacity(showsLyrics || showsQueue ? 0 : 1)
+                // The colour reaches to here, not to the zone's end.
+                .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named("window")).maxY } action: { tintBottom = $0 }
+            Spacer(minLength: 0)
         }
         .overlay {
             if showsQueue {
@@ -147,7 +152,6 @@ struct NowPlayingPage: View {
         .onChange(of: player.lyricsAvailable) {
             if showsLyrics, player.lyricsAvailable == false { navigation.showsLyrics = false }
         }
-        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named("window")).maxY } action: { tintBottom = $0 }
         .preference(key: TintBottomKey.self, value: tintBottom)
         .overlay {
             if showsArtworkActions {

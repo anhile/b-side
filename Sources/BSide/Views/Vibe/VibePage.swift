@@ -21,10 +21,9 @@ struct VibePage: View {
         var replacing: Mood?
     }
 
-    private let columns = [
-        GridItem(.fixed(Theme.Size.tileWidth), spacing: Theme.Space.s),
-        GridItem(.fixed(Theme.Size.tileWidth), spacing: Theme.Space.s),
-    ]
+    /// Two tiles across the window at its least size; wider, the tiles
+    /// grow until a third column fits.
+    private let columns = [GridItem(.adaptive(minimum: Theme.Size.tileWidth), spacing: Theme.Space.s)]
 
     /// A tile on its way to another place. A copy of it follows the pointer
     /// above the grid, and the tile itself, unseen, keeps its place in the

@@ -5,9 +5,7 @@ import SwiftUI
 /// under a bad network without a screen. `-captureTo <folder>` with
 /// `-captureAt 5,20,60` writes every page at those seconds after launch;
 /// the window is moved off the screen first. Works with `-proxy`.
-/// `-captureWidth 400` resizes the window first, as a drag of its corner
-/// does; `-captureWidth "400 end"` also ends the drag, so the layout is
-/// made again at that size.
+/// `-captureSize 500x700` resizes the window first.
 @MainActor
 enum Capture {
     private static var scheduled = false
@@ -38,19 +36,11 @@ enum Capture {
             window.alphaValue = 1
             window.orderFrontRegardless()
         }
-        if let words = Settings.defaults.string(forKey: Keys.captureWidth)?.split(separator: " "), let width = Double(words[0]) {
+        if let parts = Settings.defaults.string(forKey: Keys.captureSize)?.split(separator: "x"), parts.count == 2,
+           let width = Double(parts[0]), let height = Double(parts[1]) {
             var frame = window.frame
-            frame.size = CGSize(width: width, height: width / Theme.Size.windowBase.width * Theme.Size.windowBase.height)
-            // As a drag of the corner: the window says it starts, resizes, and says it ended.
-            WindowSize.dragPlayed = true
-            NotificationCenter.default.post(name: NSWindow.willStartLiveResizeNotification, object: window)
-            try? await Task.sleep(for: .seconds(0.2)) // the picture is taken on the next turn
+            frame.size = CGSize(width: width, height: height)
             window.setFrame(frame, display: true)
-            try? await Task.sleep(for: .seconds(0.5))
-            if words.last == "end" {
-                WindowSize.dragPlayed = false
-                NotificationCenter.default.post(name: NSWindow.didEndLiveResizeNotification, object: window)
-            }
             try? await Task.sleep(for: .seconds(1))
         }
         let shown = navigation.page

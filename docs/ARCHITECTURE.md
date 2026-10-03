@@ -125,12 +125,15 @@ The window is three pages side by side in a paging scroll view, a glass bar
 on top and the strip with the current track at the bottom.
 [design/SCREENS.md](../design/SCREENS.md) has one spec per screen.
 
-Every size in Theme is multiplied by `Theme.scale`, 1 to 1.3: the window
-drags between the Compact and Large sizes, keeping its shape. A layout
-exists for one scale only, so while the corner is dragged the content is
-scaled as a picture, and when the drag ends `WindowSize` stores the new
-scale and the window's content is built again at it (`.id` in BSideApp).
-Settings' Compact and Large take the window to either end the same way.
+Every size in Theme is multiplied by `Theme.scale`: 1 for Compact, 1.3
+for Large (Settings, Appearance). A layout exists for one scale only, so
+changing it builds the window's content again (`WindowSize`, `.id` in
+BSideApp). The window itself is dragged to any size from
+`Theme.Size.window` to twice that; the pages fill it: the pager's pages
+take the window's width, the vibe tiles grow and gain a third column, the
+lists and Up Next get longer, the artwork grows as far as the width lets
+it. SwiftUI keeps the window's frame in the defaults; a test run forgets
+it (MainWindow), so the user's window stays where it was.
 
 `Snapshots.swift` renders every page in every state with fixture data,
 without the player. That is how a change is checked without clicking through

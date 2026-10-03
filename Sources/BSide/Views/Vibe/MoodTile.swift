@@ -45,7 +45,7 @@ struct MoodTile: View {
                 .lineLimit(1)
         }
         .padding(Theme.Space.s)
-        .frame(width: Theme.Size.tileWidth, height: Theme.Size.tileHeight, alignment: .bottomLeading)
+        .frame(maxWidth: .infinity, minHeight: Theme.Size.tileHeight, maxHeight: Theme.Size.tileHeight, alignment: .bottomLeading)
         .background { background(swatch) }
         .clipShape(shape)
         .overlay {
@@ -106,7 +106,7 @@ struct AddTile: View {
                     .foregroundStyle(Theme.Colors.textMuted)
             }
         }
-        .frame(width: Theme.Size.tileWidth, height: Theme.Size.tileHeight)
+        .frame(maxWidth: .infinity, minHeight: Theme.Size.tileHeight, maxHeight: Theme.Size.tileHeight)
         .background(
             RoundedRectangle(cornerRadius: Theme.Radius.m)
                 .strokeBorder(Theme.Colors.border, style: StrokeStyle(lineWidth: 1, dash: [Theme.Space.xxs]))

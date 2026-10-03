@@ -7,6 +7,11 @@ import SwiftUI
 enum ArtworkTint {
     private static var cache: [URL: Color] = [:]
 
+    /// What is known already, for a view built again that must not wait.
+    static func cached(for url: URL?) -> Color? {
+        url.flatMap { cache[$0] }
+    }
+
     @MainActor
     static func color(for url: URL?) async -> Color? {
         guard let url else { return nil }

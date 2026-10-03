@@ -296,10 +296,20 @@ enum Snapshots {
         await renderPage(.explore, player: .fixture(state: track, source: .other, search: ("каста", found),
                                                     searchState: .loaded),
                          name: "explore-reduce-transparency", appearance: .aqua, into: folder, reduceTransparency: true)
-        // The Large size, 30% bigger.
-        Theme.scale = UISize.large.scale
+        // The window dragged wider and taller: the pages fill it.
+        let wide = CGSize(width: 560, height: 640)
+        await renderPage(.nowPlaying, player: .fixture(state: track, source: .mood(Mood.liked.id)),
+                         name: "wide-nowplaying", appearance: .aqua, into: folder, size: wide)
+        await renderPage(.nowPlaying, player: .fixture(state: track, source: .mood(Mood.liked.id), upNext: next),
+                         name: "wide-queue", appearance: .darkAqua, into: folder, showsQueue: true, size: wide)
+        await renderPage(.vibe, player: .fixture(state: track, source: .mood("focus"), moods: moods),
+                         name: "wide-vibe", appearance: .aqua, into: folder, size: wide)
         let largeLists = [Playlist(id: "1", title: "Focus", subtitle: "12 tracks", artworkURL: artwork),
                           Playlist(id: "2", title: "Night drive", subtitle: "87 tracks")]
+        await renderPage(.playlists, player: .fixture(state: track, source: .playlist("1"), playlists: largeLists),
+                         name: "wide-playlists", appearance: .darkAqua, into: folder, size: wide)
+        // The Large size, 30% bigger.
+        Theme.scale = UISize.large.scale
         await renderPage(.nowPlaying, player: .fixture(state: track, source: .mood(Mood.liked.id)),
                          name: "large-nowplaying", appearance: .aqua, into: folder, reduceTransparency: true)
         await renderPage(.nowPlaying, player: .fixture(state: singing, source: .mood(Mood.liked.id), lyrics: lyrics),
@@ -370,14 +380,14 @@ enum Snapshots {
                                    appearance: NSAppearance.Name, into folder: URL,
                                    reduceTransparency: Bool = false, artworkHover: Bool = false, progressHover: CGFloat? = nil,
                                    showsLyrics: Bool = false, showsQueue: Bool = false,
-                                   explorePath: [ExploreRoute] = []) async {
+                                   explorePath: [ExploreRoute] = [], size: CGSize = Theme.Size.window) async {
         if let only = UserDefaults.standard.string(forKey: Keys.snapshotOnly), !name.contains(only) { return }
         let navigation = Navigation()
         navigation.showsLyrics = showsLyrics
         navigation.showsQueue = showsQueue
         navigation.setExplorePath(explorePath)
         let window = NSWindow(
-            contentRect: NSRect(origin: .zero, size: Theme.Size.window),
+            contentRect: NSRect(origin: .zero, size: size),
             styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
             backing: .buffered, defer: false)
         window.titlebarAppearsTransparent = true
@@ -391,7 +401,7 @@ enum Snapshots {
             .environment(\.previewArtworkHover, artworkHover)
             .environment(\.previewProgressHover, progressHover))
         hosting.sizingOptions = []
-        hosting.frame = NSRect(origin: .zero, size: Theme.Size.window)
+        hosting.frame = NSRect(origin: .zero, size: size)
         window.contentView = hosting
         window.setFrameOrigin(NSPoint(x: -4000, y: -4000))
         window.orderFrontRegardless()

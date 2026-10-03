@@ -12,21 +12,16 @@ struct PlayerWindow: View {
     /// The artwork's colour, over the top of the window while Now Playing
     /// shows: from the title bar down to just above the track's name.
     @State private var tint: Color?
-    @State private var tintBottom: CGFloat = 0
+    /// Starts where the last window content had it, at this scale, so the
+    /// content built again at a new size shows the colour at once.
+    @State private var tintBottom: CGFloat = PlayerWindow.lastTintBottom * Theme.scale
+    private static var lastTintBottom: CGFloat = 0
     /// The page the pager shows; follows `navigation.page` by a jump, and
     /// leads it on a swipe.
     @State private var shownPage: Page? = .nowPlaying
     @State private var pageDipped = false
     /// Not hidden, minimised or covered by other windows.
     @State private var windowVisible = true
-    /// The window's width while its corner is dragged. Over the width the
-    /// content is laid out at, it scales the content until the drag ends
-    /// and the layout is made again (WindowSize).
-    @State private var windowWidth: CGFloat = Theme.Size.window.width
-    /// While the corner is dragged: a picture of the window as the drag
-    /// began, stretched with the window and blurred. The content itself
-    /// would follow a frame late, and would judder.
-    @State private var frozen: NSImage?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openWindow) private var openWindow
 
@@ -90,43 +85,14 @@ struct PlayerWindow: View {
         }
         .background(Theme.Colors.bg)
         .coordinateSpace(name: "window")
-        .onPreferenceChange(TintBottomKey.self) { tintBottom = $0 }
+        .onPreferenceChange(TintBottomKey.self) { tintBottom = $0; Self.lastTintBottom = $0 / Theme.scale }
         .ignoresSafeArea(edges: .top)
-        .frame(width: Theme.Size.window.width, height: Theme.Size.window.height - topInset)
-        .scaleEffect(windowWidth / Theme.Size.window.width, anchor: .top)
-        .opacity(frozen == nil ? 1 : 0)
-        .frame(minWidth: Theme.Size.windowBase.width * Theme.scaleRange.lowerBound,
-               maxWidth: Theme.Size.windowBase.width * Theme.scaleRange.upperBound,
-               minHeight: Theme.Size.windowBase.height * Theme.scaleRange.lowerBound - topInset,
-               maxHeight: Theme.Size.windowBase.height * Theme.scaleRange.upperBound - topInset,
-               alignment: .top)
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { windowWidth = $0 }
-        .overlay(alignment: .top) {
-            // The whole window, title bar included: the picture has it.
-            if let frozen {
-                Image(nsImage: frozen)
-                    .resizable()
-                    .blur(radius: Theme.Size.resizeBlur)
-                    .frame(width: windowWidth, height: windowWidth / Theme.Size.windowBase.width * Theme.Size.windowBase.height)
-                    .offset(y: -topInset)
-                    .allowsHitTesting(false)
-            }
-        }
+        // Dragged to any size between the two; starts at the least.
+        .frame(minWidth: Theme.Size.window.width, idealWidth: Theme.Size.window.width, maxWidth: Theme.Size.windowMax.width,
+               minHeight: Theme.Size.window.height - topInset, idealHeight: Theme.Size.window.height - topInset,
+               maxHeight: Theme.Size.windowMax.height - topInset)
         .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.top } action: { topInset = $0 }
         .background(WindowSetup())
-        .onReceive(NotificationCenter.default.publisher(for: NSWindow.willStartLiveResizeNotification)) { note in
-            guard let window = note.object as? NSWindow, window === MainWindow.window else { return }
-            frozen = WindowSize.picture(of: window)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didEndLiveResizeNotification)) { note in
-            guard let window = note.object as? NSWindow, window === MainWindow.window else { return }
-            frozen = nil
-            WindowSize.resized(window)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResizeNotification)) { note in
-            guard let window = note.object as? NSWindow, window === MainWindow.window else { return }
-            WindowSize.resized(window)
-        }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didChangeOcclusionStateNotification)) { note in
             guard let window = note.object as? NSWindow, window === MainWindow.window else { return }
             windowVisible = window.occlusionState.contains(.visible)
@@ -162,10 +128,17 @@ struct PlayerWindow: View {
     /// fading out over the next one. The page starts under the title bar,
     /// whose glass keeps the plain background.
     private var tintLayer: some View {
-        (tint ?? Theme.Colors.bg)
-            .opacity(tint != nil ? Theme.Tint.opacity : 0)
+        (shownTint ?? Theme.Colors.bg)
+            .opacity(shownTint != nil ? Theme.Tint.opacity : 0)
             .frame(height: max(tintBottom - barHeight, 0))
-            .animation(.easeInOut(duration: Theme.Motion.tintChange), value: tint)
+            .animation(.easeInOut(duration: Theme.Motion.tintChange), value: shownTint)
+    }
+
+    /// The colour found for this artwork, or the one already known for it:
+    /// the window's content built again (a new size) starts with it, with
+    /// no fade.
+    private var shownTint: Color? {
+        tint ?? (player.hasTrack ? ArtworkTint.cached(for: player.state.artworkURL) : nil)
     }
 
     @ViewBuilder
@@ -193,7 +166,7 @@ struct PlayerWindow: View {
             HStack(spacing: 0) {
                 ForEach(Page.allCases) { item in
                     page(item)
-                        .frame(width: Theme.Size.window.width)
+                        .containerRelativeFrame(.horizontal)
                         .id(item)
                 }
             }

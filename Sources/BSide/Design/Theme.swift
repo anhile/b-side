@@ -9,7 +9,7 @@ import SwiftUI
 enum Theme {
     /// Set by WindowSize before the window is built again; see UISize.
     static var scale: CGFloat = UISize.currentScale
-    /// From Compact to Large: the window resizes between the two.
+    /// Compact and Large.
     static let scaleRange: ClosedRange<CGFloat> = 1...1.3
 
     /// Semantic colours. Light and dark values live in the asset catalog
@@ -71,8 +71,10 @@ enum Theme {
     }
 
     enum Size {
+        /// The window's least size, and where it starts.
         static var window: CGSize { CGSize(width: windowBase.width * scale, height: windowBase.height * scale) }
-        /// The window at scale 1; the window keeps this shape at every size.
+        /// The window drags to any size up to twice that, in either direction.
+        static var windowMax: CGSize { CGSize(width: window.width * 2, height: window.height * 2) }
         static let windowBase = CGSize(width: 320, height: 440)
         /// The system's title bar; the bar with the page tabs grows with the
         /// size, the system's does not.
@@ -87,6 +89,8 @@ enum Theme {
         /// compact filled button with 6 above and below.
         static var pageBar: CGFloat { (36) * scale }
         /// Two columns inside the window padding, with one gutter.
+        /// A tile's least width: two in the window at its least size. In a
+        /// wider window the tiles grow, then a third column comes.
         static var tileWidth: CGFloat { (window.width - 2 * Space.m - Space.s) / 2 }
         static var tileHeight: CGFloat { (96) * scale }
         static var editorWidth: CGFloat { (300) * scale }
@@ -129,8 +133,6 @@ enum Theme {
         static var progressTarget: CGFloat { (20) * scale }
         static var progressTick: CGFloat { (2) * scale }
         static var timeLabel: CGFloat { (36) * scale }
-        /// How much the content blurs while the window's corner is dragged.
-        static var resizeBlur: CGFloat { (6) * scale }
         static let settingsWidth: CGFloat = 460
         static var menuWidth: CGFloat { (260) * scale }
         static let logHeight: CGFloat = 200
