@@ -135,8 +135,7 @@ enum Snapshots {
     }
 
     private static func renderSettings(into folder: URL) async {
-        // -snapshotOnly filters these too: the settings window crashed in
-        // AppKit's constraint pass on a laptop-only display (2026-10-04).
+        // -snapshotOnly filters these too, as it does the pages.
         if let only = UserDefaults.standard.string(forKey: Keys.snapshotOnly), !"settings".contains(only), !only.contains("settings") { return }
         let player = PlayerController.fixture(state: track, account: .signedIn(name: "Emil", handle: "@emil", photoURL: artwork),
                                               source: .mood(Mood.liked.id))
@@ -154,8 +153,7 @@ enum Snapshots {
                 window.setFrameOrigin(NSPoint(x: -4000, y: -4000))
                 window.orderFrontRegardless()
                 try? await Task.sleep(for: .seconds(0.8))
-                if let contentView = window.contentView { window.setContentSize(contentView.fittingSize) }
-                try? await Task.sleep(for: .seconds(0.4))
+                try? await Task.sleep(for: .seconds(0.4)) // the window sizes itself to the pane
                 withExtendedLifetime(keep) {}
                 if let image = capture(window, frame: true) {
                     try? image.write(to: folder.appendingPathComponent("settings-\(tab.rawValue)-\(suffix).png"))

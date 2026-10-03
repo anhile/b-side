@@ -141,6 +141,8 @@ enum Theme {
         static var progressTick: CGFloat { (2) * scale }
         static var timeLabel: CGFloat { (36) * scale }
         static let settingsWidth: CGFloat = 460
+        /// Settings' least height, for a short pane on any screen.
+        static let settingsMinHeight: CGFloat = 200
         static var menuWidth: CGFloat { (260) * scale }
         static let logHeight: CGFloat = 200
         static let avatar: CGFloat = 40
