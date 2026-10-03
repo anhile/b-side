@@ -95,6 +95,11 @@ struct PlayerWindow: View {
             }
             SpaceKey.install { player.togglePlayPause() }
             Capture.schedule(navigation: navigation)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: AppDelegate.urlCommand)) { note in
+            guard let name = note.object as? String, let command = WidgetCommand(rawValue: name) else { return }
+            if command == .show { navigation.page = .nowPlaying }
+            player.perform(command)
             TrackNotifier.shared.onOpen = {
                 if !MainWindow.show() { openWindow(id: "main") }
                 navigation.page = .nowPlaying

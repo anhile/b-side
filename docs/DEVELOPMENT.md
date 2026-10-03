@@ -106,6 +106,19 @@ exist only as arguments:
 The full list, with the stored settings, is in
 [Settings.swift](../Sources/BSide/App/Settings.swift).
 
+### The widget
+
+`./scripts/install.sh` puts the app in `/Applications`; macOS registers its
+widget extension when the app is first run from there. The widget then
+appears under B-Side when editing widgets on the desktop or in Notification
+Center. If it does not, register the extension by hand:
+
+```bash
+pluginkit -a /Applications/B-Side.app/Contents/PlugIns/BSideWidget.appex
+```
+
+The snapshots render the widget's views as `widget-*.png`.
+
 ### A bad network
 
 `scripts/slowproxy.py` is an HTTP CONNECT proxy that makes the network slow

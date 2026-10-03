@@ -28,6 +28,8 @@ The pictures are rendered by the app itself with sample data.
   add and remove tracks.
 - **Explore.** Search songs, albums, artists and playlists; artist and album
   pages.
+- **A desktop widget** with the artwork, the names and Play, Pause and Next;
+  small and medium. It shows what plays while B-Side runs.
 - **Menu bar.** The current track with Previous, Play and Next, every vibe
   and playlist. Closing the window does not stop the music. A setting puts
   the track's name next to the icon.

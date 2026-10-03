@@ -67,8 +67,12 @@ page is ever shown.
 | `Vibes/` | Vibes from words: `VibeMaker` reads the words and finds the songs, `VibeServer` talks to the optional server |
 | `Views/` | One folder per page (`NowPlaying`, `Vibe`, `Playlists`, `Explore`), the window around them (`Window`), `Settings`, `MenuBar`, and the shared `Components` |
 | `Design/` | Tokens (`Theme`), glass, the record, artwork loading and tint, the vibe palette, and `Snapshots` |
-| `Diagnostics/` | The event log and the process list |
+| `Diagnostics/` | The event log, the process list, and the debug tools: window captures, the proxy |
 | `Resources/` | player.js |
+
+Beside `Sources/BSide`: `Sources/Shared` is compiled into the app and the
+widget extension both (what the widget shows, its buttons' intents, the
+message port), and `Sources/BSideWidget` is the extension itself.
 
 ### PlayerController
 
@@ -138,6 +142,25 @@ the app; see [DEVELOPMENT.md](DEVELOPMENT.md).
 The server ([server/](../server/)) only reads words. It never sees the
 user's account, and the app works without it. Its plan and limits:
 [plans/vibe-server.md](plans/vibe-server.md).
+
+## The desktop widget
+
+`BSideWidget.appex`, embedded in the app, shows what plays (small: the
+artwork with the names and Play on it; medium: artwork, source, names and
+the transport). It is sandboxed, as extensions are, and reads nothing from
+disk: when WidgetKit asks for a timeline, the extension asks the running app
+over a `CFMessagePort` (`WidgetPort`, name `com.anhile.bside.widget`) and
+gets the state with a small JPEG of the artwork. Its buttons are App
+Intents that send a command back over the same port, or open the app by
+`bside://<command>` when it is not running. The app (`WidgetFeed`) answers
+the port and asks WidgetKit to redraw a second after what plays changes.
+
+No shared group container: on recent macOS, access to one needs the group
+ID to start with a Team ID, and B-Side is signed without one. The widget's
+entitlements (the sandbox, and a mach-lookup exception for the port's name)
+cannot be signed in by Xcode without a provisioning profile, so
+`scripts/build.sh` and `scripts/release.sh` sign the extension again with
+`Support/BSideWidget.entitlements`.
 
 ## Where to adjust things
 

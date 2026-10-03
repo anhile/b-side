@@ -8,10 +8,14 @@ import WebKit
 final class PlayerController: NSObject, ObservableObject {
     // MARK: - What plays
 
-    @Published private(set) var state = PlayerState()
+    @Published private(set) var state = PlayerState() {
+        didSet { if state != oldValue { WidgetFeed.note(self) } }
+    }
     /// Where playback is between the page's reports; see PlaybackClock.
     @Published private(set) var clock = PlaybackClock()
-    @Published private(set) var source: PlaySource?
+    @Published private(set) var source: PlaySource? {
+        didSet { if source != oldValue { WidgetFeed.note(self) } }
+    }
     /// A track or list was asked for and the page has not answered yet.
     @Published private(set) var isLoading = false
     /// The music has waited for data for a while (Tuning.bufferingNoticeSeconds).
@@ -207,6 +211,7 @@ final class PlayerController: NSObject, ObservableObject {
         configuration.preferences.inactiveSchedulingPolicy = Tuning.inactiveScheduling
 
         bridge.onState = { [weak self] in self?.handle(state: $0) }
+        WidgetFeed.start { [weak self] in self?.perform($0) }
         pathMonitor.pathUpdateHandler = { [weak self] path in
             guard path.status == .satisfied else { return }
             Task { @MainActor in
@@ -1162,6 +1167,19 @@ final class PlayerController: NSObject, ObservableObject {
             bridge.call("load", "video", video, position ?? 0)
         } else if let list = target.listID {
             bridge.call("load", "playlist", list, 0, ["shuffle": target.shuffle, "startIndex": target.startIndex])
+        }
+    }
+
+    /// From the widget, or a `bside://` URL.
+    func perform(_ command: WidgetCommand) {
+        EventLog.write("widget\t\(command.rawValue)")
+        switch command {
+        case .toggle: togglePlayPause()
+        case .next: next()
+        case .previous: previous()
+        case .vibe: playVibe()
+        case .show:
+            MainWindow.show()
         }
     }
 

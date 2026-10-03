@@ -102,6 +102,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hasVisibleWindows || !MainWindow.show()
     }
 
+    /// `bside://toggle` and the like: the widget when B-Side was not
+    /// running, or anything else that can open a URL.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls {
+            guard let command = WidgetFeed.command(in: url) else { continue }
+            NotificationCenter.default.post(name: Self.urlCommand, object: command.rawValue)
+        }
+    }
+
+    static let urlCommand = Notification.Name("BSideURLCommand")
+
     /// Playback must continue with every window closed.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 

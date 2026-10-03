@@ -24,6 +24,12 @@ enum Tuning {
     /// Waiting for data this long is said on the screen; shorter waits, as
     /// at the start of every track, are not.
     static let bufferingNoticeSeconds: Double = 1.5
+    /// The widget is redrawn this long after the last change, so a burst of
+    /// reports is one redraw.
+    static let widgetDelay: Double = 1.0
+    /// The artwork sent to the widget, square, in pixels.
+    static let widgetArtworkPixels = 320
+    static let widgetArtworkQuality: Double = 0.85
     /// A playlist made here is shown at once and the library is asked again
     /// this often until it lists it, for this long at most.
     static let newPlaylistRetrySeconds: Double = 15

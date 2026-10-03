@@ -205,6 +205,26 @@ margin, so the last row can scroll clear. Changed 2026-09-30: it used to sit
 flat on the background and read as part of the page. Vibe and Playlists also
 gained air under the title bar (16 and 12).
 
+## Widget (the desktop and Notification Center)
+
+- User's job here: "see what plays and pause or skip it without the window"
+- Small: the artwork fills the square, a dark gradient at the bottom, the
+  title (two lines) and artist in white on it, Play or Pause at the right.
+  Medium: artwork 116 on the left; on the right the source in the accent
+  with its symbol, the title (15 semibold, two lines), the artist in
+  secondary, and Previous, Play or Pause, Next along the bottom.
+- Nothing playing, or B-Side not running: a disc, the words, and a Play
+  Vibe button in the accent; the button starts the app when it is not
+  running.
+- System text colours and the system widget background (`fill.tertiary`),
+  the app's orange from the shared asset catalog: a widget is the system's
+  surface, not the app's. A click anywhere opens B-Side on Now Playing.
+- Redrawn a second after a track, play or pause change. The track's
+  position is not shown: a widget cannot count seconds.
+
+Status: built 2026-10-03; the views are rendered by the snapshots
+(`widget-*.png`), the widget itself was not seen on a desktop by Claude.
+
 ## Welcome (while the player page loads)
 
 - User's job here: none; wait a moment

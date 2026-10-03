@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import WidgetKit
 
 /// Renders every page in its main states to PNG files, light and dark, for
 /// design review without a screen recording. Run with
@@ -98,6 +99,41 @@ enum Snapshots {
     }
 
     /// The Settings window, one file per tab.
+    /// The desktop widget's views, drawn by the app at the widget sizes.
+    private static func renderWidgets(into folder: URL) async {
+        var playing = WidgetState()
+        playing.hasTrack = true
+        playing.isPlaying = true
+        playing.title = "Plug Walk"
+        playing.artist = "Rich The Kid"
+        playing.source = "Liked Music"
+        playing.sourceSymbol = "heart.fill"
+        if let artwork, let image = await ArtworkLoader.image(for: artwork) {
+            playing.artwork = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])
+        }
+        var long = playing
+        long.title = "A title long enough to be cut at the edge of the widget"
+        long.artist = "Someone feat. Someone Else"
+        long.isPlaying = false
+        let cases: [(String, WidgetState)] = [("playing", playing), ("paused-long", long), ("nothing", WidgetState())]
+        for (family, size) in [(WidgetFamily.systemSmall, CGSize(width: 170, height: 170)),
+                               (.systemMedium, CGSize(width: 364, height: 170))] {
+            for (name, state) in cases {
+                for (suffix, scheme) in [("light", ColorScheme.light), ("dark", .dark)] {
+                    let renderer = ImageRenderer(content: NowPlayingWidgetView(state: state, family: family)
+                        .frame(width: size.width, height: size.height)
+                        .background(scheme == .dark ? Color(white: 0.12) : Color(white: 0.9))
+                        .environment(\.colorScheme, scheme))
+                    renderer.scale = 2
+                    guard let image = renderer.cgImage,
+                          let data = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else { continue }
+                    let family = family == .systemSmall ? "small" : "medium"
+                    try? data.write(to: folder.appendingPathComponent("widget-\(family)-\(name)-\(suffix).png"))
+                }
+            }
+        }
+    }
+
     private static func renderSettings(into folder: URL) async {
         let player = PlayerController.fixture(state: track, account: .signedIn(name: "Emil", handle: "@emil", photoURL: artwork),
                                               source: .mood(Mood.liked.id))
@@ -174,6 +210,7 @@ enum Snapshots {
 
     static func render(into folder: URL) async {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        await renderWidgets(into: folder)
         await renderNewVibe(into: folder)
         await renderSettings(into: folder)
         await renderPage(.nowPlaying, player: .fixture(state: track, source: .mood(Mood.liked.id)),

@@ -66,14 +66,19 @@ mkdir -p "$STAGE"
 ditto "$APP" "$STAGE/B-Side.app"
 
 # Signing again drops the build's get-task-allow entitlement, which the notary
-# refuses. B-Side needs no entitlements: it is not sandboxed, and the page
-# plays in WebKit's own processes.
+# refuses. Inside out: the widget extension first, with its entitlements
+# (the sandbox and the app's message port), then the app, which needs none.
 echo "Signing as: $IDENTITY"
-if [[ "$IDENTITY" == "-" ]]; then
-  codesign --force --options runtime --sign - "$STAGE/B-Side.app"
-else
-  codesign --force --options runtime --timestamp --sign "$IDENTITY" "$STAGE/B-Side.app"
-fi
+sign() { # bundle, then codesign options
+  local bundle=$1; shift
+  if [[ "$IDENTITY" == "-" ]]; then
+    codesign --force --options runtime "$@" --sign - "$bundle"
+  else
+    codesign --force --options runtime --timestamp "$@" --sign "$IDENTITY" "$bundle"
+  fi
+}
+sign "$STAGE/B-Side.app/Contents/PlugIns/BSideWidget.appex" --entitlements Support/BSideWidget.entitlements
+sign "$STAGE/B-Side.app"
 codesign --verify --deep --strict "$STAGE/B-Side.app"
 
 notarise() {
