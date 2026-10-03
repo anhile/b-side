@@ -134,6 +134,8 @@ enum Theme {
         /// The progress bar: its line, its knob, how tall it is to the
         /// pointer, and the room a time label takes beside it.
         static var progressLine: CGFloat { (4) * scale }
+        /// The hairline above Now Playing's bottom line.
+        static let hairline: CGFloat = 1
         static var progressKnob: CGSize { CGSize(width: 20 * scale, height: 12 * scale) }
         static var progressTarget: CGFloat { (20) * scale }
         static var progressTick: CGFloat { (2) * scale }
@@ -182,6 +184,10 @@ enum Theme {
 
     enum Opacity {
         static let pressed: Double = 0.7
+        /// The source's colour over the glass of Now Playing's bottom line,
+        /// and in the hairline above it.
+        static let sourceWash: Double = 0.1
+        static let sourceRule: Double = 0.5
         /// The dark veil over the album cover while its actions show.
         static let scrim: Double = 0.45
         /// The hover circle under icon buttons, in the text colour.

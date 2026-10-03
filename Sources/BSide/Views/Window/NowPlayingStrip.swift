@@ -124,16 +124,16 @@ struct SourceLine: View {
         }
         .font(font)
         .fontWeight(.medium)
-        .foregroundStyle(colour)
+        .foregroundStyle(Self.colour(of: label, in: colorScheme))
         .lineLimit(1)
     }
 
     /// A vibe's deep colour on the light glass, its light one on the dark.
-    private var colour: Color {
+    static func colour(of label: SourceLabel, in scheme: ColorScheme) -> Color {
         switch label.kind {
         case .vibe(let index):
             let swatch = VibePalette.swatches[index]
-            return colorScheme == .dark ? swatch.light : swatch.deep
+            return scheme == .dark ? swatch.light : swatch.deep
         case .playlist, .album, .artist, .radio:
             return Theme.Colors.accentText
         }

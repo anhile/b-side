@@ -14,6 +14,7 @@ struct NowPlayingPage: View {
     @Environment(\.previewArtworkHover) private var previewArtworkHover
     @Environment(\.pageShown) private var pageShown
     @ObservedObject private var outputs = AudioOutputs.shared
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         if let blocked = blockingState(for: player) {
@@ -108,10 +109,19 @@ struct NowPlayingPage: View {
                 .frame(height: Theme.Size.sourceBar)
                 .frame(maxWidth: .infinity)
                 .barGlass(joined: .bottom)
-                .overlay(alignment: .top) { Divider() } // a line between the controls and the bar
+                // A wash of the source's colour over the glass, and a rule
+                // of it above: the line belongs to what plays.
+                .overlay { sourceColour.opacity(Theme.Opacity.sourceWash).allowsHitTesting(false) }
+                .overlay(alignment: .top) { sourceColour.opacity(Theme.Opacity.sourceRule).frame(height: Theme.Size.hairline) }
                 .animation(.easeInOut(duration: Theme.Motion.page), value: player.sourceLabel)
             }
         }
+    }
+
+    /// The source's colour, for the bottom line; the muted text colour when
+    /// only the output device is on it.
+    private var sourceColour: Color {
+        player.sourceLabel.map { SourceLine.colour(of: $0, in: colorScheme) } ?? Theme.Colors.textMuted
     }
 
     /// Opens the list of what plays next in the artwork's place, and closes
