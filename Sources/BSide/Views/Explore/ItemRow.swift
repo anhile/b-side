@@ -19,7 +19,8 @@ struct ItemRowButton: View {
                 ItemRow(item: item, isCurrent: isCurrent, isPlaying: player.state.isPlaying,
                         number: number, roomForPlay: showsPlay)
             }
-            .buttonStyle(RowButtonStyle(selected: isCurrent && showsPlay))
+            // The song, album or playlist that plays keeps the hover's glass.
+            .buttonStyle(RowButtonStyle(selected: isCurrent))
             .help(help)
         } control: {
             if showsPlay {

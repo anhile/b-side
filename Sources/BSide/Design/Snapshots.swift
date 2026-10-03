@@ -135,6 +135,9 @@ enum Snapshots {
     }
 
     private static func renderSettings(into folder: URL) async {
+        // -snapshotOnly filters these too: the settings window crashed in
+        // AppKit's constraint pass on a laptop-only display (2026-10-04).
+        if let only = UserDefaults.standard.string(forKey: Keys.snapshotOnly), !"settings".contains(only), !only.contains("settings") { return }
         let player = PlayerController.fixture(state: track, account: .signedIn(name: "Emil", handle: "@emil", photoURL: artwork),
                                               source: .mood(Mood.liked.id))
         player.processesForSnapshot = [

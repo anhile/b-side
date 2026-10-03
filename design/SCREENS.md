@@ -217,7 +217,9 @@ Research: [docs/research/vibe-from-prompt.md](../docs/research/vibe-from-prompt.
   2026-10-03; before, a flat `surface` fill): the one highlight the rows
   share with the controls. With Reduce Transparency, `surface` outlined.
   The same shape under every row in the app (tracks, Explore, Up Next),
-  with 4 of air between two rows, so the shapes of neighbours do not touch
+  with 4 of air between two rows, so the shapes of neighbours do not touch.
+  The row that plays keeps it, whatever the list: a playlist's track, a
+  song or an album in Explore
 - The playlist that plays: its name in the accent, the row filled as under
   the pointer, and at its end the speaker with moving waves (still when
   paused), as on a vibe's tile and a track's row. Under the pointer the

@@ -45,7 +45,8 @@ struct PlaylistTracks: View {
                     } label: {
                         TrackRow(track: track, isCurrent: isCurrent(track), isPlaying: player.state.isPlaying)
                     }
-                    .buttonStyle(RowButtonStyle())
+                    // The track that plays keeps the hover's glass.
+                    .buttonStyle(RowButtonStyle(selected: isCurrent(track)))
                     .help(track.title)
                     .contextMenu {
                         TrackMenu(videoID: track.videoID, title: track.title, artist: track.artist, artistID: track.artistID,
