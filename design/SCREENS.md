@@ -277,6 +277,19 @@ gained air under the title bar (16 and 12).
 Status: built 2026-10-03; the views are rendered by the snapshots
 (`widget-*.png`), the widget itself was not seen on a desktop by Claude.
 
+## Sign in (signed out, not a guest)
+
+- User's job here: sign in, or go on as a guest
+- Primary action: Sign In… (filled); Continue as Guest under it, quiet
+- Attention order: 1) the record 2) "Your music" 3) Sign In…
+- Laid out as Welcome and "Nothing playing": the record at 160, the title
+  in the display role, a caption line under it (since 2026-10-08; before,
+  a small person icon and a title over an outline button, which read as an
+  error page and jumped from the record when Welcome handed over). Continue
+  as Guest says in its tooltip what a guest can do (search and radios, no
+  library); a line for it at the bottom did not fit the least window
+- On Now Playing, Vibe and Playlists alike
+
 ## Welcome (while the player page loads)
 
 - User's job here: none; wait a moment
