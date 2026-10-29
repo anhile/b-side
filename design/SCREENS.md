@@ -300,8 +300,14 @@ Status: built 2026-10-03; the views are rendered by the snapshots
   Vibe colours fan out after a beat, turned like records leaned in a crate:
   Violet with the playlists glyph on the left, Ember with a heart
   behind, Lagoon with the vibe glyph on the right; a wash of Ember from the
-  top. The record keeps Welcome's place, so the hand-over moves nothing;
-  with Reduce Motion the sleeves are simply there
+  top, under the title bar too (the bar's glass is off while a screen
+  covers the pages). With Reduce Motion the sleeves are simply there.
+  The picture and the words are one block in the middle: "Your music" in
+  the display role, two lines in body size ("Your playlists, likes and
+  mixes / from YouTube Music, in one small player."), Sign In… as a wide
+  filled button (220, body semibold), Continue as Guest in body size; at
+  the bottom, a lock and "You sign in on Google's own page; B-Side never
+  sees the password." when the window has the height (not in the least)
 - Since 2026-10-29 one screen over the whole window, the page icons and
   the strip hidden, as Welcome (before, the same screen on every page, with
   Explore's search and the Playlists bar live around it)

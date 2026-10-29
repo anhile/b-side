@@ -51,7 +51,7 @@ struct PlayerWindow: View {
                 }
                 .frame(height: barHeight)
                 // Playlists and Explore put their own bar right under it.
-                .barGlass(joined: Page.withBar.contains(navigation.page) ? .bottom : [])
+                .barGlass(joined: Page.withBar.contains(navigation.page) ? .bottom : [], hidden: player.coversPages)
             ZStack {
                 if player.showsWelcome {
                     WelcomeScreen()
@@ -87,6 +87,11 @@ struct PlayerWindow: View {
                         .environmentObject(player)
                 }
         }
+        .background {
+            // The sign-in screen's wash runs on under the title bar.
+            if player.showsSignIn { SignInScreen.wash.transition(.opacity) }
+        }
+        .animation(.easeInOut(duration: Theme.Motion.page), value: player.showsSignIn)
         .background(Theme.Colors.bg)
         .coordinateSpace(name: "window")
         .onPreferenceChange(TintBottomKey.self) { tintBottom = $0; Self.lastTintBottom = $0 / Theme.scale }

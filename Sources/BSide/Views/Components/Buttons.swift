@@ -56,16 +56,20 @@ struct OutlineButtonStyle: ButtonStyle {
 struct FilledButtonStyle: ButtonStyle {
     /// For a bar: the height of the small icon buttons, a smaller glyph.
     var compact = false
+    /// The one way forward on a screen of its own (signing in): wider and
+    /// taller, the label in body size.
+    var prominent = false
 
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(Theme.Text.label)
+            .font(prominent ? Theme.Text.body.weight(.semibold) : Theme.Text.label)
             .imageScale(compact ? .small : .medium)
             .foregroundStyle(Theme.Colors.bg)
+            .frame(minWidth: prominent ? Theme.Size.prominentButton - 2 * Theme.Space.m : nil)
             .padding(.horizontal, compact ? Theme.Space.s : Theme.Space.m)
-            .padding(.vertical, compact ? 0 : Theme.Space.xs)
+            .padding(.vertical, compact ? 0 : prominent ? Theme.Space.s : Theme.Space.xs)
             .frame(height: compact ? Theme.Size.pageDotTarget : nil)
             .background(Theme.Colors.text, in: Capsule())
             .contentShape(Capsule())
@@ -77,17 +81,20 @@ struct FilledButtonStyle: ButtonStyle {
 /// A text button with no shape: caption in `text-muted`, `text` under the
 /// pointer. For a second, quieter choice next to a real button.
 struct QuietButtonStyle: ButtonStyle {
+    var font = Theme.Text.caption
+
     func makeBody(configuration: Configuration) -> some View {
-        QuietLabel(configuration: configuration)
+        QuietLabel(configuration: configuration, font: font)
     }
 
     private struct QuietLabel: View {
         let configuration: Configuration
+        let font: Font
         @State private var hovering = false
 
         var body: some View {
             configuration.label
-                .font(Theme.Text.caption)
+                .font(font)
                 .foregroundStyle(hovering ? Theme.Colors.text : Theme.Colors.textMuted)
                 .padding(.vertical, Theme.Space.xxs)
                 .contentShape(Rectangle())

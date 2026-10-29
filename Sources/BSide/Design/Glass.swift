@@ -32,13 +32,16 @@ extension View {
     /// bar and the pages' bars under it. Glass lights a rim along every
     /// edge, and two rims where bars meet read as a gap; `joined` names the
     /// edges that meet another bar, which then get no rim.
-    func barGlass(joined: Edge.Set = []) -> some View {
-        modifier(BarSurface(joined: joined))
+    /// `hidden`: no bar at all, for a screen that covers the pages and
+    /// runs on under the title bar.
+    func barGlass(joined: Edge.Set = [], hidden: Bool = false) -> some View {
+        modifier(BarSurface(joined: joined, hidden: hidden))
     }
 }
 
 struct BarSurface: ViewModifier {
     var joined: Edge.Set = []
+    var hidden = false
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.previewReduceTransparency) private var previewReduceTransparency
 
@@ -46,7 +49,9 @@ struct BarSurface: ViewModifier {
     private static let bleed: CGFloat = 8
 
     func body(content: Content) -> some View {
-        if reduceTransparency || previewReduceTransparency {
+        if hidden {
+            content
+        } else if reduceTransparency || previewReduceTransparency {
             content.background(Theme.Colors.surface)
         } else if #available(macOS 26, *) {
             if joined.isEmpty {

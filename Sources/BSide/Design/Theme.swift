@@ -170,6 +170,9 @@ enum Theme {
         /// The sleeves fanned out behind the sign-in screen's record, and their glyph.
         static var signInSleeve: CGFloat { (132) * scale }
         static var signInSleeveGlyph: CGFloat { (15) * scale }
+        /// The sign-in screen's own button, and how wide its lines of text run.
+        static var prominentButton: CGFloat { (220) * scale }
+        static var signInText: CGFloat { (300) * scale }
         /// The colour choices in the Vibe editor.
         static var swatch: CGFloat { (18) * scale }
         static let currentRing: CGFloat = 2
