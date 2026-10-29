@@ -120,7 +120,6 @@ final class PlayerController: NSObject, ObservableObject {
     private var signingIn = false
     private var signingOut = false
     private static var signedOutForTest = false
-    private let signInPage = SignInPage()
     /// Set while the page is unloaded by "free memory when paused".
     private var unloaded: (target: PlayTarget, position: Double)?
     /// Next (1) or Previous (-1) pressed on a track that waits for Play.
@@ -1357,54 +1356,8 @@ final class PlayerController: NSObject, ObservableObject {
         }
         signingIn = true
         webView.load(URLRequest(url: Tuning.signIn))
-        showSignInPanel()
-    }
-
-    /// Google's page under a bar of B-Side's own, in a panel over the
-    /// player: what it is, where the page comes from, and Cancel.
-    private func showSignInPanel() {
         window.title = "Sign in to YouTube Music"
-        window.titleVisibility = .hidden
-        window.titlebarAppearsTransparent = true
-        window.styleMask.insert(.fullSizeContentView)
-        window.isMovableByWindowBackground = true
-        window.backgroundColor = NSColor(named: "bg")
-        for button in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
-            window.standardWindowButton(button)?.isHidden = true
-        }
-        window.contentView = SignInContainer(webView: webView, page: signInPage) { [weak self] in
-            EventLog.write("sign-in cancelled")
-            self?.hideWebView()
-        }
-        let size = Theme.Size.signInPanel
-        var frame = NSRect(origin: .zero, size: size)
-        if let main = MainWindow.window, main.isVisible {
-            frame.origin = NSPoint(x: main.frame.midX - size.width / 2, y: main.frame.maxY - size.height)
-            if let screen = main.screen?.visibleFrame {
-                frame.origin.x = min(max(frame.origin.x, screen.minX), screen.maxX - size.width)
-                frame.origin.y = min(max(frame.origin.y, screen.minY), screen.maxY - size.height)
-            }
-            window.setFrame(frame, display: false)
-        } else {
-            window.setFrame(frame, display: false)
-            window.center()
-        }
-        NSApp.activate()
         showWebView()
-    }
-
-    /// Back to the plain window the web view lives in.
-    private func closeSignInPanel() {
-        guard window.contentView !== webView else { return }
-        window.contentView = webView
-        window.titleVisibility = .visible
-        window.titlebarAppearsTransparent = false
-        window.styleMask.remove(.fullSizeContentView)
-        window.isMovableByWindowBackground = false
-        window.backgroundColor = nil
-        for button in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
-            window.standardWindowButton(button)?.isHidden = false
-        }
     }
 
     /// Signs out as a browser does: Google's own sign-out ends the session,
@@ -1493,7 +1446,6 @@ final class PlayerController: NSObject, ObservableObject {
 
     func hideWebView() {
         window.orderOut(nil)
-        closeSignInPanel()
         window.title = "B-Side Player Page"
         // Coming back from the sign-in flow: return to the player page.
         if signingIn || (webView.url?.host != Tuning.musicHome.host && unloaded == nil) {
@@ -1737,20 +1689,11 @@ final class PlayerController: NSObject, ObservableObject {
 // MARK: - WebKit delegates
 
 extension PlayerController: WKNavigationDelegate, WKUIDelegate, NSWindowDelegate {
-    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
-        if signingIn { signInPage.isLoading = true }
-    }
-
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         pageReady = false
-        if signingIn {
-            signInPage.host = webView.url?.host ?? ""
-            signInPage.isSecure = webView.hasOnlySecureContent
-        }
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        signInPage.isLoading = false
         if signingOut {
             EventLog.write("sign out\tGoogle's page done")
             finishSignOut()
@@ -1794,7 +1737,6 @@ extension PlayerController: WKNavigationDelegate, WKUIDelegate, NSWindowDelegate
     }
 
     private func report(navigationError error: Error) {
-        signInPage.isLoading = false
         if signingOut, (error as NSError).code != NSURLErrorCancelled { finishSignOut() }
         guard (error as NSError).code != NSURLErrorCancelled else { return }
         EventLog.write("error\tnavigation: \(error.localizedDescription)")

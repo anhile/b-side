@@ -24,13 +24,9 @@ enum ContentRules {
 
     /// Never blocked.
     private static let mediaHostPattern = "googlevideo\\.com"
-
-    /// Google's sign-in pages are shown, so they load in full: the logo,
-    /// the fonts, the styles.
-    private static let shownPages = ["https://accounts\\.google\\.com/.*", "https://accounts\\.youtube\\.com/.*"]
     // --------------------------------------------------------------------------
 
-    /// Later rules win, so the exceptions must stay last.
+    /// Later rules win, so the media exceptions must stay last.
     private static var encoded: String {
         var rules: [[String: Any]] = blockedResourceTypes.map {
             ["trigger": ["url-filter": ".*", "resource-type": [$0]], "action": ["type": "block"]]
@@ -41,8 +37,6 @@ enum ContentRules {
         rules.append(["trigger": ["url-filter": ".*", "resource-type": ["media"]],
                       "action": ["type": "ignore-previous-rules"]])
         rules.append(["trigger": ["url-filter": mediaHostPattern],
-                      "action": ["type": "ignore-previous-rules"]])
-        rules.append(["trigger": ["url-filter": ".*", "if-top-url": shownPages],
                       "action": ["type": "ignore-previous-rules"]])
         let data = try! JSONSerialization.data(withJSONObject: rules)
         return String(data: data, encoding: .utf8)!

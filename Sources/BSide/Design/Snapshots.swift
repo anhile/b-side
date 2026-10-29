@@ -209,31 +209,8 @@ enum Snapshots {
         }
     }
 
-    /// The sign-in panel's bar over a blank stand-in for Google's page.
-    private static func renderSignIn(into folder: URL) async {
-        let page = SignInPage()
-        page.host = "accounts.google.com"
-        for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
-            let stand = NSView(frame: NSRect(origin: .zero, size: Theme.Size.signInPanel))
-            stand.wantsLayer = true
-            stand.layer?.backgroundColor = NSColor.white.cgColor // Google's page is white either way
-            let window = NSWindow(contentRect: stand.frame, styleMask: [.borderless], backing: .buffered, defer: false)
-            window.contentView = SignInContainer(webView: stand, page: page) {}
-            window.appearance = NSAppearance(named: appearance)
-            window.isReleasedWhenClosed = false
-            window.setFrameOrigin(NSPoint(x: -4000, y: -4000))
-            window.orderFrontRegardless()
-            try? await Task.sleep(for: .seconds(0.8))
-            if let image = capture(window) {
-                try? image.write(to: folder.appendingPathComponent("signin-panel-\(suffix).png"))
-            }
-            window.close()
-        }
-    }
-
     static func render(into folder: URL) async {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        await renderSignIn(into: folder)
         await renderWidgets(into: folder)
         await renderNewVibe(into: folder)
         await renderSettings(into: folder)

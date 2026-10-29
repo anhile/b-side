@@ -312,22 +312,13 @@ Status: built 2026-10-03; the views are rendered by the snapshots
   the strip hidden, as Welcome (before, the same screen on every page, with
   Explore's search and the Playlists bar live around it)
 
-## Sign-in panel (Google's page)
+## Sign-in window (Google's page)
 
-- User's job here: sign in to Google, or give up
-- Primary action: Google's own; Cancel (outline, also Esc and Command-W)
-  closes the panel and returns to the player
-- Attention order: 1) Google's form 2) "Sign in to YouTube Music" 3) the
-  host with a lock ("accounts.google.com"), so it is plain where the
-  password goes
-- Laid out as a 480×680 panel over the player window's top, centred on
-  it: a bar of B-Side's own in place of the title bar (the record, turning
-  while a page loads; the title; the host; Cancel), a hairline, and the
-  page under it. Since 2026-10-29; before, a bare 1000×720 browser window
-  titled "Sign in to YouTube Music". Google's pages load their images,
-  fonts and styles (the player page blocks them)
-- Entry and exit: Sign In… on the sign-in screen, in Settings or in the
-  menu; it closes by itself when Google returns to YouTube Music
+- A plain 1000×720 window titled "Sign in to YouTube Music" with Google's
+  page, as the player page loads it (images, fonts and styles blocked).
+  From 2026-10-29 to the same evening a 480×680 panel with B-Side's own bar
+  and Google's page in full; Google asked for a g.co/sc security code on
+  every sign-in either way, and the user preferred the plain window back
 - Not the default browser: playback needs the session in the app's own
   web view, and a browser's cookies cannot reach it
 

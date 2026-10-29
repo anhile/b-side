@@ -91,10 +91,6 @@ enum Theme {
         /// The line along the bottom of Now Playing with the source and the
         /// output device.
         static var sourceBar: CGFloat { (32) * scale }
-        /// The bar over Google's sign-in page, in place of a title bar.
-        static var signInBar: CGFloat { (56) * scale }
-        /// Google's sign-in page fits its narrow layout in this.
-        static let signInPanel = CGSize(width: 480, height: 680)
         /// Two columns inside the window padding, with one gutter.
         /// A tile's least width: two in the window at its least size. In a
         /// wider window the tiles grow, then a third column comes.
