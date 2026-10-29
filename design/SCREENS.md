@@ -296,6 +296,12 @@ Status: built 2026-10-03; the views are rendered by the snapshots
   error page and jumped from the record when Welcome handed over). Continue
   as Guest says in its tooltip what a guest can do (search and radios, no
   library); a line for it at the bottom did not fit the least window
+- Since 2026-10-29 (SignInScreen): behind the record three sleeves in the
+  Vibe colours fan out after a beat, turned like records leaned in a crate:
+  Violet with the playlists glyph on the left, Ember with a heart
+  behind, Lagoon with the vibe glyph on the right; a wash of Ember from the
+  top. The record keeps Welcome's place, so the hand-over moves nothing;
+  with Reduce Motion the sleeves are simply there
 - Since 2026-10-29 one screen over the whole window, the page icons and
   the strip hidden, as Welcome (before, the same screen on every page, with
   Explore's search and the Playlists bar live around it)

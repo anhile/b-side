@@ -56,8 +56,8 @@ struct PlayerWindow: View {
                 if player.showsWelcome {
                     WelcomeScreen()
                         .transition(.opacity)
-                } else if player.showsSignIn, let signIn = blockingState(for: player) {
-                    signIn
+                } else if player.showsSignIn {
+                    SignInScreen()
                         .transition(.opacity)
                 } else {
                     pages

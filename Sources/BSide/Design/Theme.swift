@@ -167,6 +167,9 @@ enum Theme {
         static var vibeMark: CGFloat { tileHeight * 0.8 }
         static var vibeGlow: CGFloat { tileHeight * 1.1 }
         static var vibeShadow: CGFloat { (8) * scale }
+        /// The sleeves fanned out behind the sign-in screen's record, and their glyph.
+        static var signInSleeve: CGFloat { (132) * scale }
+        static var signInSleeveGlyph: CGFloat { (15) * scale }
         /// The colour choices in the Vibe editor.
         static var swatch: CGFloat { (18) * scale }
         static let currentRing: CGFloat = 2
@@ -223,6 +226,10 @@ enum Theme {
         static let vibeEdgeBottom: Double = 0.08
         static let vibeSubtitle: Double = 0.8
         static let vibeShadow: Double = 0.35
+        /// The sign-in screen: the record's shadow over the sleeves, and the
+        /// wash of Ember from the top.
+        static let signInShadow: Double = 0.3
+        static let signInWash: Double = 0.22
     }
 
     enum Motion {
@@ -237,6 +244,9 @@ enum Theme {
         static let feedback: Double = 0.15
         static let tooltipDelay: Double = 1.5
         static let page: Double = 0.3
+        /// The sign-in screen's sleeves fanning out, after a beat.
+        static let signInFan: Double = 0.9
+        static let signInFanDelay: Double = 0.15
         /// A tab changes the page at once, and the page fades in.
         static let pageFadeIn: Double = 0.15
         /// Half a cycle of a skeleton's breathing.
