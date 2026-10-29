@@ -19,7 +19,7 @@ struct SignInBar: View {
         VStack(spacing: 0) {
             HStack(spacing: Theme.Space.s) {
                 Record(size: Theme.Size.artworkSmall, spinning: page.isLoading)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Theme.Space.xxs / 2) {
                     Text("Sign in to YouTube Music")
                         .font(Theme.Text.title)
                         .foregroundStyle(Theme.Colors.text)

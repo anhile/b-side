@@ -285,7 +285,30 @@ gained air under the title bar (16 and 12).
 Status: built 2026-10-03; the views are rendered by the snapshots
 (`widget-*.png`), the widget itself was not seen on a desktop by Claude.
 
+## The screens without music (Welcome, Sign in, Nothing playing)
+
+Since 2026-10-29 one layout (StageLayout): a stage of one height (the
+record at 160 with a sleeve's rise above it), the title in the display
+role, two lines in body size (room for two always), the actions in a space
+of one height (a wide filled button, a quiet one in body size under it;
+empty while there are none), and a note at the bottom. In a short window
+the note goes, then the stage shrinks to 80%. Behind the record, three
+sleeves in the Vibe colours (RecordWithSleeves): folded on Welcome, fanned
+out on Sign in (playlists, vibes, a heart) and on Nothing playing (the
+first three Vibe tiles, the one Play Vibe plays behind; three colours even
+when two tiles share one). So one screen hands over to the next with the
+record in place and the sleeves coming out.
+
 ## Sign in (signed out, not a guest)
+
+- Since 2026-10-29 a carousel on the stage, as the website's tour: Your
+  music (the fanned sleeves), Vibes (four tiles), Now Playing (a sleeve
+  with the record half out, turning), Lyrics (five lines, the sung one in
+  semibold, moving on), Explore (the search field and three results), Out
+  of the way (the menu bar and its menu). The title and lines change with
+  it; Sign In… and Continue as Guest stay. Five seconds each, not while the
+  pointer rests on the stage; dots under the stage go to any one. Reduce
+  Motion: a cross-fade instead of a slide. Snapshots: signin-slide-N
 
 - User's job here: sign in, or go on as a guest
 - Primary action: Sign In… (filled); Continue as Guest under it, quiet

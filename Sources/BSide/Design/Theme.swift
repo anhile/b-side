@@ -173,6 +173,26 @@ enum Theme {
         /// The sign-in screen's own button, and how wide its lines of text run.
         static var prominentButton: CGFloat { (220) * scale }
         static var signInText: CGFloat { (300) * scale }
+        /// The screens without music (StageLayout): the stage's height (the
+        /// record and the sleeve above it), the actions' room (the wide
+        /// button and a quiet one under it), the lines' width, and how far
+        /// the stage shrinks in a short window.
+        static var stage: CGFloat { artworkLarge + signInSleeve * 0.2 }
+        static var stageActions: CGFloat { (76) * scale }
+        static var stageText: CGFloat { (300) * scale }
+        static let stageCompact: CGFloat = 0.8
+        /// The sign-in screen's slides: how far one moves in, the dots, and
+        /// the pictures' parts.
+        static var slideShift: CGFloat { (40) * scale }
+        static var slideDot: CGFloat { (6) * scale }
+        static var slideDotActive: CGFloat { (18) * scale }
+        static var slideWidth: CGFloat { (256) * scale }
+        static var slideTile: CGSize { CGSize(width: 124 * scale, height: 64 * scale) }
+        static var slideSleeve: CGFloat { (140) * scale }
+        static var slideGlyph: CGFloat { (40) * scale }
+        static var slideMenuBar: CGFloat { (24) * scale }
+        static var slideMenuRecord: CGFloat { (14) * scale }
+        static var slideMenu: CGFloat { (180) * scale }
         /// The colour choices in the Vibe editor.
         static var swatch: CGFloat { (18) * scale }
         static let currentRing: CGFloat = 2
@@ -233,6 +253,10 @@ enum Theme {
         /// wash of Ember from the top.
         static let signInShadow: Double = 0.3
         static let signInWash: Double = 0.22
+        /// The slides: the dots not shown, the lines not sung, the sleeve's glyph.
+        static let slideDot: Double = 0.35
+        static let slideLyric: Double = 0.7
+        static let slideGlyph: Double = 0.85
     }
 
     enum Motion {
@@ -250,6 +274,11 @@ enum Theme {
         /// The sign-in screen's sleeves fanning out, after a beat.
         static let signInFan: Double = 0.9
         static let signInFanDelay: Double = 0.15
+        /// The sign-in slides: how long each shows, the change between two,
+        /// and how long a line of the lyrics picture is sung.
+        static let slideSeconds: Double = 5
+        static let slideChange: Double = 0.5
+        static let slideLyricLine: Double = 1.6
         /// A tab changes the page at once, and the page fades in.
         static let pageFadeIn: Double = 0.15
         /// Half a cycle of a skeleton's breathing.

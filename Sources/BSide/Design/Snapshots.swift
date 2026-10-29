@@ -67,6 +67,7 @@ enum Snapshots {
             ("vibe-ad", .vibe, .fixture(state: ad, source: .mood(Mood.liked.id), playlists: lists)),
             ("nowplaying-loading", .nowPlaying, .fixture(state: loading, source: .mood(Mood.liked.id), playlists: lists)),
             ("nowplaying-empty", .nowPlaying, .fixture(playlists: lists)),
+            ("nowplaying-empty-vibes", .nowPlaying, .fixture(playlists: lists, moods: moods)),
             ("nowplaying-signedout", .nowPlaying, .fixture(account: .signedOut)),
             ("nowplaying-guest", .nowPlaying, .fixture(account: .signedOut, moods: [.liked], isGuest: true)),
             ("vibe-guest", .vibe, .fixture(account: .signedOut, moods: moods, isGuest: true)),
@@ -231,11 +232,34 @@ enum Snapshots {
         }
     }
 
+    /// Each picture of the sign-in screen's slides, as the stage shows it.
+    private static func renderSignInSlides(into folder: URL) async {
+        for slide in SignInSlide.allCases {
+            for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+                let hosting = NSHostingController(rootView: SignInSlideStage(slide: slide)
+                    .frame(width: Theme.Size.windowStart.width, height: Theme.Size.stage + Theme.Space.l * 2)
+                    .background(Theme.Colors.bg))
+                let window = NSWindow(contentViewController: hosting)
+                window.styleMask = [.borderless]
+                window.appearance = NSAppearance(named: appearance)
+                window.isReleasedWhenClosed = false
+                window.setFrameOrigin(NSPoint(x: -4000, y: -4000))
+                window.orderFrontRegardless()
+                try? await Task.sleep(for: .seconds(1.2))
+                if let image = capture(window) {
+                    try? image.write(to: folder.appendingPathComponent("signin-slide-\(slide.rawValue)-\(suffix).png"))
+                }
+                window.close()
+            }
+        }
+    }
+
     static func render(into folder: URL) async {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         await renderSignIn(into: folder)
         await renderWidgets(into: folder)
         await renderNewVibe(into: folder)
+        await renderSignInSlides(into: folder)
         await renderSettings(into: folder)
         AudioOutputs.shared.sampleElsewhere = AudioOutput(id: 0, name: "AirPods Pro", symbol: "headphones", uid: "")
         await renderPage(.nowPlaying, player: .fixture(state: track, source: .mood(Mood.liked.id)),

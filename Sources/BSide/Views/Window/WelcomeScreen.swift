@@ -5,7 +5,8 @@ import SwiftUI
 /// then takes a few seconds. The record turns; there is nothing to press,
 /// until it takes long: then the line says so, and later Try Again shows
 /// where "Nothing playing" has its buttons.
-/// Laid out like "Nothing playing", so the record stays put when it follows.
+/// Laid out as signing in and "Nothing playing" (StageLayout), so the
+/// record stays put when either follows.
 struct WelcomeScreen: View {
     @EnvironmentObject private var player: PlayerController
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -26,23 +27,15 @@ struct WelcomeScreen: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: Theme.Space.m)
-            Record(size: Theme.Size.artworkLarge, spinning: true)
-            Spacer(minLength: Theme.Space.l)
-            Text(failed ? "Not connected" : returning ? "Welcome back" : "Hello")
-                .font(Theme.Text.display)
-                .foregroundStyle(Theme.Colors.text)
-            Text(line)
-                .font(Theme.Text.caption)
-                .foregroundStyle(Theme.Colors.textMuted)
-                .padding(.top, Theme.Space.xxs)
-                .contentTransition(.opacity)
-            // The height of the buttons under "Nothing playing": empty,
-            // then Try Again. With Reduce Motion the record stands still,
-            // so a spinner here shows that something is going on.
+        StageLayout(title: failed ? "Not connected" : returning ? "Welcome back" : "Hello", text: line) {
+            // The sleeves folded behind the record: they fan out on the
+            // screen that follows.
+            RecordWithSleeves(fanned: false, spinning: !failed)
+        } actions: {
+            // Empty, then Try Again. With Reduce Motion the record stands
+            // still, so a spinner here shows that something is going on.
             Button { player.retry() } label: { Label("Try Again", systemImage: "arrow.clockwise") }
-                .buttonStyle(OutlineButtonStyle())
+                .buttonStyle(FilledButtonStyle(prominent: true))
                 .opacity(showsRetry ? 1 : 0)
                 .allowsHitTesting(showsRetry)
                 .accessibilityHidden(!showsRetry)
@@ -51,10 +44,7 @@ struct WelcomeScreen: View {
                         ProgressView().controlSize(.small)
                     }
                 }
-                .padding(.top, Theme.Space.m)
-            Spacer(minLength: Theme.Space.l)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(.easeInOut(duration: Theme.Motion.page), value: player.startWait)
         .animation(.easeInOut(duration: Theme.Motion.page), value: failed)
     }

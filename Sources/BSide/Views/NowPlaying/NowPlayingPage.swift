@@ -254,43 +254,27 @@ struct NowPlayingPage: View {
         player.state.isAd ? player.state.title : player.state.artist
     }
 
-    /// The record alone, and the two ways to start: the same words and icons
-    /// as the pages they lead to.
+    /// Laid out as Welcome and signing in (StageLayout): the record with
+    /// the first Vibe tiles fanned out behind it as sleeves, and the two
+    /// ways to start, in the words and icons of the pages they lead to.
     private var nothingPlaying: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: Theme.Space.m)
-            Record(size: Theme.Size.artworkLarge, spinning: false)
-            Spacer(minLength: Theme.Space.l)
-            Text("Nothing playing")
-                .font(Theme.Text.display)
-                .foregroundStyle(Theme.Colors.text)
-            Text(player.isGuest ? "Add a vibe from a track, or sign in" : "Pick a vibe or a playlist")
-                .font(Theme.Text.caption)
-                .foregroundStyle(Theme.Colors.textMuted)
-                .padding(.top, Theme.Space.xxs)
-            HStack(spacing: Theme.Space.xs) {
-                Button { player.playVibe() } label: {
-                    Label("Play Vibe", systemImage: Page.vibe.symbol)
-                }
-                .buttonStyle(FilledButtonStyle())
+        StageLayout(title: "Nothing playing",
+                    text: player.isGuest ? "Add a vibe from a track,\nor sign in for your library."
+                                         : "Pick a vibe or a playlist.\nThe record waits for you.") {
+            RecordWithSleeves(sleeves: StageSleeve.vibes(of: player))
+        } actions: {
+            Button { player.playVibe() } label: { Label("Play Vibe", systemImage: Page.vibe.symbol) }
+                .buttonStyle(FilledButtonStyle(prominent: true))
                 .disabled(player.vibeMood == nil)
-                // A guest has no playlists: the way to them is signing in.
-                if player.isGuest {
-                    Button { player.showSignIn() } label: {
-                        Label("Sign In…", systemImage: "person.crop.circle")
-                    }
-                    .buttonStyle(OutlineButtonStyle())
-                } else {
-                    Button { navigation.page = .playlists } label: {
-                        Label("Playlists", systemImage: Page.playlists.symbol)
-                    }
-                    .buttonStyle(OutlineButtonStyle())
-                }
+            // A guest has no playlists: the way to them is signing in.
+            if player.isGuest {
+                Button("Sign In\u{2026}") { player.showSignIn() }
+                    .buttonStyle(QuietButtonStyle(font: Theme.Text.body))
+            } else {
+                Button("Open Playlists") { navigation.page = .playlists }
+                    .buttonStyle(QuietButtonStyle(font: Theme.Text.body))
             }
-            .padding(.top, Theme.Space.m)
-            Spacer(minLength: Theme.Space.l)
         }
-        .frame(maxWidth: .infinity)
     }
 
     private var progress: some View {
