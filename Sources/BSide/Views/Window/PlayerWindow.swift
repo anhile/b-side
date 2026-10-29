@@ -52,6 +52,8 @@ struct PlayerWindow: View {
                 .frame(height: barHeight)
                 // Playlists and Explore put their own bar right under it.
                 .barGlass(joined: Page.withBar.contains(navigation.page) ? .bottom : [], hidden: player.coversPages)
+                // Over the pages, so a tab's tooltip is not under a Vibe tile.
+                .zIndex(1)
             ZStack {
                 if player.showsWelcome {
                     WelcomeScreen()

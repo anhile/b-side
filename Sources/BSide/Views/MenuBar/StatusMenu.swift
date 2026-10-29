@@ -196,27 +196,13 @@ private struct StatusMenuHead: View {
     }
 }
 
-/// The status item's icon: a record, drawn as a template so it follows the
-/// menu bar's colour.
+/// The status item's icon: the Now Playing tab's record, as a template so
+/// it follows the menu bar's colour.
 enum MenuBarIcon {
     static let image: NSImage = {
-        let size = NSSize(width: 18, height: 18)
-        let image = NSImage(size: size, flipped: false) { rect in
-            let disc = rect.insetBy(dx: 1, dy: 1)
-            NSColor.black.setFill() // tokens-ok: a template image, colour comes from the menu bar
-            NSBezierPath(ovalIn: disc).fill()
-            NSColor.black.setStroke() // tokens-ok
-            // Two grooves, cut out of the disc.
-            for inset: CGFloat in [4, 6] {
-                let groove = NSBezierPath(ovalIn: disc.insetBy(dx: inset, dy: inset))
-                groove.lineWidth = 0.6
-                NSGraphicsContext.current?.compositingOperation = .destinationOut
-                groove.stroke()
-            }
-            NSGraphicsContext.current?.compositingOperation = .destinationOut
-            NSBezierPath(ovalIn: disc.insetBy(dx: 7, dy: 7)).fill()
-            return true
-        }
+        let config = NSImage.SymbolConfiguration(pointSize: Tuning.menuBarIconPoints, weight: .regular)
+        let image = NSImage(systemSymbolName: Page.nowPlaying.symbol, accessibilityDescription: "B-Side")?
+            .withSymbolConfiguration(config) ?? NSImage()
         image.isTemplate = true
         return image
     }()

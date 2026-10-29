@@ -200,7 +200,7 @@ private struct MenuBarPicture: View {
                 Spacer(minLength: 0)
                 Image(systemName: "wifi")
                 Image(systemName: "battery.75percent")
-                Record(size: Theme.Size.slideMenuRecord, spinning: true)
+                Image(systemName: Page.nowPlaying.symbol) // the app's icon in the menu bar
                 Text("9:41")
             }
             .font(Theme.Text.caption)

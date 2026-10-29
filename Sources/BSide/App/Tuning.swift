@@ -63,6 +63,8 @@ enum Tuning {
     static let googleSessionCookiePrefixes = ["__Secure-1PSID", "__Secure-3PSID", "__Secure-1PAPISID",
                                               "__Secure-3PAPISID", "__Host-1PLSID", "__Host-3PLSID",
                                               "__Secure-OSID", "__Secure-1PSIDCC", "__Secure-3PSIDCC"]
+    /// The menu bar icon's size, in points: as tall as the system's own.
+    static let menuBarIconPoints: CGFloat = 15
     static let signIn = URL(string:
         "https://accounts.google.com/ServiceLogin?service=youtube&continue=https%3A%2F%2Fmusic.youtube.com%2F")!
 

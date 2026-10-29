@@ -191,7 +191,6 @@ enum Theme {
         static var slideSleeve: CGFloat { (140) * scale }
         static var slideGlyph: CGFloat { (40) * scale }
         static var slideMenuBar: CGFloat { (24) * scale }
-        static var slideMenuRecord: CGFloat { (14) * scale }
         static var slideMenu: CGFloat { (180) * scale }
         /// The colour choices in the Vibe editor.
         static var swatch: CGFloat { (18) * scale }

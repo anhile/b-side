@@ -57,7 +57,12 @@ final class SettingsWindow: NSObject, NSToolbarDelegate {
         guard tab != self.tab else { return }
         self.tab = tab
         window.toolbar?.selectedItemIdentifier = Self.identifier(tab)
-        window.contentViewController = Self.pane(tab, player: player)
+        // The new pane comes in at the window's present size; the window
+        // would take the pane's own size first, jumping in width and
+        // height, and only then ease to the new height.
+        let pane = Self.pane(tab, player: player)
+        pane.view.setFrameSize(window.contentLayoutRect.size)
+        window.contentViewController = pane
         fit(keepingTop: true)
     }
 
