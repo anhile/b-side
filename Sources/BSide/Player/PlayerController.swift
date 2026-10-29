@@ -1473,12 +1473,15 @@ final class PlayerController: NSObject, ObservableObject {
         }
     }
 
-    /// YouTube's cookies all belong to the session; Google's only those that
-    /// carry the sign-in, not the ones that know the device.
+    /// YouTube's cookies all belong to the session; Google's (on google.com
+    /// and the country domains, where it sets the sign-in too) only those
+    /// that carry the sign-in, not the ones that know the device.
     nonisolated private static func isSessionCookie(_ cookie: HTTPCookie) -> Bool {
         let domain = cookie.domain.hasPrefix(".") ? String(cookie.domain.dropFirst()) : cookie.domain
         if domain == "youtube.com" || domain.hasSuffix(".youtube.com") { return true }
-        guard domain == "google.com" || domain.hasSuffix(".google.com") else { return false }
+        // Google's own in every country: google.com, google.ge, google.co.uk.
+        guard domain.range(of: #"(^|\.)google\.[a-z]{2,3}(\.[a-z]{2})?$"#, options: .regularExpression) != nil
+        else { return false }
         return Tuning.googleSessionCookies.contains(cookie.name)
             || Tuning.googleSessionCookiePrefixes.contains { cookie.name.hasPrefix($0) }
     }
