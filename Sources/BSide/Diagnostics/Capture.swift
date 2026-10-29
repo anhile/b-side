@@ -53,6 +53,15 @@ enum Capture {
             try? rep.representation(using: .png, properties: [:])?.write(to: folder.appendingPathComponent(name))
         }
         navigation.page = shown
+        // The sign-in panel, when it is open (`-signIn YES`).
+        for other in NSApp.windows where other !== window && other.isVisible && other.title.hasPrefix("Sign in") {
+            other.setFrameOrigin(NSPoint(x: -6000, y: -4000))
+            try? await Task.sleep(for: .seconds(0.5))
+            guard let view = other.contentView, let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { continue }
+            view.cacheDisplay(in: view.bounds, to: rep)
+            let name = String(format: "t%03d-signin.png", tag)
+            try? rep.representation(using: .png, properties: [:])?.write(to: folder.appendingPathComponent(name))
+        }
         EventLog.write("capture\tat \(tag) s")
     }
 }

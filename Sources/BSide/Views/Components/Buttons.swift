@@ -44,7 +44,9 @@ struct OutlineButtonStyle: ButtonStyle {
             .foregroundStyle(Theme.Colors.text)
             .padding(.horizontal, Theme.Space.m)
             .padding(.vertical, Theme.Space.xs)
-            .background(Capsule().strokeBorder(Theme.Colors.controlBorder))
+            // A continuous capsule's outline draws stray ticks at its ends
+            // on macOS 27; the circular one does not.
+            .background(Capsule(style: .circular).strokeBorder(Theme.Colors.controlBorder))
             .contentShape(Capsule())
             .pointingHand(isEnabled)
             .opacity(configuration.isPressed ? Theme.Opacity.pressed : isEnabled ? 1 : Theme.Opacity.disabled)

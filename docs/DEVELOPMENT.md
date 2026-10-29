@@ -103,6 +103,7 @@ exist only as arguments:
 | `-captureSize 500x700` | With `-captureTo`: the window at that size first |
 | `-scratch YES` | Settings, vibes and the last session come from a throwaway domain, so a test run leaves yours alone (the Google session is shared either way) |
 | `-freshStart YES` | A first launch: scratch settings and a Google session that lives only in memory, so the run starts signed out and leaves the real session alone. Scratch and fresh runs share one domain (`com.anhile.bside.snapshot`): run them one after another, not side by side |
+| `-signIn YES` | Opens the sign-in panel once the page is ready, when signed out; with `-captureTo` the panel is written too (`tNNN-signin.png`) |
 | `-ApplePersistenceIgnoreState YES` | macOS: skips the "restore windows?" prompt after a killed run |
 
 The full list, with the stored settings, is in

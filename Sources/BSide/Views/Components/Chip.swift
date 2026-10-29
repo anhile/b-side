@@ -31,7 +31,7 @@ struct Chip: View {
             .padding(.horizontal, Theme.Space.xs)
             .padding(.vertical, Theme.Space.xxs)
             .background(Theme.Colors.text.opacity(hovering ? Theme.Opacity.hover : 0), in: Capsule())
-            .overlay { Capsule().strokeBorder(Theme.Colors.controlBorder) }
+            .overlay { Capsule(style: .circular).strokeBorder(Theme.Colors.controlBorder) }
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
