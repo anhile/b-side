@@ -1457,7 +1457,7 @@ final class PlayerController: NSObject, ObservableObject {
         let store = webView.configuration.websiteDataStore
         var types = WKWebsiteDataStore.allWebsiteDataTypes()
         types.remove(WKWebsiteDataTypeCookies)
-        store.removeData(ofTypes: types, modifiedSince: .distantPast) {
+        store.removeData(ofTypes: types, modifiedSince: .distantPast) { [weak self] in
             store.httpCookieStore.getAllCookies { cookies in
                 let session = cookies.filter(Self.isSessionCookie)
                 let group = DispatchGroup()
@@ -1465,7 +1465,7 @@ final class PlayerController: NSObject, ObservableObject {
                     group.enter()
                     store.httpCookieStore.delete(cookie) { group.leave() }
                 }
-                group.notify(queue: .main) { [weak self] in
+                group.notify(queue: .main) {
                     EventLog.write("sign out\t\(session.count) session cookies removed")
                     MainActor.assumeIsolated { self?.loadHome() }
                 }
