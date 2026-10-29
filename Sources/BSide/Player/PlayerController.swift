@@ -20,6 +20,11 @@ final class PlayerController: NSObject, ObservableObject {
     @Published private(set) var isLoading = false
     /// The music has waited for data for a while (Tuning.bufferingNoticeSeconds).
     @Published private(set) var showsBuffering = false
+    /// The Mac has no network: a wait says it waits for the connection.
+    @Published private(set) var isOffline = false
+    /// Reports from the page are ignored after a sign-out until the page
+    /// starts again, so a late one does not bring the old track back.
+    private var ignoresReports = false
     /// What plays after the current track, in order; a track's `index` is
     /// its place in the page's queue.
     @Published private(set) var upNext: [Track] = []
@@ -207,7 +212,9 @@ final class PlayerController: NSObject, ObservableObject {
 
         let configuration = WKWebViewConfiguration()
         configuration.userContentController = contentController
-        configuration.websiteDataStore = .default() // persistent cookies, so sign-in survives relaunch
+        // Persistent cookies, so sign-in survives relaunch; a fresh start
+        // (debug) has none and keeps none.
+        configuration.websiteDataStore = Settings.isFreshStart ? .nonPersistent() : .default()
         Net.apply(to: configuration.websiteDataStore)
         configuration.mediaTypesRequiringUserActionForPlayback = []
         configuration.preferences.inactiveSchedulingPolicy = Tuning.inactiveScheduling
@@ -215,11 +222,12 @@ final class PlayerController: NSObject, ObservableObject {
         bridge.onState = { [weak self] in self?.handle(state: $0) }
         WidgetFeed.start { [weak self] in self?.perform($0) }
         pathMonitor.pathUpdateHandler = { [weak self] path in
-            guard path.status == .satisfied else { return }
+            let online = path.status == .satisfied
             Task { @MainActor in
-                guard let self, case .failed = self.phase else { return }
-                EventLog.write("net\tback; starting the page again")
-                self.retry()
+                guard let self else { return }
+                if self.isOffline == online { self.isOffline = !online }
+                guard online else { return }
+                self.connectionBack()
             }
         }
         pathMonitor.start(queue: .global(qos: .utility))
@@ -317,15 +325,35 @@ final class PlayerController: NSObject, ObservableObject {
     /// through `load`; showing the window or the menu does it here, since
     /// the user is about to look at the account, playlists or Vibe tiles.
     func wake() {
+        // Asleep: started in the menu bar, or unloaded after a long pause.
         guard phase == .asleep else { return }
         EventLog.write("wake")
         loadHome()
     }
 
-    /// The page is loading and there is nothing else to show yet: the window
-    /// shows the welcome screen instead of empty pages.
+    /// The page is loading and there is nothing else to show yet, or it
+    /// failed to start: the window shows the welcome screen instead of
+    /// pages that could only each say the same thing. Not after a sign-out:
+    /// the sign-in screen is known to come next.
     var showsWelcome: Bool {
-        !hasTrack && (phase == .asleep || phase == .starting)
+        if case .failed = phase { return true }
+        return !hasTrack && (phase == .asleep || phase == .starting) && account != .signedOut
+    }
+
+    /// Signed out and not a guest: one sign-in screen over the whole
+    /// window, not the same one on every page.
+    var showsSignIn: Bool {
+        account == .signedOut && !isGuest && !hasTrack && !showsWelcome
+    }
+
+    /// The pages are hidden, with their tabs.
+    var coversPages: Bool { showsWelcome || showsSignIn }
+
+    /// What a wait is called under the track: a Play that waits for the
+    /// page or the track, or music that waits for data.
+    var waitText: String {
+        if isOffline { return "Waiting for the connection…" }
+        return isLoading ? "Loading…" : "Buffering…"
     }
 
     private func installScripts() {
@@ -369,6 +397,9 @@ final class PlayerController: NSObject, ObservableObject {
             guard !Task.isCancelled else { return }
             self?.startWait = .tooLong
             EventLog.write("error\tstart: the page is not ready after \(Int(Tuning.startRetrySeconds)) s")
+            // A restored track covers the welcome screen, which says this;
+            // the strip says it instead.
+            if let self, self.hasTrack, self.problem == nil { self.problem = Self.slowStart }
         }
         webView.loadHTMLString(Tuning.emptyPage, baseURL: Tuning.musicHome)
     }
@@ -378,6 +409,27 @@ final class PlayerController: NSObject, ObservableObject {
         problem = nil
         loadHome()
     }
+
+    /// The network is back: what failed for want of it is asked for again,
+    /// so no page keeps an error the user would have to clear by hand.
+    private func connectionBack() {
+        if case .failed = phase {
+            EventLog.write("net\tback; starting the page again")
+            return retry()
+        }
+        guard pageReady else { return }
+        if case .failed = playlistsState, account.isSignedIn { loadPlaylists() }
+        if case .failed = searchState { retrySearch() }
+        if case .failed = tracksState { retryTracks() }
+        if case .failed = lyricsState { lyricsState = .idle; lyricsRequested = ""; loadLyrics() }
+        for id in exploreFailures { exploreFailures.remove(id); retryExplorePage(id) }
+        if problem == Self.slowStart || problem == Self.loadFailed { problem = nil }
+    }
+
+    /// Said in the strip when a restored track waits for a page that is slow
+    /// to start, and when a load failed for want of the network.
+    private static let slowStart = "YouTube Music is slow to answer. Check the connection."
+    private static let loadFailed = "This could not be played. Check the connection and try again."
 
     func applyNowPlayingSetting() {
         nowPlaying.setEnabled(Settings.bool(Keys.nativeNowPlaying))
@@ -672,6 +724,16 @@ final class PlayerController: NSObject, ObservableObject {
     /// its own, an ad, or a list whose name is unknown.
     var sourceLabel: SourceLabel? {
         guard hasTrack, !state.isAd else { return nil }
+        return label(of: source)
+    }
+
+    /// The first line while a track has no title yet: what is starting
+    /// ("Liked Music"), so the line under it can say "Loading…" alone.
+    var titleWhileLoading: String {
+        label(of: source)?.name ?? "Loading…"
+    }
+
+    private func label(of source: PlaySource?) -> SourceLabel? {
         switch source {
         case .mood(let id):
             guard let mood = moods.first(where: { $0.id == id }) else { return nil }
@@ -1209,13 +1271,18 @@ final class PlayerController: NSObject, ObservableObject {
             sendToPage(target, startAt: position)
         } else {
             pendingTarget = (target, position)
-            if webView.url?.host != Tuning.musicHome.host { loadHome() }
+            // Waiting for the page counts as loading: "Loading…" shows if
+            // it lasts.
+            isLoading = true
+            noteBuffering(true)
+            if webView.url?.host != Tuning.musicHome.host || phase == .asleep { loadHome() }
         }
     }
 
     private func sendToPage(_ target: PlayTarget, startAt position: Double?) {
         defer { skipAfterLoad = 0 }
         isLoading = true
+        noteBuffering(true)
         if let video = target.videoID, let list = target.listID, let position {
             // Resuming: the same track at its position, and the list goes
             // on after it.
@@ -1279,6 +1346,12 @@ final class PlayerController: NSObject, ObservableObject {
     // MARK: - Account
 
     func showSignIn() {
+        // The page goes to Google's: the track stops and waits for Play,
+        // where it was, instead of freezing on screen as if playing.
+        if hasTrack, unloaded == nil {
+            if state.isPlaying { pause() }
+            unloaded = (currentTarget, position(at: Date()))
+        }
         signingIn = true
         window.title = "Sign in to YouTube Music"
         webView.load(URLRequest(url: Tuning.signIn))
@@ -1299,8 +1372,21 @@ final class PlayerController: NSObject, ObservableObject {
         nowPlaying.update(state)
         playlists = []
         playlistsState = .idle
+        // Nothing of the old account stays on screen: its open playlist,
+        // its search, its Explore pages.
+        closePlaylist()
+        searchAsked = nil
+        searchResults = []
+        searchState = .idle
+        artistPages = [:]
+        collectionPages = [:]
+        exploreFailures = []
+        isLoading = false
+        noteBuffering(false)
+        problem = nil
+        ignoresReports = true
         account = .signedOut
-        WKWebsiteDataStore.default().removeData(
+        webView.configuration.websiteDataStore.removeData(
             ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast
         ) { [weak self] in
             Task { @MainActor in self?.loadHome() }
@@ -1325,7 +1411,7 @@ final class PlayerController: NSObject, ObservableObject {
     // MARK: - Page messages
 
     private func handle(state new: PlayerState) {
-        guard unloaded == nil else { return }
+        guard unloaded == nil, !ignoresReports else { return }
         var new = new
         if let expected {
             if Date() < expected.until, new.isPlaying != expected.isPlaying {
@@ -1339,7 +1425,7 @@ final class PlayerController: NSObject, ObservableObject {
         if !new.videoID.isEmpty { isLoading = false }
         clock = clock.following(new, at: Date(), sameTrack: new.videoID == old.videoID)
         nowPlaying.update(new)
-        noteBuffering(new.isPlaying && new.isBuffering)
+        noteBuffering((new.isPlaying && new.isBuffering) || isLoading)
 
         // The title arrives a moment after the video ID, so wait for it.
         if !new.title.isEmpty, new.videoID != old.videoID || new.title != old.title {
@@ -1397,6 +1483,8 @@ final class PlayerController: NSObject, ObservableObject {
         case "ready":
             phase = .ready
             pageReady = true
+            ignoresReports = false
+            if problem == Self.slowStart { problem = nil }
             bridge.call("volume", volume)
             bridge.call("repeat", repeatMode.rawValue)
             if account.isSignedIn { loadPlaylists() }
@@ -1424,17 +1512,28 @@ final class PlayerController: NSObject, ObservableObject {
                 loadingMoreTracks = false
                 if tracks.isEmpty { tracksState = .failed("The tracks of this playlist could not be loaded.") }
             } else if detail.hasPrefix("playlists") {
-                playlistsState = .failed("The list of playlists could not be loaded.")
+                // A list on screen stays; only an empty page shows the error.
+                if playlists.isEmpty { playlistsState = .failed("The list of playlists could not be loaded.") }
             } else if detail.hasPrefix("load") {
-                problem = "This could not be played. It may be empty or unavailable."
-                forgetWhatWasAsked()
+                isLoading = false
+                noteBuffering(false)
+                if detail.contains("empty or not accessible") {
+                    // Gone (deleted on the web, say): forget it.
+                    problem = "This could not be played. It may be empty or unavailable."
+                    forgetWhatWasAsked()
+                } else {
+                    // The network, most likely: the track stays for another try.
+                    problem = Self.loadFailed
+                }
             } else if detail.hasPrefix("player error") {
                 isLoading = false
+                noteBuffering(false)
                 problem = "This track could not be played."
             } else if detail.hasPrefix("playlist edit") {
                 show(notice: "The playlist could not be changed. Try again.")
             } else if detail.hasPrefix("like") {
-                problem = "The like could not be saved."
+                // A notice, not a problem: a problem takes the strip's place.
+                show(notice: "The like could not be saved.")
             }
         default:
             EventLog.write("\(kind)\t\(detail)")
@@ -1463,9 +1562,17 @@ final class PlayerController: NSObject, ObservableObject {
             guard bufferingTask == nil else { return }
             bufferingTask = Task { [weak self] in
                 try? await Task.sleep(for: .seconds(Tuning.bufferingNoticeSeconds))
-                guard !Task.isCancelled, let self, self.state.isPlaying, self.state.isBuffering else { return }
+                guard !Task.isCancelled, let self, (self.state.isPlaying && self.state.isBuffering) || self.isLoading else { return }
                 self.showsBuffering = true
                 EventLog.write("buffering\t\(self.state.videoID) at \(Int(self.state.position)) s")
+                // A load that never ends: say so, and keep the track.
+                try? await Task.sleep(for: .seconds(Tuning.loadTimeoutSeconds))
+                guard !Task.isCancelled, self.isLoading else { return }
+                self.isLoading = false
+                self.showsBuffering = false
+                self.bufferingTask = nil
+                self.problem = Self.loadFailed
+                EventLog.write("error\tload: nothing after \(Int(Tuning.loadTimeoutSeconds)) s")
             }
         } else {
             bufferingTask?.cancel()
@@ -1504,6 +1611,8 @@ final class PlayerController: NSObject, ObservableObject {
         unloaded = (currentTarget, state.position)
         EventLog.write("unloaded after \(minutes) min paused")
         webView.load(URLRequest(url: URL(string: "about:blank")!))
+        // Asleep, so a search, a playlist or an Explore page wakes it.
+        phase = .asleep
     }
 
     private func sampleProcesses() {

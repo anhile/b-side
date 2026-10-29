@@ -39,15 +39,15 @@ struct PlayerWindow: View {
                         .id(navigation.page)
                         .transition(.opacity)
                         .padding(.leading, Theme.Size.trafficLights)
-                        .opacity(player.showsWelcome ? 0 : 1)
+                        .opacity(player.coversPages ? 0 : 1)
                         .allowsHitTesting(false) // the bar under it moves the window
                         .animation(.easeOut(duration: Theme.Motion.page), value: navigation.page)
                 }
                 .overlay(alignment: .trailing) {
                     PageTabs(page: $navigation.page)
                         .padding(.trailing, Theme.Space.xs)
-                        .opacity(player.showsWelcome ? 0 : 1)
-                        .allowsHitTesting(!player.showsWelcome)
+                        .opacity(player.coversPages ? 0 : 1)
+                        .allowsHitTesting(!player.coversPages)
                 }
                 .frame(height: barHeight)
                 // Playlists and Explore put their own bar right under it.
@@ -56,12 +56,16 @@ struct PlayerWindow: View {
                 if player.showsWelcome {
                     WelcomeScreen()
                         .transition(.opacity)
+                } else if player.showsSignIn, let signIn = blockingState(for: player) {
+                    signIn
+                        .transition(.opacity)
                 } else {
                     pages
                         .transition(.opacity)
                 }
             }
             .animation(.easeInOut(duration: Theme.Motion.page), value: player.showsWelcome)
+            .animation(.easeInOut(duration: Theme.Motion.page), value: player.showsSignIn)
                 .overlay(alignment: .bottom) {
                     VStack(spacing: Theme.Space.xs) {
                         if let notice = player.notice {
@@ -231,8 +235,11 @@ struct PlayerWindow: View {
         page != .nowPlaying || player.problem != nil ? Theme.Size.stripHeight + Theme.Space.xs * 2 : 0
     }
 
+    /// Nothing under Welcome and the sign-in screen: they speak for the
+    /// player themselves.
     private var showsFooter: Bool {
-        player.problem != nil || ((player.hasTrack || player.isLoading) && navigation.page != .nowPlaying)
+        guard !player.coversPages else { return false }
+        return player.problem != nil || ((player.hasTrack || player.isLoading) && navigation.page != .nowPlaying)
     }
 
     /// The strip shows on Vibe and Playlists while something plays; Now

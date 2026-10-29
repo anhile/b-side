@@ -63,6 +63,14 @@ make them 15% and 30% bigger, and the window's least size with them.
   the clock ran on and the page looked as if it played
 - While a track or list is being asked for, the page shows it loading
   ("Loading…", the artwork's placeholder) rather than "Nothing playing"
+- Since 2026-10-29 the line under the title names the wait: "Loading…"
+  while a track is asked for (also while the page itself still loads),
+  "Buffering…" while it plays, "Waiting for the connection…" offline. Until
+  the track's title comes, the title line names what starts ("Liked
+  Music"). After 30 s still loading: the problem line "This could not be
+  played. Check the connection and try again." in the strip's place, the
+  track kept; when the connection comes back, failed lists and pages load
+  again and that line goes
 - The track from last time: Next and Previous work on it too; its list is
   loaded and the next (previous) track plays. Something that no longer
   exists (a playlist deleted on the web) gives "Nothing playing" with the
@@ -288,7 +296,9 @@ Status: built 2026-10-03; the views are rendered by the snapshots
   error page and jumped from the record when Welcome handed over). Continue
   as Guest says in its tooltip what a guest can do (search and radios, no
   library); a line for it at the bottom did not fit the least window
-- On Now Playing, Vibe and Playlists alike
+- Since 2026-10-29 one screen over the whole window, the page icons and
+  the strip hidden, as Welcome (before, the same screen on every page, with
+  Explore's search and the Playlists bar live around it)
 
 ## Welcome (while the player page loads)
 
@@ -302,8 +312,12 @@ Status: built 2026-10-03; the views are rendered by the snapshots
   ready. Check the connection." with Try Again where "Nothing
   playing" has its buttons. With Reduce Motion a small spinner stands there
   until then, since the record does not turn
-- Entry and exit: covers all three pages; the page icons are hidden. It ends
-  when the page reports ready or fails
+- Failed (no connection at the start, since 2026-10-29): "Not connected",
+  the reason ("YouTube Music could not be loaded. Check the connection and
+  try again.") and Try Again, over the whole window instead of a small
+  error on each page; it tries again by itself when the connection returns
+- Entry and exit: covers all pages; the page icons and the strip are
+  hidden. It ends when the page reports ready
 
 Status: built 2026-09-30. Laid out like "Nothing playing", with the buttons'
 height kept empty, so the record and the title stay put when it hands over.

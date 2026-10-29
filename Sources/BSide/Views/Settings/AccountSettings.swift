@@ -10,7 +10,13 @@ struct AccountSettings: View {
             Section {
                 switch player.account {
                 case .unknown:
-                    LabeledContent("YouTube Music", value: "Checking…")
+                    // No answer comes from a page that did not start.
+                    if case .failed = player.phase {
+                        LabeledContent("YouTube Music", value: "Not connected")
+                        Button("Try Again") { player.retry() }
+                    } else {
+                        LabeledContent("YouTube Music", value: "Checking…")
+                    }
                 case .signedOut:
                     LabeledContent("YouTube Music", value: "Not signed in")
                     Button("Sign In…") { player.showSignIn() }

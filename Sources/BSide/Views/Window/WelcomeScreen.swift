@@ -11,8 +11,14 @@ struct WelcomeScreen: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var returning: Bool { Settings.bool(Keys.wasSignedIn) }
 
+    private var failed: Bool {
+        if case .failed = player.phase { return true }
+        return false
+    }
+
     private var line: String {
-        switch player.startWait {
+        if case .failed(let reason) = player.phase { return reason }
+        return switch player.startWait {
         case .short: "Getting the player ready"
         case .long: "Taking longer than usual\u{2026}"
         case .tooLong: "Still not ready. Check the connection."
@@ -24,7 +30,7 @@ struct WelcomeScreen: View {
             Spacer(minLength: Theme.Space.m)
             Record(size: Theme.Size.artworkLarge, spinning: true)
             Spacer(minLength: Theme.Space.l)
-            Text(returning ? "Welcome back" : "Hello")
+            Text(failed ? "Not connected" : returning ? "Welcome back" : "Hello")
                 .font(Theme.Text.display)
                 .foregroundStyle(Theme.Colors.text)
             Text(line)
@@ -37,11 +43,11 @@ struct WelcomeScreen: View {
             // so a spinner here shows that something is going on.
             Button { player.retry() } label: { Label("Try Again", systemImage: "arrow.clockwise") }
                 .buttonStyle(OutlineButtonStyle())
-                .opacity(player.startWait == .tooLong ? 1 : 0)
-                .allowsHitTesting(player.startWait == .tooLong)
-                .accessibilityHidden(player.startWait != .tooLong)
+                .opacity(showsRetry ? 1 : 0)
+                .allowsHitTesting(showsRetry)
+                .accessibilityHidden(!showsRetry)
                 .overlay {
-                    if reduceMotion, player.startWait != .tooLong {
+                    if reduceMotion, !showsRetry {
                         ProgressView().controlSize(.small)
                     }
                 }
@@ -50,5 +56,9 @@ struct WelcomeScreen: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(.easeInOut(duration: Theme.Motion.page), value: player.startWait)
+        .animation(.easeInOut(duration: Theme.Motion.page), value: failed)
     }
+
+    /// Try Again once the start has taken too long, or has failed.
+    private var showsRetry: Bool { failed || player.startWait == .tooLong }
 }

@@ -25,7 +25,7 @@ struct NowPlayingStrip: View {
                         if player.state.isAd, player.state.adLeft >= 0 {
                             AdCountdown(font: Theme.Text.caption)
                         } else if player.showsBuffering {
-                            Text("Buffering…")
+                            Text(player.waitText)
                                 .font(Theme.Text.caption)
                                 .foregroundStyle(Theme.Colors.textMuted)
                         } else if let label = player.sourceLabel {
@@ -85,7 +85,7 @@ struct NowPlayingStrip: View {
 
     private var line: String {
         if player.state.isAd { return "Advertisement" }
-        let title = player.state.title.isEmpty ? "Loading…" : player.state.title
+        let title = player.state.title.isEmpty ? player.titleWhileLoading : player.state.title
         var artist = player.state.artist
         // Playing an artist's songs, the line under the track names them;
         // the others on a joint track stay.

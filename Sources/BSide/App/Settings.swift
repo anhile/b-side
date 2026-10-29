@@ -41,6 +41,7 @@ enum Keys {
     static let captureAt = "captureAt"           // …at these seconds after launch, "5,20,60"
     static let captureSize = "captureSize"       // debug: the window's size before the pictures, "500x700"
     static let scratch = "scratch"               // debug: settings and the last session in a throwaway domain
+    static let freshStart = "freshStart"         // debug: a first launch: scratch settings and a web store with no cookies
 }
 
 enum Settings {
@@ -49,7 +50,10 @@ enum Settings {
     /// user's settings.
     static let isSnapshot = UserDefaults.standard.string(forKey: Keys.snapshot) != nil
     /// A test run: it must not touch the user's settings or their last session.
-    static let isScratch = isSnapshot || UserDefaults.standard.bool(forKey: Keys.scratch)
+    static let isScratch = isSnapshot || isFreshStart || UserDefaults.standard.bool(forKey: Keys.scratch)
+    /// A first launch, for trying it again and again: nothing signed in,
+    /// nothing remembered; the user's own sign-in is not touched.
+    static let isFreshStart = UserDefaults.standard.bool(forKey: Keys.freshStart)
     /// The sample data a snapshot sets (volume, Vibe tiles) goes to a scratch
     /// domain, emptied before and after, instead of the user's settings.
     static let defaults: UserDefaults = isScratch ? scratch : .standard

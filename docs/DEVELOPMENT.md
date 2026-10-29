@@ -102,6 +102,7 @@ exist only as arguments:
 | `-captureTo <folder> -captureAt 5,20,60` | Writes pictures of the real window, every page, at those seconds after launch; the window is moved off the screen |
 | `-captureSize 500x700` | With `-captureTo`: the window at that size first |
 | `-scratch YES` | Settings, vibes and the last session come from a throwaway domain, so a test run leaves yours alone (the Google session is shared either way) |
+| `-freshStart YES` | A first launch: scratch settings and a Google session that lives only in memory, so the run starts signed out and leaves the real session alone. Scratch and fresh runs share one domain (`com.anhile.bside.snapshot`): run them one after another, not side by side |
 | `-ApplePersistenceIgnoreState YES` | macOS: skips the "restore windows?" prompt after a killed run |
 
 The full list, with the stored settings, is in

@@ -24,6 +24,9 @@ enum Tuning {
     /// Waiting for data this long is said on the screen; shorter waits, as
     /// at the start of every track, are not.
     static let bufferingNoticeSeconds: Double = 1.5
+    /// A Play that has brought nothing after this long (past the notice)
+    /// is given up, with a word in the strip; the track stays.
+    static let loadTimeoutSeconds: Double = 30
     /// The widget is redrawn this long after the last change, so a burst of
     /// reports is one redraw.
     static let widgetDelay: Double = 1.0

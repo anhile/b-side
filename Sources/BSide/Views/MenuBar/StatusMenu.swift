@@ -100,10 +100,13 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         vibe.submenu?.autoenablesItems = false
         for mood in player.moods {
             let item = Self.item(mood.name) { [weak player] in player?.play(mood) }
-            item.isEnabled = player.account.isSignedIn || !mood.needsAccount
+            item.isEnabled = player.account.isSignedIn || (player.account == .unknown && Settings.bool(Keys.wasSignedIn)) || !mood.needsAccount
             vibe.submenu?.addItem(item)
         }
-        vibe.isEnabled = player.account.isSignedIn || player.isGuest
+        // While the account is not known yet, as it was last time: a Play
+        // waits for the page.
+        let likelySignedIn = player.account.isSignedIn || (player.account == .unknown && Settings.bool(Keys.wasSignedIn))
+        vibe.isEnabled = likelySignedIn || player.isGuest
         menu.addItem(vibe)
 
         let playlists = NSMenuItem(title: "Playlists", action: nil, keyEquivalent: "")
@@ -113,7 +116,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         for playlist in player.playlists where playlist.id != Tuning.likedMusicID {
             playlists.submenu?.addItem(Self.item(playlist.title) { [weak player] in player?.play(playlist) })
         }
-        playlists.isEnabled = player.account.isSignedIn
+        playlists.isEnabled = likelySignedIn
         menu.addItem(playlists)
         menu.addItem(.separator())
 
@@ -185,7 +188,7 @@ private struct StatusMenuHead: View {
     private var title: String {
         guard player.hasTrack else { return "Nothing playing" }
         if player.state.isAd { return "Advertisement" }
-        return player.state.title.isEmpty ? "Loading…" : player.state.title
+        return player.state.title.isEmpty ? player.titleWhileLoading : player.state.title
     }
 
     private var artist: String {

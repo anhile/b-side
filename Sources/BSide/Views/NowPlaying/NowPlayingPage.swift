@@ -42,7 +42,7 @@ struct NowPlayingPage: View {
                     if player.state.isAd, player.state.adLeft >= 0 {
                         AdCountdown(font: Theme.Text.body)
                     } else if player.showsBuffering {
-                        Text("Buffering…")
+                        Text(player.waitText)
                             .font(Theme.Text.body)
                             .foregroundStyle(Theme.Colors.textMuted)
                     } else if player.state.artistID.isEmpty || player.state.isAd {
@@ -247,7 +247,7 @@ struct NowPlayingPage: View {
     /// An ad is named as such; its own title, if any, goes to the second line.
     private var title: String {
         if player.state.isAd { return "Advertisement" }
-        return player.state.title.isEmpty ? "Loading…" : player.state.title
+        return player.state.title.isEmpty ? player.titleWhileLoading : player.state.title
     }
 
     private var subtitle: String {
