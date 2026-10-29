@@ -42,6 +42,7 @@ enum Keys {
     static let captureSize = "captureSize"       // debug: the window's size before the pictures, "500x700"
     static let scratch = "scratch"               // debug: settings and the last session in a throwaway domain
     static let signIn = "signIn"                 // debug: open the sign-in panel once the page is ready
+    static let signOutTest = "signOutTest"       // debug, with freshStart only: sign out once the page is ready
     static let freshStart = "freshStart"         // debug: a first launch: scratch settings and a web store with no cookies
 }
 

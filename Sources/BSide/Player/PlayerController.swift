@@ -118,6 +118,8 @@ final class PlayerController: NSObject, ObservableObject {
     private var pendingTarget: (target: PlayTarget, position: Double?)?
     private var startWaitTask: Task<Void, Never>?
     private var signingIn = false
+    private var signingOut = false
+    private static var signedOutForTest = false
     private let signInPage = SignInPage()
     /// Set while the page is unloaded by "free memory when paused".
     private var unloaded: (target: PlayTarget, position: Double)?
@@ -1405,7 +1407,11 @@ final class PlayerController: NSObject, ObservableObject {
         }
     }
 
-    /// Removes every cookie and cache of the web view, which signs out.
+    /// Signs out as a browser does: Google's own sign-out ends the session,
+    /// then the session's cookies and every cache go. Google's mark that
+    /// this device has signed in before stays, so "Don't ask again on this
+    /// device" holds for the next sign-in (removing all website data took
+    /// it too, and Google asked for a security code every time).
     func signOut() {
         EventLog.write("sign out")
         pause()
@@ -1433,11 +1439,48 @@ final class PlayerController: NSObject, ObservableObject {
         problem = nil
         ignoresReports = true
         account = .signedOut
-        webView.configuration.websiteDataStore.removeData(
-            ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast
-        ) { [weak self] in
-            Task { @MainActor in self?.loadHome() }
+        signingOut = true
+        webView.load(URLRequest(url: Tuning.signOut))
+        // Offline, or Google slow to answer: the cookies go all the same.
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(Tuning.signOutSeconds))
+            self?.finishSignOut()
         }
+    }
+
+    /// After Google's sign-out page, or instead of it: the session's
+    /// cookies (Google's and YouTube's) and all other website data but the
+    /// cookies, then the player page again.
+    private func finishSignOut() {
+        guard signingOut else { return }
+        signingOut = false
+        let store = webView.configuration.websiteDataStore
+        var types = WKWebsiteDataStore.allWebsiteDataTypes()
+        types.remove(WKWebsiteDataTypeCookies)
+        store.removeData(ofTypes: types, modifiedSince: .distantPast) {
+            store.httpCookieStore.getAllCookies { cookies in
+                let session = cookies.filter(Self.isSessionCookie)
+                let group = DispatchGroup()
+                for cookie in session {
+                    group.enter()
+                    store.httpCookieStore.delete(cookie) { group.leave() }
+                }
+                group.notify(queue: .main) { [weak self] in
+                    EventLog.write("sign out\t\(session.count) session cookies removed")
+                    MainActor.assumeIsolated { self?.loadHome() }
+                }
+            }
+        }
+    }
+
+    /// YouTube's cookies all belong to the session; Google's only those that
+    /// carry the sign-in, not the ones that know the device.
+    nonisolated private static func isSessionCookie(_ cookie: HTTPCookie) -> Bool {
+        let domain = cookie.domain.hasPrefix(".") ? String(cookie.domain.dropFirst()) : cookie.domain
+        if domain == "youtube.com" || domain.hasSuffix(".youtube.com") { return true }
+        guard domain == "google.com" || domain.hasSuffix(".google.com") else { return false }
+        return Tuning.googleSessionCookies.contains(cookie.name)
+            || Tuning.googleSessionCookiePrefixes.contains { cookie.name.hasPrefix($0) }
     }
 
     /// The player's window, shown for Google's sign-in page.
@@ -1544,6 +1587,11 @@ final class PlayerController: NSObject, ObservableObject {
             }
             if let words = Settings.defaults.string(forKey: Keys.makeVibe) { logVibe(words) }
             if Settings.bool(Keys.signIn), !signingIn, account == .signedOut { showSignIn() }
+            // Never with the real session: only a first launch's store in memory.
+            if Settings.isFreshStart, Settings.bool(Keys.signOutTest), !Self.signedOutForTest {
+                Self.signedOutForTest = true
+                signOut()
+            }
             if let pending = pendingTarget {
                 pendingTarget = nil
                 sendToPage(pending.target, startAt: pending.position)
@@ -1700,6 +1748,11 @@ extension PlayerController: WKNavigationDelegate, WKUIDelegate, NSWindowDelegate
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         signInPage.isLoading = false
+        if signingOut {
+            EventLog.write("sign out\tGoogle's page done")
+            finishSignOut()
+            return
+        }
         // Google sends the browser back to YouTube Music once sign-in is done.
         if signingIn, webView.url?.host == Tuning.musicHome.host {
             EventLog.write("sign-in flow finished")
@@ -1739,6 +1792,7 @@ extension PlayerController: WKNavigationDelegate, WKUIDelegate, NSWindowDelegate
 
     private func report(navigationError error: Error) {
         signInPage.isLoading = false
+        if signingOut, (error as NSError).code != NSURLErrorCancelled { finishSignOut() }
         guard (error as NSError).code != NSURLErrorCancelled else { return }
         EventLog.write("error\tnavigation: \(error.localizedDescription)")
     }

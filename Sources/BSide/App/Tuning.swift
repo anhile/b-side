@@ -49,6 +49,20 @@ enum Tuning {
     /// A track's link, before its video ID: what Copy Link copies.
     static let trackLink = "https://music.youtube.com/watch?v="
 
+    /// Google's own sign-out, back to YouTube Music; Google's device mark
+    /// stays, as in a browser.
+    static let signOut = URL(string:
+        "https://accounts.google.com/Logout?continue=https%3A%2F%2Fmusic.youtube.com%2F")!
+    /// How long sign-out waits for Google's page before removing the
+    /// cookies anyway.
+    static let signOutSeconds: Double = 8
+    /// Google's cookies that carry the sign-in (observed, not documented).
+    /// The rest (NID, the account chooser, the device's marks) stay.
+    static let googleSessionCookies: Set<String> = ["SID", "HSID", "SSID", "APISID", "SAPISID", "LSID", "OSID",
+                                                    "SIDCC", "LOGIN_INFO"]
+    static let googleSessionCookiePrefixes = ["__Secure-1PSID", "__Secure-3PSID", "__Secure-1PAPISID",
+                                              "__Secure-3PAPISID", "__Host-1PLSID", "__Host-3PLSID",
+                                              "__Secure-OSID", "__Secure-1PSIDCC", "__Secure-3PSIDCC"]
     static let signIn = URL(string:
         "https://accounts.google.com/ServiceLogin?service=youtube&continue=https%3A%2F%2Fmusic.youtube.com%2F")!
 
