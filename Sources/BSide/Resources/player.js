@@ -481,6 +481,19 @@
     report();
   }
 
+  // From a drag in the Up Next list: the track goes to place `to` of the
+  // queue, after the current one. Checked as removeQueued is.
+  function moveQueued(index, videoId, to) {
+    if (index <= queueIndex || !queue[index] || queue[index].id !== videoId) return event('error', 'queue: the queue changed');
+    to = Math.max(queueIndex + 1, Math.min(to, queue.length - 1));
+    if (to === index) return;
+    const entry = queue.splice(index, 1)[0];
+    queue.splice(to, 0, entry);
+    event('queue', 'moved ' + videoId + ' from ' + index + ' to ' + to);
+    postQueue();
+    report();
+  }
+
   // Puts a track right after the current one. Its radio's first item is
   // the track itself, with its title, artwork and song version; without
   // that, the title and artist the app's list had.
@@ -926,6 +939,7 @@
     },
     playQueued(index, videoId) { playQueued(index, videoId); },
     removeQueued(index, videoId) { removeQueued(index, videoId); },
+    moveQueued(index, videoId, to) { moveQueued(index, videoId, to); },
     playNext(videoId, title, artist) { playNext(videoId, title, artist); },
     load(kind, id, startSeconds, options) {
       load(kind, id, startSeconds, options).catch(function (e) { event('error', 'load: ' + e); });

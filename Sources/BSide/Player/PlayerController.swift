@@ -635,6 +635,31 @@ final class PlayerController: NSObject, ObservableObject {
         upNext.removeAll { $0.index == track.index } // shown at once; the page sends the list again
     }
 
+    /// Up Next in a new order while a row is dragged, shown at once; the
+    /// page learns it when the drag ends (commitUpNextMove). A track keeps
+    /// its `index`, its place in the page's queue, until the page sends the
+    /// list again.
+    func moveUpNext(_ id: Track.ID, toPlaceOf target: Track.ID) {
+        guard let from = upNext.firstIndex(where: { $0.id == id }),
+              let to = upNext.firstIndex(where: { $0.id == target }), from != to else { return }
+        upNext.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+    }
+
+    /// One place up (-1) or down (1), from a row's menu.
+    func moveUpNext(_ track: Track, by step: Int) {
+        guard let from = upNext.firstIndex(where: { $0.id == track.id }), upNext.indices.contains(from + step) else { return }
+        upNext.swapAt(from, from + step)
+        commitUpNextMove(track)
+    }
+
+    /// Where the track now stands in the list, as a place in the page's
+    /// queue: the list starts right after the track that plays.
+    func commitUpNextMove(_ track: Track) {
+        guard let place = upNext.firstIndex(where: { $0.id == track.id }),
+              let first = upNext.map(\.index).min(), first + place != track.index else { return }
+        bridge.call("moveQueued", track.index, track.videoID, first + place)
+    }
+
     /// Puts a track right after the one that plays. The title and artist
     /// are what the list showed, for when YouTube Music gives none.
     func playNext(_ videoID: String, title: String, artist: String) {

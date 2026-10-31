@@ -57,6 +57,11 @@ make them 15% and 30% bigger, and the window's least size with them.
   under it (since 2026-10-03; before, a caption inside the list); at the
   bar's end, under the page's tab, an x closes the list. The next 30
   tracks; "Nothing after this track." when there are none.
+- Since 2026-10-31 the rows of Up Next drag into another order, as the
+  Playlists rows do (a lifted copy under the pointer, the others making
+  room); the queue takes the new order when the drag ends. A row's menu
+  has Move Up and Move Down above Remove from Up Next. A click still
+  plays the row
 - Waiting for data: "Buffering…" in the artist's place after 1.5 s of
   waiting (not at the usual moment a track starts), and the time stands
   still; the strip says it under the track too. Since 2026-10-03: before,
