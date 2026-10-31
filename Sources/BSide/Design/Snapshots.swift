@@ -162,6 +162,25 @@ enum Snapshots {
                 window.close()
             }
         }
+        // The account tab signed out, and as a guest.
+        let accounts: [(String, PlayerController)] = [
+            ("signedout", .fixture(account: .signedOut)),
+            ("guest", .fixture(account: .signedOut, isGuest: true)),
+        ]
+        for (name, signedOut) in accounts {
+            for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+                let (window, keep) = SettingsWindow.make(player: signedOut, tab: .account)
+                window.appearance = NSAppearance(named: appearance)
+                window.setFrameOrigin(NSPoint(x: -4000, y: -4000))
+                window.orderFrontRegardless()
+                try? await Task.sleep(for: .seconds(1.2))
+                withExtendedLifetime(keep) {}
+                if let image = capture(window, frame: true) {
+                    try? image.write(to: folder.appendingPathComponent("settings-account-\(name)-\(suffix).png"))
+                }
+                window.close()
+            }
+        }
     }
 
     /// The New Vibe sheet in each step, as it shows over the window.
