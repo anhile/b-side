@@ -2,8 +2,9 @@ import ServiceManagement
 import SwiftUI
 
 /// Where a new vibe's words are read: on this Mac (the default), or on the
-/// B-Side server, which knows more music. See VibeServer.
-struct VibeSettings: View {
+/// B-Side server, which knows more music. See VibeServer. The end of
+/// Playback.
+struct VibeServerSections: View {
     @AppStorage(Keys.vibeServer) private var useServer = false
     @AppStorage(Keys.vibeServerAddress) private var address = VibeServer.defaultAddress
     @State private var status: Status = .checking
@@ -14,11 +15,13 @@ struct VibeSettings: View {
     }
 
     var body: some View {
-        Form {
+        Group {
             Section {
                 Toggle(isOn: $useServer) {
-                    SettingLabel(title: "Read vibes on the B-Side server", symbol: "text.bubble", colour: 1)
+                    SettingLabel(title: "Read new vibes on the B-Side server", symbol: "text.bubble", colour: 1)
                 }
+            } header: {
+                Text("Vibes")
             } footer: {
                 Text("A larger model reads the words of a new vibe and knows far more music, from deep cuts to Russian rock. The words go to the B-Side server and its AI provider and are not stored. When it is off, this Mac reads them.")
                     .font(.subheadline)
@@ -36,8 +39,6 @@ struct VibeSettings: View {
             }
             .disabled(!useServer)
         }
-        .formStyle(.grouped)
-        .background(ThinScrollers())
         .task(id: "\(useServer) \(address)") {
             guard useServer else { return }
             status = .checking

@@ -7,17 +7,17 @@ import SwiftUI
 /// colours, as System Settings has them. This is one tab's pane.
 struct SettingsView: View {
     enum Tab: String, CaseIterable {
-        case general, appearance, playback, vibes, account, diagnostics
+        /// Three, by what they are about: you and the app, the music, and
+        /// what goes on inside (since 2026-10-31; before, six, some with one
+        /// setting).
+        case general, playback, diagnostics
 
         var title: String { rawValue.capitalized }
 
         var symbol: String {
             switch self {
             case .general: "gearshape"
-            case .appearance: "paintpalette"
             case .playback: "play.circle"
-            case .vibes: "text.bubble"
-            case .account: "person.crop.circle"
             case .diagnostics: "gauge.with.dots.needle.33percent"
             }
         }
@@ -29,10 +29,7 @@ struct SettingsView: View {
         Group {
             switch tab {
             case .general: GeneralSettings()
-            case .appearance: AppearanceSettings()
             case .playback: PlaybackSettings()
-            case .vibes: VibeSettings()
-            case .account: AccountSettings()
             case .diagnostics: DiagnosticsSettings()
             }
         }

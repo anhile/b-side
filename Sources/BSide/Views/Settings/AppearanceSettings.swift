@@ -1,8 +1,9 @@
 import ServiceManagement
 import SwiftUI
 
-/// Light or dark, and the size of everything in the window.
-struct AppearanceSettings: View {
+/// Light or dark, and the size of everything in the window: one section
+/// of General.
+struct AppearanceSection: View {
     @AppStorage(Keys.theme) private var theme = ThemeMode.system.rawValue
     @AppStorage(Keys.uiScale, store: Settings.defaults) private var scale = 0.0
 
@@ -26,33 +27,25 @@ struct AppearanceSettings: View {
     }
 
     var body: some View {
-        Form {
-            Section {
-                Picker(selection: themeMode) {
-                    ForEach(ThemeMode.allCases) { Text($0.title).tag($0) }
-                } label: {
-                    SettingLabel(title: "Appearance", symbol: "circle.lefthalf.filled", colour: 1)
-                }
-                .pickerStyle(.segmented)
-            } footer: {
-                Text("Automatic follows the system's light and dark setting.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+        Section {
+            Picker(selection: themeMode) {
+                ForEach(ThemeMode.allCases) { Text($0.title).tag($0) }
+            } label: {
+                SettingLabel(title: "Theme", symbol: "circle.lefthalf.filled", colour: 1)
             }
-            Section {
-                Picker(selection: uiSize) {
-                    ForEach(UISize.allCases) { Text($0.title).tag($0) }
-                } label: {
-                    SettingLabel(title: "Size", symbol: "textformat.size", colour: 3)
-                }
-                .pickerStyle(.segmented)
-            } footer: {
-                Text("Medium and Large make the text and the buttons 15% and 30% bigger, for reading at a distance or with low vision. The window itself can be dragged to any size.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+            .pickerStyle(.segmented)
+            Picker(selection: uiSize) {
+                ForEach(UISize.allCases) { Text($0.title).tag($0) }
+            } label: {
+                SettingLabel(title: "Text and buttons", symbol: "textformat.size", colour: 3)
             }
+            .pickerStyle(.segmented)
+        } header: {
+            Text("Appearance")
+        } footer: {
+            Text("Automatic follows the system. Medium and Large are 15% and 30% bigger; the window itself drags to any size.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
-        .formStyle(.grouped)
-        .background(ThinScrollers())
     }
 }

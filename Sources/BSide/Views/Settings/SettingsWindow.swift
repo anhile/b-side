@@ -64,6 +64,9 @@ final class SettingsWindow: NSObject, NSToolbarDelegate {
         pane.view.setFrameSize(window.contentLayoutRect.size)
         window.contentViewController = pane
         fit(keepingTop: true)
+        // No field takes the focus by itself (the Vibes server's address
+        // came up selected).
+        DispatchQueue.main.async { [window] in window.makeFirstResponder(nil) }
     }
 
     /// The pane decides nothing about the window: with any sizing option

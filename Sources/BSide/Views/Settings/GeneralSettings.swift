@@ -1,13 +1,13 @@
 import ServiceManagement
 import SwiftUI
 
-/// How B-Side starts and what it tells you.
+/// Who you are, how B-Side looks and how it starts, and about it.
 struct GeneralSettings: View {
     var body: some View {
         Form {
+            AccountSection()
+            AppearanceSection()
             OpenAtLogin()
-            TrackNotifications()
-            MenuBarTrack()
             AboutSection()
         }
         .formStyle(.grouped)
@@ -16,19 +16,13 @@ struct GeneralSettings: View {
 }
 
 /// The track's name next to the record in the menu bar. Off by default:
-/// the menu bar is short of room.
+/// the menu bar is short of room. A row of Playback's Controls.
 struct MenuBarTrack: View {
     @AppStorage(Keys.menuBarTrack) private var shows = false
 
     var body: some View {
-        Section {
-            Toggle(isOn: $shows) {
-                SettingLabel(title: "Show the track in the menu bar", symbol: "menubar.rectangle", colour: 6)
-            }
-        } footer: {
-            Text("The title and artist next to the record. Long names are cut short.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+        Toggle(isOn: $shows) {
+            SettingLabel(title: "Track name in the menu bar", symbol: "menubar.rectangle", colour: 6)
         }
     }
 }
@@ -104,6 +98,8 @@ struct OpenAtLogin: View {
                 Text(failure)
                     .foregroundStyle(.secondary)
             }
+        } header: {
+            Text("Startup")
         } footer: {
             Text("B-Side starts in the menu bar, without its window, so the Play key and AirPods start B-Side instead of Apple Music.")
                 .font(.subheadline)
@@ -113,15 +109,16 @@ struct OpenAtLogin: View {
     }
 }
 
-/// Turning it on asks macOS for permission the first time. When macOS says
+/// A row of Playback's Controls. Turning it on asks macOS for permission
+/// the first time. When macOS says
 /// no, the toggle goes back off and points to System Settings.
 struct TrackNotifications: View {
     @AppStorage(Keys.notifyTrack) private var notify = false
     @State private var denied = false
 
     var body: some View {
-        Section {
-            Toggle(isOn: $notify) { SettingLabel(title: "Notify when a track starts", symbol: "bell.badge.fill", colour: 5) }
+        Group {
+            Toggle(isOn: $notify) { SettingLabel(title: "Notification when a track starts", symbol: "bell.badge.fill", colour: 5) }
                 .onChange(of: notify) {
                     guard notify else { return }
                     Task {
@@ -137,10 +134,6 @@ struct TrackNotifications: View {
                     }
                 }
             }
-        } footer: {
-            Text("The track's name and artwork, while B-Side is in the background. Clicking it opens Now Playing.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
         }
         .task {
             // Permission can be taken back in System Settings at any time.

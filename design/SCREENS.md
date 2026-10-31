@@ -375,3 +375,17 @@ record in place and the sleeves coming out.
 
 Status: built 2026-09-30. Laid out like "Nothing playing", with the buttons'
 height kept empty, so the record and the title stay put when it hands over.
+
+## Settings
+
+Since 2026-10-31 three tabs, by what they are about (before, six: some
+held one setting):
+- General: Account (one row for every state: the record or the avatar,
+  what it is, one button; the note on the password), Appearance (Theme;
+  Text and buttons: Small, Medium, Large), Startup (Open at login), About
+- Playback: Sound (Audio only), Controls (Media keys and Control Center,
+  Notification when a track starts, Track name in the menu bar), Memory
+  (Unload the player when paused), Vibes (read new vibes on the B-Side
+  server; its address and status)
+- Diagnostics: memory by process, the event log
+No field takes the focus when a tab opens.
