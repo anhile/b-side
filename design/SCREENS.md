@@ -398,3 +398,19 @@ held one setting):
   server; its address and status)
 - Diagnostics: memory by process, the event log
 No field takes the focus when a tab opens.
+
+## Empty states and page headers (since 2026-10-31)
+
+- Every "nothing to show" (EmptyState) is built on StageLayout, as
+  Welcome, Sign in and Nothing playing are: a picture on the stage, the
+  title in the display role, two lines, a wide button and a quiet one.
+  The picture is the record with the account's sleeves where an account
+  would fill the page (Playlists as a guest: "Your playlists"), a symbol
+  in a soft accent circle (Search, Empty), or in a plain one for a
+  problem ("Not loaded", "Search failed", "Not connected").
+- Explore's artist, album and playlist pages head in the colour of their
+  artwork (HeaderWash, the colour Now Playing takes, ArtworkTint): from
+  the top of the window, under the bar, fading out below the header. The
+  kind in small capitals ("ARTIST", "ALBUM") over the name; an artist's
+  photo at 128 with a light ring and the artwork's shadow, the name in the
+  display role.

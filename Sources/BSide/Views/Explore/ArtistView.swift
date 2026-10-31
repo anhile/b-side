@@ -36,17 +36,29 @@ struct ArtistView: View {
         }
     }
 
+    /// The photo large and round, lifted off a wash of its colour, what the
+    /// page is, and the name.
     private func header(_ page: ArtistPage) -> some View {
-        VStack(spacing: Theme.Space.xs) {
-            Artwork(url: page.artworkURL, size: Theme.Size.cover, radius: Theme.Size.cover / 2, placeholder: "person.fill")
+        VStack(spacing: 0) {
+            Artwork(url: page.artworkURL, size: Theme.Size.artistPhoto, radius: Theme.Size.artistPhoto / 2,
+                    placeholder: "person.fill")
+                .overlay(Circle().strokeBorder(Theme.Colors.bg.opacity(Theme.Opacity.photoRing), lineWidth: Theme.Size.photoRing))
+                .shadow(color: Theme.Colors.shadow.opacity(Theme.Opacity.signInShadow),
+                        radius: Theme.Shadow.artworkRadius, y: Theme.Shadow.artworkY)
+            PageKind(text: "Artist")
+                .padding(.top, Theme.Space.m)
             Text(page.name)
-                .font(Theme.Text.title)
+                .font(Theme.Text.display)
                 .foregroundStyle(Theme.Colors.text)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
+                .padding(.top, Theme.Space.xxs)
         }
+        .frame(maxWidth: .infinity)
         .padding(.horizontal, Theme.Space.m)
-        .padding(.top, Theme.Space.s)
+        .padding(.top, Theme.Space.l)
+        .padding(.bottom, Theme.Space.xs)
+        .headerWash(page.artworkURL)
     }
 }
 

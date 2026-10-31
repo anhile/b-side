@@ -22,13 +22,13 @@ struct PlaylistTracks: View {
                 .padding(.top, Theme.Size.pageBar)
                 .padding(.bottom, footerRoom)
         case .failed(let reason):
-            EmptyState(symbol: "exclamationmark.triangle", title: "Could not load the tracks",
-                       message: reason, actionTitle: "Try Again", action: { player.retryTracks() })
+            EmptyState(symbol: "exclamationmark.triangle", title: "Not loaded",
+                       message: reason, actionTitle: "Try Again", action: { player.retryTracks() }, picture: .problem)
                 .padding(.top, Theme.Size.pageBar)
                 .padding(.bottom, footerRoom)
         case .loaded where player.tracks.isEmpty:
-            EmptyState(symbol: "music.note.list", title: "No tracks",
-                       message: "This playlist is empty, or its tracks are not available.")
+            EmptyState(symbol: "music.note.list", title: "Empty",
+                       message: "This playlist has no tracks,\nor they are not available.")
                 .padding(.top, Theme.Size.pageBar)
                 .padding(.bottom, footerRoom)
         case .loaded:

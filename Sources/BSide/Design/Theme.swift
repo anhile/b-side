@@ -173,6 +173,14 @@ enum Theme {
         /// The sign-in screen's own button, and how wide its lines of text run.
         static var prominentButton: CGFloat { (220) * scale }
         static var signInText: CGFloat { (300) * scale }
+        /// An artist's photo at the head of their page.
+        static var artistPhoto: CGFloat { (128) * scale }
+        /// How far below a page's header its wash of the artwork's colour runs.
+        static var headerWashTail: CGFloat { (48) * scale }
+        /// The letter spacing of a page's kind ("ARTIST").
+        static let kindTracking: CGFloat = 0.8
+        /// The light ring around an artist's photo.
+        static var photoRing: CGFloat { (3) * scale }
         /// The screens without music (StageLayout): the stage's height (the
         /// record and the sleeve above it), the actions' room (the wide
         /// button and a quiet one under it), the lines' width, and how far
@@ -181,6 +189,9 @@ enum Theme {
         static var stageActions: CGFloat { (76) * scale }
         static var stageText: CGFloat { (300) * scale }
         static let stageCompact: CGFloat = 0.8
+        /// An empty state's symbol and the circle around it.
+        static var stageGlyph: CGFloat { (48) * scale }
+        static var stageCircle: CGFloat { (128) * scale }
         /// The sign-in screen's slides: how far one moves in, the dots, and
         /// the pictures' parts.
         static var slideShift: CGFloat { (40) * scale }
@@ -254,6 +265,11 @@ enum Theme {
         /// wash of Ember from the top.
         static let signInShadow: Double = 0.3
         static let signInWash: Double = 0.22
+        /// The ring around an artist's photo, in the page's colour.
+        static let photoRing: Double = 0.7
+        /// The soft circle behind an empty state's symbol, top and bottom.
+        static let stageCircleTop: Double = 0.18
+        static let stageCircleBottom: Double = 0.06
         /// The slides: the dots not shown, the lines not sung, the sleeve's glyph.
         static let slideDot: Double = 0.35
         /// How far a waiting view fades at the low of its breath (Reduce Motion).

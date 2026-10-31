@@ -47,11 +47,14 @@ struct CollectionView: View {
     }
 
     private func header(_ page: CollectionPage) -> some View {
-        HStack(alignment: .center, spacing: Theme.Space.s) {
+        HStack(alignment: .center, spacing: Theme.Space.m) {
             Artwork(url: page.artworkURL, size: Theme.Size.cover, placeholder: "music.note.list")
+                .shadow(color: Theme.Colors.shadow.opacity(Theme.Opacity.signInShadow),
+                        radius: Theme.Shadow.artworkRadius, y: Theme.Shadow.artworkY)
             VStack(alignment: .leading, spacing: Theme.Space.xxs) {
+                PageKind(text: page.isAlbum ? "Album" : "Playlist")
                 Text(page.title)
-                    .font(Theme.Text.title)
+                    .font(Theme.Text.title.weight(.bold))
                     .foregroundStyle(Theme.Colors.text)
                     .lineLimit(3)
                 if !page.artist.isEmpty {
@@ -79,7 +82,9 @@ struct CollectionView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, Theme.Space.m)
-        .padding(.top, Theme.Space.s)
+        .padding(.top, Theme.Space.m)
+        .padding(.bottom, Theme.Space.xs)
+        .headerWash(page.artworkURL)
     }
 }
 

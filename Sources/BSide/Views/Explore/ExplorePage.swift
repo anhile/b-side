@@ -169,8 +169,8 @@ struct ExplorePage: View {
             if let blocked = blockingState(for: player) {
                 blocked
             } else if !hasQuery {
-                EmptyState(symbol: "magnifyingglass", title: "Search YouTube Music",
-                           message: "Start typing to find something to play.")
+                EmptyState(symbol: "magnifyingglass", title: "Search",
+                           message: "Songs, albums, artists and playlists:\nall of YouTube\u{00A0}Music, one search away.")
                     .background { FloatingNotes(running: navigation.page == .explore) }
             } else {
                 switch player.searchState {
@@ -181,10 +181,10 @@ struct ExplorePage: View {
                         .frame(maxHeight: .infinity, alignment: .top)
                 case .failed(let reason):
                     EmptyState(symbol: "exclamationmark.triangle", title: "Search failed",
-                               message: reason, actionTitle: "Try Again", action: { player.retrySearch() })
+                               message: reason, actionTitle: "Try Again", action: { player.retrySearch() }, picture: .problem)
                 case .loaded where player.searchResults.isEmpty:
-                    EmptyState(symbol: "magnifyingglass", title: "Nothing found",
-                               message: "Try other words, or another kind.")
+                    EmptyState(symbol: "questionmark", title: "Nothing found",
+                               message: "Try other words,\nor another kind above.")
                 case .loaded:
                     results
                 }
@@ -256,9 +256,9 @@ struct PageState: View {
     var body: some View {
         Group {
             if player.exploreFailures.contains(id) {
-                EmptyState(symbol: "exclamationmark.triangle", title: "Could not load this page",
-                           message: "Check the connection and try again.",
-                           actionTitle: "Try Again", action: { player.retryExplorePage(id) })
+                EmptyState(symbol: "exclamationmark.triangle", title: "Not loaded",
+                           message: "This page could not be loaded.\nCheck the connection and try again.",
+                           actionTitle: "Try Again", action: { player.retryExplorePage(id) }, picture: .problem)
             } else {
                 SkeletonList()
                     .frame(maxHeight: .infinity, alignment: .top)
