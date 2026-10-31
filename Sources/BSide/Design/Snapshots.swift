@@ -120,10 +120,16 @@ enum Snapshots {
         for (family, size) in [(WidgetFamily.systemSmall, CGSize(width: 170, height: 170)),
                                (.systemMedium, CGSize(width: 364, height: 170))] {
             for (name, state) in cases {
-                for (suffix, scheme) in [("light", ColorScheme.light), ("dark", .dark)] {
-                    let renderer = ImageRenderer(content: NowPlayingWidgetView(state: state, family: family)
+                for (suffix, scheme, vibrant) in [("light", ColorScheme.light, false), ("dark", .dark, false),
+                                                  ("vibrant", .dark, true)] {
+                    // The widget's margins, and its background, which only
+                    // WidgetKit draws for a real widget.
+                    let renderer = ImageRenderer(content: NowPlayingWidgetView(state: state, family: family, previewVibrant: vibrant)
+                        .padding(16)
                         .frame(width: size.width, height: size.height)
+                        .background(NowPlayingWidgetView.backdrop(for: state, vibrant: vibrant))
                         .background(scheme == .dark ? Color(white: 0.12) : Color(white: 0.9))
+                        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                         .environment(\.colorScheme, scheme))
                     renderer.scale = 2
                     guard let image = renderer.cgImage,
