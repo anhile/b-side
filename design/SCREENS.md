@@ -36,6 +36,10 @@ make them 15% and 30% bigger, and the window's least size with them.
   pair in balance).
 - Like: a heart, always in view; orange and filled once liked. Not on the
   artwork's hover, which keeps Lyrics and Repeat. Hidden during an ad.
+  A like bounces the heart and sends out a thin ring and six small
+  hearts (0.7 s); taking it back only empties the heart; with Reduce
+  Motion, only the colour changes. Its tooltip, over the heart here and
+  in the strip, says "Like ⌘L" or "Remove Like ⌘L".
 - Along the bottom of the page, a glass line (32) with what plays from
   where, in the label role, the kind first ("Vibe: Focus", "Playlist:
   Night drive", "Album: …", "Artist: …", "Radio: <track>"), as the strip

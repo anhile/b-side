@@ -144,11 +144,7 @@ struct NowPlayingPage: View {
     /// Orange and filled once liked. An ad cannot be liked: the button
     /// keeps its place and goes away.
     private var likeButton: some View {
-        TransportButton(symbol: player.state.isLiked ? "heart.fill" : "heart",
-                        label: player.state.isLiked ? "Remove Like" : "Like",
-                        color: player.state.isLiked ? Theme.Colors.accentText : Theme.Colors.textMuted) {
-            player.toggleLike()
-        }
+        LikeButton(liked: player.state.isLiked) { player.toggleLike() }
         .opacity(player.state.isAd ? 0 : 1)
         .disabled(player.state.isAd)
     }

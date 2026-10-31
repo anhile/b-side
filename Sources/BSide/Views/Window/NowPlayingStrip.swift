@@ -66,14 +66,11 @@ struct NowPlayingStrip: View {
                     .disabled(!player.state.hasNext)
             }
             if wide, !player.state.isAd {
-                TransportButton(symbol: player.state.isLiked ? "heart.fill" : "heart",
-                                label: player.state.isLiked ? "Remove Like" : "Like", target: Theme.Size.artworkStrip,
-                                color: player.state.isLiked ? Theme.Colors.accentText : Theme.Colors.textMuted) {
+                LikeButton(liked: player.state.isLiked, target: Theme.Size.artworkStrip) {
                     player.toggleLike()
                 }
                 .disabled(!player.hasTrack)
                 .padding(.leading, Theme.Space.xs)
-                .help("Like (⌘L)")
             }
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }

@@ -175,6 +175,12 @@ enum Theme {
         static var signInText: CGFloat { (300) * scale }
         /// The search kinds' segments, and how far the pill stands inside its track.
         static var segmentHeight: CGFloat { (24) * scale }
+        /// A like's burst: the ring's line and how far it grows (times the
+        /// heart), the small hearts' size and how far they fly.
+        static var likeRing: CGFloat { (2) * scale }
+        static let likeRingGrowth: CGFloat = 1.1
+        static var likeSpark: CGFloat { (8) * scale }
+        static var likeSparkReach: CGFloat { (27) * scale }
         static var segmentInset: CGFloat { (2) * scale }
         /// An artist's photo at the head of their page.
         static var artistPhoto: CGFloat { (128) * scale }
@@ -299,6 +305,8 @@ enum Theme {
         /// The sign-in slides: how long each shows, the change between two,
         /// and how long a line of the lyrics picture is sung.
         static let slideSeconds: Double = 5
+        /// How long a like's burst lasts.
+        static let likeBurst: Double = 0.7
         /// One pass of the light across a waiting view, and its frame rate.
         static let shimmerPeriod: Double = 1.4
         static let shimmerFrameRate: Double = 30

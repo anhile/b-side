@@ -64,10 +64,11 @@ struct Tooltip: ViewModifier {
     let shortcut: String?
     /// Centred under the control, or flush with one of its edges.
     let alignment: Alignment
+    /// Under the control, or over it (at the window's bottom edge).
+    var above = false
     let shown: Bool
 
     @State private var visible = false
-    @State private var wait: Task<Void, Never>?
 
     func body(content: Content) -> some View {
         content
@@ -87,29 +88,26 @@ struct Tooltip: ViewModifier {
                     .background(Theme.Colors.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.s))
                     .overlay(RoundedRectangle(cornerRadius: Theme.Radius.s).strokeBorder(Theme.Colors.border))
                     .fixedSize()
-                    .offset(y: Theme.Size.pageDotTarget + Theme.Space.xxs)
+                    // Over the control: from a line at its top, upwards.
+                    .frame(height: above ? 0 : nil, alignment: .bottom)
+                    .offset(y: above ? -Theme.Space.xxs : Theme.Size.pageDotTarget + Theme.Space.xxs)
                     .transition(.opacity)
                     .allowsHitTesting(false)
-                        .accessibilityHidden(true)
+                    .accessibilityHidden(true)
                 }
             }
             .animation(.easeOut(duration: Theme.Motion.feedback), value: visible)
-            .onChange(of: shown) { _, isShown in
-                wait?.cancel()
-                if isShown {
-                    wait = Task {
-                        try? await Task.sleep(for: .seconds(Theme.Motion.tooltipDelay))
-                        if !Task.isCancelled { visible = true }
-                    }
-                } else {
-                    visible = false
-                }
+            .task(id: shown) {
+                guard shown else { visible = false; return }
+                try? await Task.sleep(for: .seconds(Theme.Motion.tooltipDelay))
+                if !Task.isCancelled { visible = true }
             }
     }
 }
 
 extension View {
-    func tooltip(_ text: String, shortcut: String? = nil, alignment: Alignment = .top, shown: Bool) -> some View {
-        modifier(Tooltip(text: text, shortcut: shortcut, alignment: alignment, shown: shown))
+    func tooltip(_ text: String, shortcut: String? = nil, alignment: Alignment = .top, above: Bool = false,
+                 shown: Bool) -> some View {
+        modifier(Tooltip(text: text, shortcut: shortcut, alignment: alignment, above: above, shown: shown))
     }
 }

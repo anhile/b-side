@@ -279,8 +279,41 @@ enum Snapshots {
         }
     }
 
+    /// The like button: at rest, then a like's burst at three points of its
+    /// way, its tooltip open; below, the strip's, with the tooltip above.
+    private static func renderLike(into folder: URL) async {
+        for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+            let frames: [(Bool, Double?)] = [(false, nil), (true, 0.2), (true, 0.45), (true, 0.75)]
+            let hosting = NSHostingController(rootView: VStack(spacing: Theme.Space.xl) {
+                HStack(spacing: Theme.Space.xl) {
+                    ForEach(frames.indices, id: \.self) { index in
+                        LikeButton(liked: frames[index].0) {}
+                            .environment(\.previewLikeBurst, frames[index].1)
+                    }
+                }
+                LikeButton(liked: true, target: Theme.Size.artworkStrip) {}
+                    .environment(\.previewLikeBurst, 1)
+            }
+            .padding(.horizontal, Theme.Space.xl)
+            .padding(.vertical, Theme.Space.xl * 2)
+            .background(Theme.Colors.bg))
+            let window = NSWindow(contentViewController: hosting)
+            window.styleMask = [.borderless]
+            window.appearance = NSAppearance(named: appearance)
+            window.isReleasedWhenClosed = false
+            window.setFrameOrigin(NSPoint(x: -4000, y: -4000))
+            window.orderFrontRegardless()
+            try? await Task.sleep(for: .seconds(Theme.Motion.tooltipDelay + 0.5))
+            if let image = capture(window) {
+                try? image.write(to: folder.appendingPathComponent("like-\(suffix).png"))
+            }
+            window.close()
+        }
+    }
+
     static func render(into folder: URL) async {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        await renderLike(into: folder)
         await renderSignIn(into: folder)
         await renderWidgets(into: folder)
         await renderNewVibe(into: folder)

@@ -122,7 +122,8 @@ Center. If it does not, register the extension by hand:
 pluginkit -a /Applications/B-Side.app/Contents/PlugIns/BSideWidget.appex
 ```
 
-The snapshots render the widget's views as `widget-*.png`.
+The snapshots render the widget's views as `widget-*.png`, and the like
+button's burst at three points with its tooltip as `like-*.png`.
 
 ### A bad network
 
