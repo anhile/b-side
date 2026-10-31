@@ -354,9 +354,11 @@ final class PlayerController: NSObject, ObservableObject {
 
     /// What a wait is called under the track: a Play that waits for the
     /// page or the track, or music that waits for data.
-    var waitText: String {
-        if isOffline { return "Waiting for the connection…" }
-        return isLoading ? "Loading…" : "Buffering…"
+    /// Words for a wait only where they tell something: no connection.
+    /// Loading and buffering show as a light running along the progress
+    /// line and the strip's cover (Shimmer), not as a word.
+    var waitText: String? {
+        isOffline ? "Waiting for the connection…" : nil
     }
 
     private func installScripts() {
@@ -1655,8 +1657,8 @@ final class PlayerController: NSObject, ObservableObject {
         LastSession.clear()
     }
 
-    /// "Buffering…" is shown once a wait has lasted a while, so the usual
-    /// moment at the start of a track does not flash it.
+    /// The wait shows (the running light, Shimmer) once it has lasted a
+    /// while, so the usual moment at the start of a track does not flash it.
     private func noteBuffering(_ buffering: Bool) {
         if buffering {
             guard bufferingTask == nil else { return }

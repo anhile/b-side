@@ -468,7 +468,8 @@ enum Snapshots {
             .environmentObject(navigation)
             .environment(\.previewReduceTransparency, reduceTransparency)
             .environment(\.previewArtworkHover, artworkHover)
-            .environment(\.previewProgressHover, progressHover))
+            .environment(\.previewProgressHover, progressHover)
+            .environment(\.previewShimmerPhase, 0.5))
         hosting.sizingOptions = []
         hosting.frame = NSRect(origin: .zero, size: size)
         window.contentView = hosting

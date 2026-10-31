@@ -20,12 +20,15 @@ struct NowPlayingStrip: View {
             Button(action: open) {
                 HStack(spacing: Theme.Space.xs) {
                     Artwork(url: player.state.artworkURL, size: Theme.Size.artworkStrip, radius: Theme.Radius.nested)
+                        // Loading or buffering: a light runs across the cover.
+                        .shimmer(player.showsBuffering, colour: Theme.Colors.onVibe.opacity(Theme.Opacity.shimmerOnCover),
+                                 in: RoundedRectangle(cornerRadius: Theme.Radius.nested, style: .continuous))
                     VStack(alignment: .leading, spacing: 0) {
                         MarqueeText(text: line, font: Theme.Text.body, color: Theme.Colors.text)
                         if player.state.isAd, player.state.adLeft >= 0 {
                             AdCountdown(font: Theme.Text.caption)
-                        } else if player.showsBuffering {
-                            Text(player.waitText)
+                        } else if player.showsBuffering, let wait = player.waitText {
+                            Text(wait)
                                 .font(Theme.Text.caption)
                                 .foregroundStyle(Theme.Colors.textMuted)
                         } else if let label = player.sourceLabel {

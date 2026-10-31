@@ -65,7 +65,11 @@ make them 15% and 30% bigger, and the window's least size with them.
   ("Loading…", the artwork's placeholder) rather than "Nothing playing"
 - Since 2026-10-29 the line under the title names the wait: "Loading…"
   while a track is asked for (also while the page itself still loads),
-  "Buffering…" while it plays, "Waiting for the connection…" offline. Until
+  "Buffering…" while it plays, "Waiting for the connection…" offline.
+  Since 2026-10-31 no word for loading or buffering: a light runs along
+  the progress line (accent) and across the strip's cover (white), 1.4 s a
+  pass; with Reduce Motion they breathe instead. Only "Waiting for the
+  connection…" stays, in the artist's place. Until
   the track's title comes, the title line names what starts ("Liked
   Music"). After 30 s still loading: the problem line "This could not be
   played. Check the connection and try again." in the strip's place, the

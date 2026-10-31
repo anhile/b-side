@@ -17,6 +17,8 @@ struct ProgressBar: View {
     @State private var dragging = false
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.previewProgressHover) private var previewHover
+    /// Loading or buffering: a light runs along the line.
+    @Environment(\.progressWaiting) private var waiting
 
     private var active: Bool { isEnabled && (pointer != nil || dragging || previewHover != nil) }
 
@@ -35,6 +37,7 @@ struct ProgressBar: View {
                         .frame(width: max(filled, Theme.Size.progressLine))
                 }
                 .frame(height: Theme.Size.progressLine)
+                .shimmer(waiting, colour: Theme.Colors.accent, in: Capsule())
                 .overlay(alignment: .leading) {
                     // Where a click would go.
                     if isEnabled, !dragging, let pointer {
@@ -127,4 +130,9 @@ struct ProgressBar: View {
         guard width > 0 else { return 0 }
         return Double(min(max(x / width, 0), 1)) * max(duration, 0)
     }
+}
+
+extension EnvironmentValues {
+    /// The progress line waits for the track: loading or buffering.
+    @Entry var progressWaiting = false
 }

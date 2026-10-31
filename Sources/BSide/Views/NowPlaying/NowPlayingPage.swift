@@ -41,8 +41,8 @@ struct NowPlayingPage: View {
                         .help(title)
                     if player.state.isAd, player.state.adLeft >= 0 {
                         AdCountdown(font: Theme.Text.body)
-                    } else if player.showsBuffering {
-                        Text(player.waitText)
+                    } else if player.showsBuffering, let wait = player.waitText {
+                        Text(wait)
                             .font(Theme.Text.body)
                             .foregroundStyle(Theme.Colors.textMuted)
                     } else if player.state.artistID.isEmpty || player.state.isAd {
@@ -288,6 +288,7 @@ struct NowPlayingPage: View {
                             scrub = nil
                         })
                 .disabled(duration <= 0 || player.state.isAd)
+                .environment(\.progressWaiting, player.showsBuffering)
         }
     }
 

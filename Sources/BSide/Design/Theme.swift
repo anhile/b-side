@@ -184,6 +184,8 @@ enum Theme {
         /// The sign-in screen's slides: how far one moves in, the dots, and
         /// the pictures' parts.
         static var slideShift: CGFloat { (40) * scale }
+        /// The light that runs across a view while it waits, against the view's width.
+        static let shimmerBand: CGFloat = 0.35
         static var slideDot: CGFloat { (6) * scale }
         static var slideDotActive: CGFloat { (18) * scale }
         static var slideWidth: CGFloat { (256) * scale }
@@ -254,6 +256,10 @@ enum Theme {
         static let signInWash: Double = 0.22
         /// The slides: the dots not shown, the lines not sung, the sleeve's glyph.
         static let slideDot: Double = 0.35
+        /// How far a waiting view fades at the low of its breath (Reduce Motion).
+        static let shimmerBreath: Double = 0.5
+        /// The light across a cover: white, not so strong as to wash it out.
+        static let shimmerOnCover: Double = 0.6
         static let slideLyric: Double = 0.7
         static let slideGlyph: Double = 0.85
     }
@@ -276,6 +282,9 @@ enum Theme {
         /// The sign-in slides: how long each shows, the change between two,
         /// and how long a line of the lyrics picture is sung.
         static let slideSeconds: Double = 5
+        /// One pass of the light across a waiting view, and its frame rate.
+        static let shimmerPeriod: Double = 1.4
+        static let shimmerFrameRate: Double = 30
         static let slideChange: Double = 0.5
         static let slideLyricLine: Double = 1.6
         /// A tab changes the page at once, and the page fades in.
