@@ -54,7 +54,8 @@ struct Playlist: Identifiable, Equatable {
 
 /// What a search on the Explore page looks for.
 enum SearchKind: String, CaseIterable, Identifiable {
-    case songs, albums, artists, playlists
+    /// Everything, in YouTube Music's own order; each row says its kind.
+    case all, songs, albums, artists, playlists
 
     var id: String { rawValue }
     var title: String { rawValue.capitalized }

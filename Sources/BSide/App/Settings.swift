@@ -43,6 +43,7 @@ enum Keys {
     static let scratch = "scratch"               // debug: settings and the last session in a throwaway domain
     static let signIn = "signIn"                 // debug: open the sign-in panel once the page is ready
     static let signOutTest = "signOutTest"       // debug, with freshStart only: sign out once the page is ready
+    static let searchTest = "searchTest"         // debug: search these words, all kinds, once the page is ready, and log it
     static let freshStart = "freshStart"         // debug: a first launch: scratch settings and a web store with no cookies
 }
 

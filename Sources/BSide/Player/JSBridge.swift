@@ -165,7 +165,7 @@ final class JSBridge: NSObject, WKScriptMessageHandler {
                              length: item["length"] as? String ?? "")
             })
         case "search":
-            onSearch?(body["query"] as? String ?? "", SearchKind(rawValue: body["kind"] as? String ?? "") ?? .songs,
+            onSearch?(body["query"] as? String ?? "", SearchKind(rawValue: body["kind"] as? String ?? "") ?? .all,
                       MusicItem.list(body["items"]))
         case "artist":
             let id = body["id"] as? String ?? ""

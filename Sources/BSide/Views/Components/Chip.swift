@@ -46,6 +46,8 @@ struct Chip: View {
 /// full, as words in a paragraph.
 struct FlowLayout: Layout {
     var spacing: CGFloat
+    /// Each row in the middle of the width, as lines of centred text.
+    var centered = false
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let rows = arrange(width: proposal.width ?? .infinity, subviews: subviews)
@@ -57,7 +59,7 @@ struct FlowLayout: Layout {
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         var y = bounds.minY
         for row in arrange(width: bounds.width, subviews: subviews) {
-            var x = bounds.minX
+            var x = centered ? bounds.minX + (bounds.width - row.width) / 2 : bounds.minX
             for index in row.indices {
                 let size = subviews[index].sizeThatFits(.unspecified)
                 subviews[index].place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))

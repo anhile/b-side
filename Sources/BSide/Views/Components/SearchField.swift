@@ -39,7 +39,7 @@ struct SearchField: View {
             field.target = context.coordinator
             field.action = #selector(Coordinator.changed(_:)) // also the clear button and Escape
             field.sendsSearchStringImmediately = true
-            field.controlSize = Theme.scale > 1 ? .large : .regular
+            field.controlSize = .large // the bar's main control: taller than a toolbar's field
             field.font = .systemFont(ofSize: NSFont.systemFontSize * Theme.scale)
             field.focusRingType = .none // drawn by SearchField, in orange
             return field

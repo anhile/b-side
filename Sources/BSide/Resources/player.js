@@ -49,6 +49,7 @@
   // `params` that limit a search to one kind, as the YouTube Music UI's chips
   // do. Playlists: YouTube Music's own first, the community's when it has none.
   const SEARCH_FILTERS = {
+    all: [''], // no filter: YouTube Music's own mix, its shelves in order
     songs: ['EgWKAQIIAWoMEA4QChADEAQQCRAF'],
     albums: ['EgWKAQIYAWoMEA4QChADEAQQCRAF'],
     playlists: ['EgeKAQQoADgBagwQDhAKEAMQBBAJEAU=', 'EgeKAQQoAEABagwQDhAKEAMQBBAJEAU='],
@@ -718,10 +719,12 @@
 
   // One kind of result for a search, for the Explore page.
   async function search(query, kind) {
-    const filters = SEARCH_FILTERS[kind] || SEARCH_FILTERS.songs;
+    const filters = SEARCH_FILTERS[kind] || SEARCH_FILTERS.all;
     let items = [], bytes = 0;
     for (const params of filters) {
-      const text = await api(SEARCH_ENDPOINT, { query: query, params: params });
+      const body = { query: query };
+      if (params) body.params = params;
+      const text = await api(SEARCH_ENDPOINT, body);
       bytes += text.length;
       cut(text, [SEARCH_ITEM], function (key, node) {
         const item = listItem(node);
@@ -731,7 +734,10 @@
     }
     post({ type: 'search', query: query, kind: kind, items: items });
     const liked = items.filter(function (item) { return item.like === LIKED; }).length;
-    event('search', kind + ': ' + items.length + ' results, ' + liked + ' liked (' + Math.round(bytes / 1024) + ' KB)');
+    const kinds = {};
+    items.forEach(function (item) { kinds[item.kind] = (kinds[item.kind] || 0) + 1; });
+    event('search', kind + ': ' + items.length + ' results (' + Object.keys(kinds).map(function (k) { return kinds[k] + ' ' + k; }).join(', ')
+      + '), ' + liked + ' liked (' + Math.round(bytes / 1024) + ' KB)');
   }
 
   // Songs for a query, returned to the caller instead of posted: the vibe

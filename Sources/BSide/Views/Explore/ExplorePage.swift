@@ -12,7 +12,7 @@ struct ExplorePage: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var query = ""
-    @State private var kind = SearchKind.songs
+    @State private var kind = SearchKind.all
     @State private var barHeight: CGFloat = 0
     /// Counts the arrivals on the search, each of which puts the typing there.
     @State private var focusRequest = 0
@@ -169,9 +169,7 @@ struct ExplorePage: View {
             if let blocked = blockingState(for: player) {
                 blocked
             } else if !hasQuery {
-                EmptyState(symbol: "magnifyingglass", title: "Search",
-                           message: "Songs, albums, artists and playlists:\nall of YouTube\u{00A0}Music, one search away.")
-                    .background { FloatingNotes(running: navigation.page == .explore) }
+                searchStart
             } else {
                 switch player.searchState {
                 case .idle, .loading:
@@ -195,6 +193,31 @@ struct ExplorePage: View {
         .padding(.top, showsList ? 0 : barHeight)
         .padding(.bottom, showsList ? 0 : footerRoom)
     }
+
+    /// Before a search: the record with sleeves for what can be found
+    /// (songs, artists, albums), as the screens without music have it, and
+    /// a few words to start from; a click searches for them.
+    private var searchStart: some View {
+        StageLayout(title: "Search",
+                    text: "Songs, albums, artists and playlists:\nall of YouTube\u{00A0}Music, one search away.") {
+            RecordWithSleeves(sleeves: Self.searchSleeves)
+        } actions: {
+            FlowLayout(spacing: Theme.Space.xs, centered: true) {
+                ForEach(Self.suggestions, id: \.self) { words in
+                    Chip(title: words) { query = words }
+                }
+            }
+            .frame(maxWidth: Theme.Size.stageText)
+        }
+    }
+
+    /// Songs, artists and, behind the record, albums.
+    private static let searchSleeves = [StageSleeve(colour: 3, symbol: "music.note"),
+                                        StageSleeve(colour: 4, symbol: "music.mic"),
+                                        StageSleeve(colour: 7, symbol: "square.stack")]
+
+    /// Kinds of music most people have a word for.
+    private static let suggestions = ["Jazz", "Lo-fi beats", "Synthwave", "Hip-hop", "Indie rock", "Classical"]
 
     private var showsList: Bool {
         blockingState(for: player) == nil && hasQuery && player.searchState == .loaded && !player.searchResults.isEmpty

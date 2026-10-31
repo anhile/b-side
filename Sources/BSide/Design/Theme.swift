@@ -173,6 +173,9 @@ enum Theme {
         /// The sign-in screen's own button, and how wide its lines of text run.
         static var prominentButton: CGFloat { (220) * scale }
         static var signInText: CGFloat { (300) * scale }
+        /// The search kinds' segments, and how far the pill stands inside its track.
+        static var segmentHeight: CGFloat { (24) * scale }
+        static var segmentInset: CGFloat { (2) * scale }
         /// An artist's photo at the head of their page.
         static var artistPhoto: CGFloat { (128) * scale }
         /// How far below a page's header its wash of the artwork's colour runs.
@@ -265,6 +268,9 @@ enum Theme {
         /// wash of Ember from the top.
         static let signInShadow: Double = 0.3
         static let signInWash: Double = 0.22
+        /// The search kinds' track, and the raised pill's shadow.
+        static let segmentTrack: Double = 0.07
+        static let segmentShadow: Double = 0.18
         /// The ring around an artist's photo, in the page's colour.
         static let photoRing: Double = 0.7
         /// The soft circle behind an empty state's symbol, top and bottom.
@@ -281,11 +287,6 @@ enum Theme {
     }
 
     enum Motion {
-        /// The notes behind an empty Explore: how fast they rise (points per
-        /// second), how far they sway, and how many frames a second they take.
-        static let notesRise: Double = 9
-        static let notesSway: Double = 14
-        static let notesFrameRate: Double = 30
         /// A Vibe tile rises a little under the pointer and dips when pressed.
         static let tileHover: Double = 1.03
         static let tilePress: Double = 0.96

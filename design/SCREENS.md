@@ -414,3 +414,15 @@ No field takes the focus when a tab opens.
   kind in small capitals ("ARTIST", "ALBUM") over the name; an artist's
   photo at 128 with a light ring and the artwork's shadow, the name in the
   display role.
+
+## Explore's search (since 2026-10-31)
+
+- Before a search: the stage of the screens without music, the record
+  with sleeves for songs, artists and albums, "Search", two lines, and
+  chips of words to start from (Jazz, Lo-fi beats, Synthwave, Hip-hop,
+  Indie rock, Classical); a click searches for them. The floating notes
+  are gone: they crossed the picture.
+- The bar: the field at the large control size; the kinds All, Songs,
+  Albums, Artists, Playlists, All first and chosen at first (YouTube
+  Music's own mix, no filter; each row says its kind). The kinds sit on a
+  soft track, the current one a raised pill in the page's colour.

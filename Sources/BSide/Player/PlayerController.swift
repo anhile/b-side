@@ -1616,6 +1616,7 @@ final class PlayerController: NSObject, ObservableObject {
                 open(Playlist(id: id, title: id))
             }
             if let words = Settings.defaults.string(forKey: Keys.makeVibe) { logVibe(words) }
+            if let words = Settings.defaults.string(forKey: Keys.searchTest) { search(words, kind: .all) }
             if Settings.bool(Keys.signIn), !signingIn, account == .signedOut { showSignIn() }
             // Never with the real session: only a first launch's store in memory.
             if Settings.isFreshStart, Settings.bool(Keys.signOutTest), !Self.signedOutForTest {

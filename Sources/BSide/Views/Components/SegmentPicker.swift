@@ -1,13 +1,15 @@
 import AppKit
 import SwiftUI
 
-/// CUSTOM: the kinds of search, as segments of equal width. The current one
-/// is an orange pill that slides to the next with a light spring; no track
-/// under them, the titles stand on the page. The titles
-/// are drawn twice, muted and white, the white ones cut to the pill's shape,
-/// so a title turns white exactly where the pill passes under it. No hover
-/// background, which would clash with the pill: a hovered title darkens.
-/// Every title keeps its weight, so nothing changes width on a click.
+/// CUSTOM: the kinds of search, as segments of equal width on a soft
+/// track, as the system's segmented controls are: the current one a raised
+/// pill in the page's colour, with a hairline and a little shadow, that
+/// slides to the next with a light spring (since 2026-10-31; before, an
+/// orange pill with no track, which competed with the buttons). The titles
+/// are drawn twice, muted and in `text`, the second cut to the pill's
+/// shape, so a title brightens exactly where the pill passes under it. A
+/// hovered title darkens. Every title keeps its weight, so nothing changes
+/// width on a click.
 struct SegmentPicker<Value: Hashable>: View {
     @Binding var selection: Value
     let options: [(Value, String)]
@@ -29,15 +31,21 @@ struct SegmentPicker<Value: Hashable>: View {
                 .accessibilityAddTraits(isCurrent ? .isSelected : [])
             }
         }
-        .background { pill.foregroundStyle(Theme.Colors.accent) }
+        .background {
+            pill
+                .foregroundStyle(Theme.Colors.bg)
+                .shadow(color: Theme.Colors.shadow.opacity(Theme.Opacity.segmentShadow), radius: Theme.Space.xxs / 2, y: 1)
+        }
         .overlay {
             HStack(spacing: 0) {
-                ForEach(options.indices, id: \.self) { title($0, color: Theme.Colors.accentOnWhite) }
+                ForEach(options.indices, id: \.self) { title($0, color: Theme.Colors.text) }
             }
             .mask { pill }
             .allowsHitTesting(false)
             .accessibilityHidden(true)
         }
+        .padding(Theme.Size.segmentInset)
+        .background(Theme.Colors.text.opacity(Theme.Opacity.segmentTrack), in: Capsule())
         .animation(reduceMotion ? nil : .snappy(duration: Theme.Motion.page), value: currentIndex)
         .animation(.easeOut(duration: Theme.Motion.feedback), value: hovered)
     }
@@ -47,7 +55,7 @@ struct SegmentPicker<Value: Hashable>: View {
             .font(Theme.Text.label.weight(.semibold))
             .foregroundStyle(color)
             .lineLimit(1)
-            .frame(maxWidth: .infinity, minHeight: Theme.Size.pageDotTarget)
+            .frame(maxWidth: .infinity, minHeight: Theme.Size.segmentHeight)
             .contentShape(Capsule())
     }
 
