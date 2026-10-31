@@ -52,9 +52,10 @@ The pictures are rendered by the app itself with sample data.
 
 ## Install
 
-**Download.** Get `B-Side-<version>.dmg` from the
-[latest release](https://github.com/anhile/b-side/releases/latest), open it
-and drag B-Side to Applications.
+**Download.** [B-Side.dmg](https://github.com/anhile/b-side/releases/latest/download/B-Side.dmg)
+is always the latest release (all of them are on the
+[releases page](https://github.com/anhile/b-side/releases)). Open it and
+drag B-Side to Applications.
 
 The build is not signed with an Apple certificate and not notarised yet, so
 macOS stops it the first time:

@@ -48,14 +48,23 @@ The script:
    ticket to it.
 5. Puts the app and a link to `/Applications` in a disk image, signs,
    notarises and staples the image, and asks Gatekeeper about it.
-6. Leaves `dist/B-Side-<version>.dmg` and prints its SHA-256.
+6. Leaves `dist/B-Side-<version>.dmg`, the same image as
+   `dist/B-Side.dmg`, and prints the SHA-256.
+
+Both images go into the release. The one without the version makes a link
+that never changes and always gets the newest release, for the website and
+the README:
+
+```
+https://github.com/anhile/b-side/releases/latest/download/B-Side.dmg
+```
 
 Then try the image as a user would: open it, drag B-Side to Applications,
 start it. After that, tag and publish:
 
 ```bash
 git tag v1.0.0 && git push origin v1.0.0
-gh release create v1.0.0 dist/B-Side-1.0.0.dmg --title "B-Side 1.0.0" --notes-file docs/releases/1.0.0.md
+gh release create v1.0.0 dist/B-Side-1.0.0.dmg dist/B-Side.dmg --title "B-Side 1.0.0" --notes-file docs/releases/1.0.0.md
 ```
 
 The release's text is written beforehand in `docs/releases/<version>.md`,

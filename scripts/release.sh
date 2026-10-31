@@ -2,7 +2,9 @@
 # Builds a release of B-Side: a universal app signed with Developer ID and the
 # hardened runtime, notarised by Apple and stapled, in a disk image.
 #
-#   scripts/release.sh 1.0.0           the real thing, into dist/B-Side-1.0.0.dmg
+#   scripts/release.sh 1.0.0           the real thing, into dist/B-Side-1.0.0.dmg,
+#                                      and a copy as dist/B-Side.dmg for the
+#                                      link that always gets the latest
 #   scripts/release.sh 1.0.0 --adhoc   the same steps without a certificate and
 #                                      without Apple, to try the script itself
 #
@@ -107,5 +109,9 @@ if [[ "$IDENTITY" != "-" ]]; then
   spctl --assess --type open --context context:primary-signature --verbose "$DMG"
 fi
 
-echo "Done: $DMG"
+# The same image under a name without the version: as a release's asset,
+# releases/latest/download/B-Side.dmg always gets the newest.
+cp "$DMG" "$DIST/B-Side.dmg"
+
+echo "Done: $DMG and $DIST/B-Side.dmg"
 shasum -a 256 "$DMG"
