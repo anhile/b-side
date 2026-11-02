@@ -19,6 +19,8 @@ struct PlayerWindow: View {
     /// The page the pager shows; follows `navigation.page` by a jump, and
     /// leads it on a swipe.
     @State private var shownPage: Page? = .nowPlaying
+    /// The height under the bar, which every page of the pager is given.
+    @State private var pagesHeight: CGFloat?
     @State private var pageDipped = false
     /// Not hidden, minimised or covered by other windows.
     @State private var windowVisible = true
@@ -68,6 +70,12 @@ struct PlayerWindow: View {
             }
             .animation(.easeInOut(duration: Theme.Motion.page), value: player.showsWelcome)
             .animation(.easeInOut(duration: Theme.Motion.page), value: player.showsSignIn)
+            // The pages take the height left under the bar, however little.
+            // Without this, a page taller than the window at its least size
+            // made the whole column taller, and the window centred it: the
+            // bar slid up under the title bar and the strip off the bottom.
+            .frame(minHeight: 0, maxHeight: .infinity, alignment: .top)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { pagesHeight = $0 }
                 .overlay(alignment: .bottom) {
                     VStack(spacing: Theme.Space.xs) {
                         if let notice = player.notice {
@@ -180,8 +188,13 @@ struct PlayerWindow: View {
         ScrollView(.horizontal) {
             HStack(spacing: 0) {
                 ForEach(Page.allCases) { item in
+                    // The height is given, not left to the scroll view: a
+                    // horizontal one is as tall as its pages want, and they
+                    // took the window's starting height at any size, so an
+                    // empty state chose its largest layout and spilled over.
                     page(item)
                         .containerRelativeFrame(.horizontal)
+                        .frame(height: pagesHeight, alignment: .top) // anything taller runs off the bottom, not under the bar
                         .id(item)
                 }
             }
