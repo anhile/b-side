@@ -501,10 +501,10 @@ final class PlayerController: NSObject, ObservableObject {
         restored.position = session.position
         restored.duration = session.duration
         // Play, Next and Previous are the page's to answer once it plays;
-        // in a list there is a next track to go to.
+        // there is always a next track: the list's, or the track's radio.
         restored.queueIndex = 0
         restored.queueCount = 1
-        restored.queueHasMore = session.listID != nil
+        restored.queueHasMore = true
         state = restored
         clock = PlaybackClock(restored, at: Date())
         currentListID = session.listID
@@ -1336,7 +1336,7 @@ final class PlayerController: NSObject, ObservableObject {
                           "artistId": state.artistID, "albumId": state.albumID],
             ])
         } else if let video = target.videoID, target.listID == nil || position != nil {
-            bridge.call("load", "video", video, position ?? 0)
+            bridge.call("load", "video", video, position ?? 0, ["skip": skipAfterLoad])
         } else if let list = target.listID {
             bridge.call("load", "playlist", list, 0, ["shuffle": target.shuffle, "startIndex": target.startIndex])
         }

@@ -577,8 +577,10 @@
       page.tracks.unshift({ id: id, versions: [id], audio: false });
     }
     queueListId = '';
-    setQueue(page, 'radio');
-    playAt(0, startSeconds);
+    // Next pressed on the track before it was loaded: the radio's first.
+    const skip = options && options.skip > 0 && page.tracks.length > 1;
+    setQueue(page, skip ? 'radio, skipping to track 2' : 'radio');
+    playAt(skip ? 1 : 0, skip ? 0 : startSeconds);
   }
 
   // The tracks of one playlist, for the list in the app window: the same
