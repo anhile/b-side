@@ -57,8 +57,8 @@ enum Thumbnails {
             if attempt > 0 { try? await Task.sleep(for: .seconds(Tuning.artworkRetryDelay * Double(attempt))) }
             do {
                 let (data, response) = try await Net.session.data(from: url)
-                let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-                if status == 200, let image = decode(data, pixels: pixels) { return image }
+                let status = (response as? HTTPURLResponse)?.statusCode ?? 0 // none for a file: the snapshots' covers
+                if status == 200 || url.isFileURL, let image = decode(data, pixels: pixels) { return image }
                 failure = "HTTP \(status), \(data.count) bytes"
             } catch {
                 failure = error.localizedDescription

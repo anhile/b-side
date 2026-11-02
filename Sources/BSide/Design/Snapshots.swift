@@ -9,51 +9,54 @@ import WidgetKit
 /// bar, same views, only the player is a fixture.
 @MainActor
 enum Snapshots {
-    private static let artwork = URL(string: "https://i.ytimg.com/vi/UzIm_ZSmGYQ/hqdefault.jpg")
-    private static let track = PlayerState(
-        title: "Plug Walk", artist: "Rich The Kid", artworkURL: artwork, videoID: "x",
-        position: 4, duration: 175, isPlaying: true, isAd: false, queueIndex: 3, queueCount: 50, queueHasMore: true)
+    /// One made-up band and its neighbours (SnapshotCovers): Night Drive by
+    /// The Low Hours, from After Midnight, plays on every page.
+    private static var artwork: URL? { SnapshotCovers.afterMidnight }
+    private static var track: PlayerState { PlayerState(
+        title: "Night Drive", artist: "The Low Hours", artworkURL: artwork, videoID: "x",
+        position: 4, duration: 175, isPlaying: true, isAd: false, queueIndex: 3, queueCount: 50, queueHasMore: true) }
 
     private static let moods = [
         Mood.liked,
         Mood(id: "focus", name: "Focus", source: .playlist(id: "1", shuffled: false)),
         Mood(id: "night", name: "Night drive with a long name", source: .playlist(id: "2", shuffled: true)),
-        Mood(id: "radio", name: "Like Plug Walk", source: .radio(videoID: "x")),
+        Mood(id: "radio", name: "Like Night Drive", source: .radio(videoID: "x")),
     ]
 
     /// A playlist's tracks, the second one being the one that plays.
     private static func tracks(current: String) -> [Track] {
-        let names = [("Sicko Mode", "Travis Scott"), ("Plug Walk", "Rich The Kid"),
-                     ("A title long enough to be cut at the end of the row", "Someone feat. Someone Else"),
-                     ("Goosebumps", "Travis Scott"), ("", ""), ("Money Longer", "Lil Uzi Vert")]
+        let names: [(String, String, URL?)] = [
+            ("Slow Lights", "Marigold", SnapshotCovers.marigold), ("Night Drive", "The Low Hours", artwork),
+            ("A title long enough to be cut at the end of the row", "Vela feat. June Avenue", SnapshotCovers.vela),
+            ("Paper Moons", "Vela", nil), ("", "", nil), ("Overpass", "June Avenue", SnapshotCovers.juneAvenue)]
         return names.enumerated().map { index, name in
             Track(index: index, videoID: index == 1 ? current : "t\(index)", title: name.0, artist: name.1,
-                  artworkURL: index % 2 == 0 ? artwork : nil, length: "\(2 + index % 3):\(10 + index * 7)")
+                  artworkURL: name.2, length: "\(2 + index % 3):\(10 + index * 7)")
         }
     }
 
     /// Made-up timed lyrics; the track in the fixture is 18 s in, on line 4.
     private static let lyrics = Lyrics(
         videoID: "x", text: "", source: "Source: Musixmatch",
-        lines: ["Placeholder words for the first line", "A second line that runs long enough to wrap",
-                "", "The line being sung right now", "What comes next", "And after that",
-                "A line further down", "The last line"]
+        lines: ["Streetlights counting down the road", "Radio low, the windows open all the way",
+                "", "Where we go when the city sleeps", "Hold the wheel and hold the night",
+                "Every song's the one we keep", "Turn it up, the road is ours", "Side B, track one, all the way home"]
             .enumerated().map { LyricLine(start: Double($0.offset * 5 + 3), text: $0.element) })
 
     /// Name, page, and the situation to show.
     private static var cases: [(String, Page, PlayerController)] {
         var paused = track; paused.isPlaying = false; paused.like = "LIKE" // it plays from Liked Music
         var long = track
-        long.title = "Everything In Its Right Place (Live at Glastonbury 2003, Remastered)"
-        long.artist = "Radiohead feat. Someone With A Very Long Name Indeed"
+        long.title = "Night Drive (Live at the Old Theatre, 2003, Remastered and Extended)"
+        long.artist = "The Low Hours feat. Someone With A Very Long Name Indeed"
         var noArt = track; noArt.artworkURL = nil
         var ad = track; ad.isAd = true; ad.title = ""; ad.adLeft = 12; ad.adLeftAt = .distantFuture // stands still
         var adRun = ad; adRun.adIndex = 1; adRun.adCount = 2
         var loading = PlayerState(); loading.videoID = "x"
         let lists = [
-            Playlist(id: "1", title: "Focus", subtitle: "Emil • 12 tracks", artworkURL: artwork),
+            Playlist(id: "1", title: "Focus", subtitle: "Emil • 12 tracks", artworkURL: SnapshotCovers.focus),
             Playlist(id: "2", title: "Night drive with an unreasonably long playlist name", subtitle: "Someone Else • 87 tracks", artworkURL: nil),
-            Playlist(id: "3", title: "Workout", subtitle: "Emil • 34 tracks", artworkURL: artwork),
+            Playlist(id: "3", title: "Workout", subtitle: "Emil • 34 tracks", artworkURL: SnapshotCovers.workout),
         ]
         return [
             ("nowplaying-playing", .nowPlaying, .fixture(state: track, source: .mood(Mood.liked.id), playlists: lists)),
@@ -79,7 +82,7 @@ enum Snapshots {
             ("vibe-playing", .vibe, .fixture(state: track, source: .mood("focus"), playlists: lists, moods: moods)),
             ("vibe-one", .vibe, .fixture(playlists: lists)),
             ("vibe-longstrip", .vibe, .fixture(state: long, source: .mood("focus"), playlists: lists, moods: moods)),
-            ("vibe-radio", .vibe, .fixture(state: track, source: .radio("Sicko Mode"), playlists: lists, moods: moods)),
+            ("vibe-radio", .vibe, .fixture(state: track, source: .radio("Night Drive"), playlists: lists, moods: moods)),
             ("vibe-none", .vibe, .fixture(playlists: lists, moods: [])),
             ("vibe-many", .vibe, .fixture(state: track, source: .mood("m3"), playlists: lists, moods: moods + (1...5).map {
                 Mood(id: "m\($0)", name: "Mood \($0)", source: .playlist(id: "1", shuffled: $0 % 2 == 0))
@@ -94,7 +97,8 @@ enum Snapshots {
             ("playlists-failed", .playlists, .fixture(playlistsState: .failed("The list of playlists could not be loaded."))),
             ("playlists-none", .playlists, .fixture(playlists: [])),
             ("playlists-many", .playlists, .fixture(state: track, source: .playlist("7"), playlists: (1...20).map {
-                Playlist(id: String($0), title: "Playlist \($0)", subtitle: "\($0 * 3) tracks", artworkURL: $0 % 2 == 0 ? artwork : nil)
+                Playlist(id: String($0), title: "Playlist \($0)", subtitle: "\($0 * 3) tracks",
+                         artworkURL: [SnapshotCovers.focus, nil, SnapshotCovers.workout, SnapshotCovers.sideB][$0 % 4])
             })),
         ]
     }
@@ -105,8 +109,8 @@ enum Snapshots {
         var playing = WidgetState()
         playing.hasTrack = true
         playing.isPlaying = true
-        playing.title = "Plug Walk"
-        playing.artist = "Rich The Kid"
+        playing.title = "Night Drive"
+        playing.artist = "The Low Hours"
         playing.source = "Liked Music"
         playing.sourceSymbol = "heart.fill"
         if let artwork, let image = await ArtworkLoader.image(for: artwork) {
@@ -144,7 +148,7 @@ enum Snapshots {
     private static func renderSettings(into folder: URL) async {
         // -snapshotOnly filters these too, as it does the pages.
         if let only = UserDefaults.standard.string(forKey: Keys.snapshotOnly), !"settings".contains(only), !only.contains("settings") { return }
-        let player = PlayerController.fixture(state: track, account: .signedIn(name: "Emil", handle: "@emil", photoURL: artwork),
+        let player = PlayerController.fixture(state: track, account: .signedIn(name: "Emil", handle: "@emil", photoURL: SnapshotCovers.account),
                                               source: .mood(Mood.liked.id))
         player.processesForSnapshot = [
             ProcessInfoRow(pid: 501, name: "B-Side", footprintBytes: 41 << 20),
@@ -193,10 +197,10 @@ enum Snapshots {
     private static func renderNewVibe(into folder: URL) async {
         let jazz = VibeSpec(
             name: "Rainy Sunday", colour: 2, tags: ["slow jazz", "rainy", "instrumental"],
-            artists: ["Bill Evans", "Chet Baker", "Kenny Dorham", "Paul Desmond"], vocals: .without, mix: .both,
-            anchors: [Track(index: 0, videoID: "a", title: "Peace Piece", artist: "Bill Evans", artworkURL: artwork),
-                      Track(index: 1, videoID: "b", title: "Alone Together", artist: "Chet Baker", artworkURL: nil),
-                      Track(index: 2, videoID: "c", title: "Lotus Blossom", artist: "Kenny Dorham", artworkURL: artwork)],
+            artists: ["Marigold", "Vela", "Northern Glass", "June Avenue"], vocals: .without, mix: .both,
+            anchors: [Track(index: 0, videoID: "a", title: "Rain on Glass", artist: "Marigold", artworkURL: SnapshotCovers.marigold),
+                      Track(index: 1, videoID: "b", title: "Slow Hours", artist: "Vela", artworkURL: nil),
+                      Track(index: 2, videoID: "c", title: "Blue Window", artist: "Northern Glass", artworkURL: SnapshotCovers.vela)],
             matchedMoods: nil)
         var plain = jazz
         plain.name = "Rainy Sunday"; plain.colour = 3; plain.tags = []; plain.artists = []
@@ -352,56 +356,58 @@ enum Snapshots {
         plain.text = "Plain lyrics, without timings,\nshown as text you can select.\n\nA second verse\nof made-up words."
         await renderPage(.nowPlaying, player: .fixture(state: singing, source: .mood(Mood.liked.id), lyrics: plain),
                          name: "nowplaying-lyrics-plain", appearance: .aqua, into: folder, showsLyrics: true)
-        let found = [("Вокруг шум", "Каста • Быль в глаза", "3:36"), ("Plug Walk", "Rich The Kid • Plug Walk", "2:55"),
-                     ("A result with a title long enough to be cut", "Someone feat. Someone Else • An album", "4:07"),
-                     ("Ды-ды-дым", "Каста • Быль в глаза", "4:07")]
-            .enumerated().map { index, item in
+        let rows: [(String, String, String, URL?)] = [
+            ("Streetlights", "The Low Hours • After Midnight", "3:36", artwork),
+            ("Night Drive", "The Low Hours • After Midnight", "2:55", artwork),
+            ("A result with a title long enough to be cut", "The Low Hours feat. Vela • Side B", "4:07", SnapshotCovers.sideB),
+            ("Radio Low", "The Low Hours • Side B", "4:07", SnapshotCovers.sideB)]
+        let found = rows.enumerated().map { index, item in
                 MusicItem(id: index, videoID: index == 1 ? track.videoID : "s\(index)", title: item.0,
-                          subtitle: item.1, detail: item.2, artworkURL: index % 2 == 0 ? artwork : nil)
+                          subtitle: item.1, detail: item.2, artworkURL: item.3)
             }
         for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
             await renderPage(.explore, player: .fixture(state: track, source: .other), name: "explore-empty-\(suffix)",
                              appearance: appearance, into: folder)
-            await renderPage(.explore, player: .fixture(state: track, source: .other, search: ("каста", found),
+            await renderPage(.explore, player: .fixture(state: track, source: .other, search: ("low hours", found),
                                                         searchState: .loaded),
                              name: "explore-results-\(suffix)", appearance: appearance, into: folder)
         }
         let albums = (1...4).map {
             MusicItem(id: $0, kind: .album, playlistID: "OLAK\($0)", browseID: "MPREb\($0)",
-                      title: $0 == 1 ? "Быль в глаза" : "An album with a longer name \($0)",
-                      subtitle: "\(2000 + $0 * 4)", artworkURL: $0 % 2 == 1 ? artwork : nil)
+                      title: ["After Midnight", "Side B", "An album with a longer name than most", "Early Hours"][$0 - 1],
+                      subtitle: "\(2008 + $0 * 4)", artworkURL: [artwork, SnapshotCovers.sideB, nil, SnapshotCovers.vela][$0 - 1])
         }
         let related = (1...4).map {
-            MusicItem(id: $0, kind: .artist, browseID: "UC\($0)", title: ["25/17", "Баста", "Someone", "Other"][$0 - 1])
+            MusicItem(id: $0, kind: .artist, browseID: "UC\($0)", title: ["Marigold", "Vela", "June Avenue", "Northern Glass"][$0 - 1])
         }
-        let artistPage = ArtistPage(id: "UCkasta", name: "Каста", artworkURL: artwork, songsPlaylistID: "OLAKall",
+        let artistPage = ArtistPage(id: "UClowhours", name: "The Low Hours", artworkURL: SnapshotCovers.lowHours, songsPlaylistID: "OLAKall",
                                     songs: Array(found.prefix(3)),
                                     shelves: [.init(id: 0, title: "Albums", items: albums),
                                               .init(id: 1, title: "Fans might also like", items: related)])
-        let albumTracks = ["В супермаркете", "Встреча", "Нормально всё", "Вокруг шум", "Ды-ды-дым"].enumerated().map {
+        let albumTracks = ["Intro", "Streetlights", "Radio Low", "Night Drive", "Side B"].enumerated().map {
             MusicItem(id: $0.offset, videoID: $0.offset == 3 ? track.videoID : "a\($0.offset)", title: $0.element,
-                      subtitle: "Каста", detail: "3:\(10 + $0.offset * 7)", artistID: "UCkasta")
+                      subtitle: "The Low Hours", detail: "3:\(10 + $0.offset * 7)", artistID: "UClowhours")
         }
-        let album = CollectionPage(id: "MPREbalbum", isAlbum: true, title: "Быль в глаза", subtitle: "Album • 2008",
-                                   artist: "Каста", artistID: "UCkasta", artworkURL: artwork, playlistID: "OLAKalbum",
+        let album = CollectionPage(id: "MPREbalbum", isAlbum: true, title: "After Midnight", subtitle: "Album • 2012",
+                                   artist: "The Low Hours", artistID: "UClowhours", artworkURL: artwork, playlistID: "OLAKalbum",
                                    tracks: albumTracks)
         for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
             await renderPage(.explore, player: .fixture(state: track, source: .other, artist: artistPage),
                              name: "explore-artist-\(suffix)", appearance: appearance, into: folder,
-                             explorePath: [.artist(id: "UCkasta", name: "Каста")])
+                             explorePath: [.artist(id: "UClowhours", name: "The Low Hours")])
             await renderPage(.explore, player: .fixture(state: track, source: .other, collection: album),
                              name: "explore-album-\(suffix)", appearance: appearance, into: folder,
-                             explorePath: [.collection(id: "MPREbalbum", title: "Быль в глаза")])
+                             explorePath: [.collection(id: "MPREbalbum", title: "After Midnight")])
         }
         var shelvesOnly = artistPage; shelvesOnly.songs = []
         await renderPage(.explore, player: .fixture(state: track, source: .other, artist: shelvesOnly),
                          name: "explore-artist-rows", appearance: .aqua, into: folder,
-                         explorePath: [.artist(id: "UCkasta", name: "Каста")])
-        await renderPage(.explore, player: .fixture(search: ("каста", []), searchState: .loading),
+                         explorePath: [.artist(id: "UClowhours", name: "The Low Hours")])
+        await renderPage(.explore, player: .fixture(search: ("low hours", []), searchState: .loading),
                          name: "explore-loading", appearance: .aqua, into: folder)
         await renderPage(.explore, player: .fixture(search: ("zzqx", []), searchState: .loaded),
                          name: "explore-nothing", appearance: .aqua, into: folder)
-        await renderPage(.explore, player: .fixture(state: track, source: .other, search: ("каста", found),
+        await renderPage(.explore, player: .fixture(state: track, source: .other, search: ("low hours", found),
                                                     searchState: .loaded),
                          name: "explore-reduce-transparency", appearance: .aqua, into: folder, reduceTransparency: true)
         // The window dragged wider and taller: the pages fill it.
@@ -412,7 +418,7 @@ enum Snapshots {
                          name: "wide-queue", appearance: .darkAqua, into: folder, showsQueue: true, size: wide)
         await renderPage(.vibe, player: .fixture(state: track, source: .mood("focus"), moods: moods),
                          name: "wide-vibe", appearance: .aqua, into: folder, size: wide)
-        let largeLists = [Playlist(id: "1", title: "Focus", subtitle: "12 tracks", artworkURL: artwork),
+        let largeLists = [Playlist(id: "1", title: "Focus", subtitle: "12 tracks", artworkURL: SnapshotCovers.focus),
                           Playlist(id: "2", title: "Night drive", subtitle: "87 tracks")]
         await renderPage(.playlists, player: .fixture(state: track, source: .playlist("1"), playlists: largeLists),
                          name: "wide-playlists", appearance: .darkAqua, into: folder, size: wide)
