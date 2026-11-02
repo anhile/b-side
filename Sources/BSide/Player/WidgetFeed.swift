@@ -94,4 +94,10 @@ enum WidgetFeed {
         guard url.scheme == WidgetState.urlScheme, let host = url.host() else { return nil }
         return WidgetCommand(rawValue: host)
     }
+
+    /// The vibe tile `bside://vibe?id=<id>` names, if it names one.
+    static func vibeID(in url: URL) -> String? {
+        URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?.first { $0.name == "id" }?.value
+    }
 }

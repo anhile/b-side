@@ -21,6 +21,9 @@ struct BSideApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
+        // `bside://` URLs are commands for AppDelegate; left to SwiftUI, each
+        // one also reopens this window, which blinks.
+        .handlesExternalEvents(matching: [])
         .commands {
             CommandGroup(replacing: .newItem) {}
             CommandGroup(replacing: .appSettings) {
@@ -107,11 +110,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func application(_ application: NSApplication, open urls: [URL]) {
         for url in urls {
             guard let command = WidgetFeed.command(in: url) else { continue }
-            NotificationCenter.default.post(name: Self.urlCommand, object: command.rawValue)
+            let vibe = WidgetFeed.vibeID(in: url).map { [Self.vibeKey: $0] }
+            NotificationCenter.default.post(name: Self.urlCommand, object: command.rawValue, userInfo: vibe)
         }
     }
 
     static let urlCommand = Notification.Name("BSideURLCommand")
+    /// In a URL command's user info: the vibe tile it names.
+    static let vibeKey = "vibe"
 
     /// Playback must continue with every window closed.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }

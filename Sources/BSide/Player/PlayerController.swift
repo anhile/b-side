@@ -542,6 +542,17 @@ final class PlayerController: NSObject, ObservableObject {
         }
     }
 
+    /// A tile by its id, from `bside://vibe?id=`; Play Vibe's own choice
+    /// when no tile has it any more.
+    func playVibe(id: String) {
+        EventLog.write("widget\tvibe \(id)")
+        if let mood = moods.first(where: { $0.id == id }) {
+            play(mood)
+        } else {
+            playVibe()
+        }
+    }
+
     /// What Play Vibe starts. While the account is not known yet (right
     /// after launch) it is Liked Music, unless the user chose to be a guest.
     var vibeMood: Mood? {
@@ -1341,6 +1352,8 @@ final class PlayerController: NSObject, ObservableObject {
         case .vibe: playVibe()
         case .show:
             MainWindow.show()
+        case .like:
+            if hasTrack, !state.isLiked { setLike(state.videoID, on: true) }
         }
     }
 

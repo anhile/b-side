@@ -19,8 +19,10 @@ declare namespace Preferences {
   export type Next = ExtensionPreferences & {}
   /** Preferences accessible in the `previous` command */
   export type Previous = ExtensionPreferences & {}
-  /** Preferences accessible in the `play-vibe` command */
-  export type PlayVibe = ExtensionPreferences & {}
+  /** Preferences accessible in the `like` command */
+  export type Like = ExtensionPreferences & {}
+  /** Preferences accessible in the `choose-vibe` command */
+  export type ChooseVibe = ExtensionPreferences & {}
   /** Preferences accessible in the `show` command */
   export type Show = ExtensionPreferences & {}
 }
@@ -32,8 +34,10 @@ declare namespace Arguments {
   export type Next = {}
   /** Arguments passed to the `previous` command */
   export type Previous = {}
-  /** Arguments passed to the `play-vibe` command */
-  export type PlayVibe = {}
+  /** Arguments passed to the `like` command */
+  export type Like = {}
+  /** Arguments passed to the `choose-vibe` command */
+  export type ChooseVibe = {}
   /** Arguments passed to the `show` command */
   export type Show = {}
 }

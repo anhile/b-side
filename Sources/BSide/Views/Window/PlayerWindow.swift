@@ -120,7 +120,11 @@ struct PlayerWindow: View {
         .onReceive(NotificationCenter.default.publisher(for: AppDelegate.urlCommand)) { note in
             guard let name = note.object as? String, let command = WidgetCommand(rawValue: name) else { return }
             if command == .show { navigation.page = .nowPlaying }
-            player.perform(command)
+            if command == .vibe, let id = note.userInfo?[AppDelegate.vibeKey] as? String {
+                player.playVibe(id: id)
+            } else {
+                player.perform(command)
+            }
             TrackNotifier.shared.onOpen = {
                 if !MainWindow.show() { openWindow(id: "main") }
                 navigation.page = .nowPlaying

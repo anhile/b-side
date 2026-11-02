@@ -23,7 +23,8 @@ struct WidgetState: Codable, Equatable {
 
     static let widgetKind = "NowPlaying"
     static let appBundleID = "com.anhile.bside"
-    /// `bside://<command>` opens the app and runs the command.
+    /// `bside://<command>` opens the app and runs the command;
+    /// `bside://vibe?id=<id>` starts that vibe tile.
     static let urlScheme = "bside"
 }
 
@@ -32,6 +33,9 @@ enum WidgetCommand: String, CaseIterable {
     case toggle, next, previous, vibe
     /// Only shows the app, on Now Playing.
     case show
+    /// Likes the playing track; never takes a like back. By URL only,
+    /// for Raycast and the like.
+    case like
 
     var url: URL { URL(string: "\(WidgetState.urlScheme)://\(rawValue)")! }
 }

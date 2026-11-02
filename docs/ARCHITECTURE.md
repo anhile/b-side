@@ -165,6 +165,12 @@ Intents that send a command back over the same port, or open the app by
 `bside://<command>` when it is not running. The app (`WidgetFeed`) answers
 the port and asks WidgetKit to redraw a second after what plays changes.
 
+The same URLs work from anywhere, and the Raycast extension in `raycast/`
+uses them: `toggle`, `next`, `previous`, `vibe`, `show`, and two the widget
+does not send: `like` (likes the playing track, never takes a like back)
+and `vibe?id=<tile id>`. The extension lists the tiles by reading the
+`moods` JSON from the app's preferences.
+
 No shared group container: on recent macOS, access to one needs the group
 ID to start with a Team ID, and B-Side is signed without one. The widget's
 entitlements (the sandbox, and a mach-lookup exception for the port's name)
