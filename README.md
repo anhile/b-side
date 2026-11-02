@@ -111,6 +111,15 @@ B-Side server**. A larger model then reads the words and knows far more
 music. The words are not stored; each Mac gets 10 vibes a month. The server
 is in [server/](server/) and anyone can run their own.
 
+## Raycast
+
+The [Raycast](https://www.raycast.com) extension in [raycast/](raycast/)
+plays, pauses, skips, likes the track, lists your vibes and starts the one
+you pick. Until it is in the Raycast Store, add it with `npm install` and
+`npm run dev` in that folder. Every command is a `bside://` URL, so they work
+from anything that opens URLs: `bside://toggle`, `next`, `previous`, `like`,
+`show`, `vibe`.
+
 ## Privacy
 
 B-Side talks to Google (YouTube Music) with your own session, and to nobody
