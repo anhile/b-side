@@ -98,6 +98,12 @@ enum Tuning {
 
     /// A failed artwork download is tried once more after this many seconds.
     static let artworkRetryDelay: TimeInterval = 1
+    /// Small artwork (Thumbnails): tries per download, how long a picture
+    /// that failed every try is left alone before it is asked for again,
+    /// and the memory the decoded pictures may take, about a thousand rows.
+    static let thumbnailAttempts = 3
+    static let thumbnailRetryAfter: TimeInterval = 20
+    static let thumbnailCacheBytes = 64 * 1024 * 1024
     /// How far VoiceOver's adjust gestures move the progress bar, in seconds.
     static let seekStep: TimeInterval = 10
     /// The playback clock (PlaybackClock): a report off by less than the

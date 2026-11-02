@@ -131,6 +131,8 @@ enum Theme {
         static var artworkAction: CGFloat { (48) * scale }
         /// The hover shape stops this short of the button's edge.
         static var hoverInset: CGFloat { (2) * scale }
+        /// The shadow under an icon button's raised capsule.
+        static var buttonShadow: CGFloat { (3) * scale }
         /// The search field's ring while it has the keyboard.
         static var focusRing: CGFloat { (2) * scale }
         static var volumeGlyph: CGFloat { (20) * scale }
@@ -246,6 +248,13 @@ enum Theme {
         static let scrim: Double = 0.45
         /// The hover circle under icon buttons, in the text colour.
         static let hover: Double = 0.08
+        /// Icon buttons as keys (PressableStyle): the light capsule under
+        /// the pointer, in light and dark mode, its shadow, and the shade
+        /// of the text colour it sinks to while pressed.
+        static let buttonRaised: Double = 0.7
+        static let buttonRaisedDark: Double = 0.12
+        static let buttonShadow: Double = 0.12
+        static let buttonSunk: Double = 0.12
         static let disabled: Double = 0.35
         static let groove: Double = 0.18
         /// The light on the record's surface, which makes its turning visible.
@@ -297,6 +306,12 @@ enum Theme {
         static let tileHover: Double = 1.03
         static let tilePress: Double = 0.96
         static let feedback: Double = 0.15
+        /// An icon button pressed: its glyph squeezed to this, quickly, and
+        /// back on release with a spring that overshoots a little.
+        static let buttonPress: Double = 0.84
+        static let buttonDown: Double = 0.08
+        static let buttonSpring: Double = 0.3
+        static let buttonBounce: Double = 0.5
         static let tooltipDelay: Double = 1.5
         static let page: Double = 0.3
         /// The sign-in screen's sleeves fanning out, after a beat.

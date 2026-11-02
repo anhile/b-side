@@ -133,10 +133,12 @@ struct TransportButton: View {
     }
 }
 
-/// Feedback for icon buttons: a soft capsule in the text colour under the
-/// pointer, and a short dip in opacity while pressed. It fills the button's
-/// frame: a circle on square buttons and the round glass ones, the shape of
-/// the page pill on the page tabs.
+/// Feedback for icon buttons, as if they were keys. Under the pointer a
+/// light capsule rises behind the glyph, with a soft shadow; pressed, the
+/// capsule sinks into a shade of the text colour and the glyph squeezes,
+/// then springs back on release. It fills the button's frame: a circle on
+/// square buttons and the round glass ones, the shape of the page pill on
+/// the page tabs. With Reduce Motion the glyph stays still and dims.
 struct PressableStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         HoverLabel(configuration: configuration)
@@ -145,21 +147,33 @@ struct PressableStyle: ButtonStyle {
     private struct HoverLabel: View {
         let configuration: Configuration
         @Environment(\.isEnabled) private var isEnabled
+        @Environment(\.colorScheme) private var colorScheme
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
         @State private var hovering = false
+
+        private var pressed: Bool { configuration.isPressed && isEnabled }
 
         var body: some View {
             configuration.label
+                .scaleEffect(pressed && !reduceMotion ? Theme.Motion.buttonPress : 1)
+                .opacity(pressed && reduceMotion ? Theme.Opacity.pressed : 1)
                 .background {
                     Capsule()
-                        .fill(Theme.Colors.text.opacity(Theme.Opacity.hover))
+                        .fill(pressed ? Theme.Colors.text.opacity(Theme.Opacity.buttonSunk)
+                                      : Theme.Colors.knob.opacity(colorScheme == .dark ? Theme.Opacity.buttonRaisedDark
+                                                                                      : Theme.Opacity.buttonRaised))
+                        .shadow(color: Theme.Colors.shadow.opacity(pressed ? 0 : Theme.Opacity.buttonShadow),
+                                radius: Theme.Size.buttonShadow, y: Theme.Size.buttonShadow / 2)
                         .padding(Theme.Size.hoverInset)
-                        .opacity(hovering && isEnabled ? 1 : 0)
+                        .opacity((hovering || pressed) && isEnabled ? 1 : 0)
                 }
-                .opacity(configuration.isPressed ? Theme.Opacity.pressed : 1)
                 .onHover { hovering = $0 }
                 .pointingHand(isEnabled)
                 .animation(.easeOut(duration: Theme.Motion.feedback), value: hovering)
-                .animation(.easeOut(duration: Theme.Motion.feedback), value: configuration.isPressed)
+                // Down at once, back with a small overshoot.
+                .animation(pressed ? .easeOut(duration: Theme.Motion.buttonDown)
+                                   : .spring(response: Theme.Motion.buttonSpring, dampingFraction: Theme.Motion.buttonBounce),
+                           value: pressed)
         }
     }
 }
