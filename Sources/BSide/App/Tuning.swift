@@ -127,6 +127,9 @@ struct PlayTarget: Equatable {
     var shuffle = false
     /// Start the playlist at this track (0-based).
     var startIndex = 0
+    /// A track without a list goes on with this track's radio instead of
+    /// its own: the radio a vibe started, resumed at a later track of it.
+    var radioOf: String?
 
     init(videoID: String?, listID: String?, shuffle: Bool = false, startIndex: Int = 0) {
         self.videoID = videoID

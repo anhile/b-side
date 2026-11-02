@@ -571,16 +571,27 @@
     // Like YouTube Music with autoplay on: the track, then its radio. The
     // radio is fetched first because it also says whether the track has a
     // song version.
+    // Resuming a later track of a radio (a vibe's): the same radio, from
+    // where the track is in it, or with the track before it when the
+    // radio's first page does not have it.
+    const radioOf = (options && options.radioOf) || id;
     let page = { tracks: [], continuation: null };
-    try { page = await fetchQueue({ videoId: id, playlistId: RADIO_PREFIX + id }); } catch (e) { event('error', 'radio: ' + e); }
-    if (!page.tracks.length || page.tracks[0].versions.indexOf(id) === -1) {
-      page.tracks.unshift({ id: id, versions: [id], audio: false });
+    try { page = await fetchQueue({ videoId: radioOf, playlistId: RADIO_PREFIX + radioOf }); } catch (e) { event('error', 'radio: ' + e); }
+    let at = radioOf === id
+      ? (page.tracks.length && page.tracks[0].versions.indexOf(id) !== -1 ? 0 : -1)
+      : page.tracks.findIndex(function (entry) { return entry.versions.indexOf(id) !== -1; });
+    if (at === -1) {
+      const known = (options && options.track) || {};
+      page.tracks.unshift({ id: id, versions: [id], audio: false, title: known.title || '',
+                            artist: known.artist || '', artwork: known.artwork || '', thumb: known.artwork || '',
+                            like: known.like || '', artistId: known.artistId || '', albumId: known.albumId || '' });
+      at = 0;
     }
     queueListId = '';
-    // Next pressed on the track before it was loaded: the radio's first.
-    const skip = options && options.skip > 0 && page.tracks.length > 1;
-    setQueue(page, skip ? 'radio, skipping to track 2' : 'radio');
-    playAt(skip ? 1 : 0, skip ? 0 : startSeconds);
+    // Next pressed on the track before it was loaded: the one after it.
+    const to = options && options.skip > 0 && at + 1 < page.tracks.length ? at + 1 : at;
+    setQueue(page, 'radio' + (radioOf === id ? '' : ' of ' + radioOf + ', at track ' + (at + 1)) + (to !== at ? ', skipping to ' + (to + 1) : ''));
+    playAt(to, to === at ? startSeconds : 0);
   }
 
   // The tracks of one playlist, for the list in the app window: the same

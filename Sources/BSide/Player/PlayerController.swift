@@ -143,6 +143,8 @@ final class PlayerController: NSObject, ObservableObject {
     private var webKitSessionChecked = false
 
     private var currentListID: String?
+    /// The track whose radio plays, when no list does.
+    private var currentRadio: String?
     private var currentShuffle = false
     private var savedSession: LastSession?
     /// Names of lists played from Explore, which are not in the library.
@@ -450,7 +452,9 @@ final class PlayerController: NSObject, ObservableObject {
 
     /// The track that plays, in the list it plays from.
     private var currentTarget: PlayTarget {
-        PlayTarget(videoID: state.videoID, listID: currentListID, shuffle: currentShuffle)
+        var target = PlayTarget(videoID: state.videoID, listID: currentListID, shuffle: currentShuffle)
+        target.radioOf = currentRadio
+        return target
     }
 
     // MARK: - The last session
@@ -477,7 +481,7 @@ final class PlayerController: NSObject, ObservableObject {
             videoID: state.videoID, title: state.title, artist: state.artist,
             artwork: state.artworkURL?.absoluteString, artistID: state.artistID, albumID: state.albumID,
             like: state.like, position: unloaded?.position ?? position(at: Date()), duration: state.duration,
-            listID: currentListID, shuffle: currentShuffle, sourceKind: kind, sourceID: id,
+            listID: currentListID, shuffle: currentShuffle, radioOf: currentRadio, sourceKind: kind, sourceID: id,
             listTitle: known?.title, listKind: listKind)
         guard session != savedSession else { return }
         savedSession = session
@@ -509,6 +513,7 @@ final class PlayerController: NSObject, ObservableObject {
         clock = PlaybackClock(restored, at: Date())
         currentListID = session.listID
         currentShuffle = session.shuffle
+        currentRadio = session.radioOf
         source = switch session.sourceKind {
         case "mood": .mood(session.sourceID)
         case "playlist": .playlist(session.sourceID)
@@ -1283,6 +1288,7 @@ final class PlayerController: NSObject, ObservableObject {
         problem = nil
         source = .playlist(playlist.id)
         currentListID = playlist.id
+        currentRadio = nil
         EventLog.write("load\t\(track.videoID)\t\(playlist.id)\tfrom track \(track.index + 1)")
         bridge.call("playListing", playlist.id, track.index)
     }
@@ -1307,6 +1313,7 @@ final class PlayerController: NSObject, ObservableObject {
         source = newSource
         currentListID = target.listID
         currentShuffle = target.shuffle
+        currentRadio = target.listID == nil ? target.radioOf ?? target.videoID : nil
         EventLog.write("load\t\(target.videoID ?? "-")\t\(target.listID ?? "-")\(target.shuffle ? "\tshuffle" : "")")
         if pageReady {
             sendToPage(target, startAt: position)
@@ -1336,7 +1343,14 @@ final class PlayerController: NSObject, ObservableObject {
                           "artistId": state.artistID, "albumId": state.albumID],
             ])
         } else if let video = target.videoID, target.listID == nil || position != nil {
-            bridge.call("load", "video", video, position ?? 0, ["skip": skipAfterLoad])
+            // Resuming a radio at a later track of it: the same radio goes on.
+            var options: [String: Any] = ["skip": skipAfterLoad, "radioOf": target.radioOf ?? video]
+            if video == state.videoID {
+                options["track"] = ["title": state.title, "artist": state.artist, "like": state.like,
+                                    "artwork": state.artworkURL?.absoluteString ?? "",
+                                    "artistId": state.artistID, "albumId": state.albumID]
+            }
+            bridge.call("load", "video", video, position ?? 0, options)
         } else if let list = target.listID {
             bridge.call("load", "playlist", list, 0, ["shuffle": target.shuffle, "startIndex": target.startIndex])
         }
@@ -1459,6 +1473,7 @@ final class PlayerController: NSObject, ObservableObject {
         unloaded = nil
         source = nil
         currentListID = nil
+        currentRadio = nil
         savedSession = nil
         LastSession.clear() // it may be from the account's own playlists
         state = PlayerState()
@@ -1689,6 +1704,7 @@ final class PlayerController: NSObject, ObservableObject {
         unloaded = nil
         source = nil
         currentListID = nil
+        currentRadio = nil
         state = PlayerState()
         clock = PlaybackClock()
         nowPlaying.update(state)

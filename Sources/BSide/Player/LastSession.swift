@@ -16,6 +16,9 @@ struct LastSession: Codable, Equatable {
     /// The list it played from, and whether shuffled; nil for a radio.
     var listID: String?
     var shuffle: Bool
+    /// Without a list: the track whose radio plays (a vibe's first), nil
+    /// in sessions saved before it was kept.
+    var radioOf: String?
     /// "mood" or "playlist" with its ID, or "other".
     var sourceKind: String
     var sourceID: String
