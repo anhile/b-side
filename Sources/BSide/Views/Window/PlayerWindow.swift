@@ -74,7 +74,7 @@ struct PlayerWindow: View {
             // Without this, a page taller than the window at its least size
             // made the whole column taller, and the window centred it: the
             // bar slid up under the title bar and the strip off the bottom.
-            .frame(minHeight: 0, maxHeight: .infinity, alignment: .top)
+            .frame(minHeight: 0, maxHeight: .infinity, alignment: .top) // tokens-ok: zero is not a size, it lets the pages shrink
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { pagesHeight = $0 }
                 .overlay(alignment: .bottom) {
                     VStack(spacing: Theme.Space.xs) {
