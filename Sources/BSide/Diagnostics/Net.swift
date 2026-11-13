@@ -7,7 +7,25 @@ import WebKit
 /// it and the page through an HTTP CONNECT proxy, for trying the app on a
 /// slow or broken network.
 enum Net {
-    static let session: URLSession = {
+    static let session = URLSession(configuration: baseConfiguration())
+
+    /// For pictures, which come from a few hosts, again and again (the
+    /// same cover for the window, the strip, Control Center, the
+    /// notification, the widget), and which the hosts let be kept for hours:
+    /// a cache on disk that outlives the launch, so a library of covers is
+    /// not downloaded again at every start. It follows what the host says
+    /// about how long a picture stays good.
+    static let imageSession: URLSession = {
+        let configuration = baseConfiguration()
+        let folder = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("B-Side", isDirectory: true).appendingPathComponent("Pictures", isDirectory: true)
+        configuration.urlCache = URLCache(memoryCapacity: Tuning.pictureMemoryCacheBytes,
+                                          diskCapacity: Tuning.pictureDiskCacheBytes, directory: folder)
+        configuration.requestCachePolicy = .useProtocolCachePolicy
+        return URLSession(configuration: configuration)
+    }()
+
+    private static func baseConfiguration() -> URLSessionConfiguration {
         let configuration = URLSessionConfiguration.default
         if let proxy {
             configuration.connectionProxyDictionary = [
@@ -15,8 +33,8 @@ enum Net {
                 kCFNetworkProxiesHTTPEnable: true, kCFNetworkProxiesHTTPProxy: proxy.host, kCFNetworkProxiesHTTPPort: proxy.port,
             ]
         }
-        return URLSession(configuration: configuration)
-    }()
+        return configuration
+    }
 
     /// The proxy from the launch arguments, or nil.
     static let proxy: (host: String, port: Int)? = {

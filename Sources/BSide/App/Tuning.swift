@@ -108,6 +108,10 @@ enum Tuning {
     static let thumbnailAttempts = 3
     static let thumbnailRetryAfter: TimeInterval = 20
     static let thumbnailCacheBytes = 64 * 1024 * 1024
+    /// The pictures as they came (JPEG), kept by the URL cache: in memory,
+    /// and on disk across launches.
+    static let pictureMemoryCacheBytes = 16 * 1024 * 1024
+    static let pictureDiskCacheBytes = 150 * 1024 * 1024
     /// How far VoiceOver's adjust gestures move the progress bar, in seconds.
     static let seekStep: TimeInterval = 10
     /// The playback clock (PlaybackClock): a report off by less than the

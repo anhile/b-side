@@ -145,21 +145,9 @@ enum ArtworkLoader {
     }
 
     private static func download(_ url: URL, scale: CGFloat) async -> CGImage? {
-        var failure = ""
-        for attempt in 0..<2 {
-            if attempt > 0 { try? await Task.sleep(for: .seconds(Tuning.artworkRetryDelay)) }
-            do {
-                let (data, response) = try await Net.session.data(from: url)
-                let status = (response as? HTTPURLResponse)?.statusCode ?? 0 // none for a file: the snapshots' covers
-                if status == 200 || url.isFileURL, let image = decode(data, scale: scale) {
-                    return image
-                }
-                failure = "HTTP \(status), \(data.count) bytes"
-            } catch {
-                failure = error.localizedDescription
-            }
-        }
-        EventLog.write("error\tartwork: \(failure) (\(url.host ?? "?"))")
+        guard let data = await ImageData.data(for: url, label: "artwork", attempts: 2) else { return nil }
+        if let image = decode(data, scale: scale) { return image }
+        EventLog.write("error\tartwork: not a picture, \(data.count) bytes (\(url.host ?? "?"))")
         return nil
     }
 }

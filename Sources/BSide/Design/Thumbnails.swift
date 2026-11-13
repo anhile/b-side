@@ -52,23 +52,17 @@ enum Thumbnails {
     }
 
     private static func download(_ url: URL, pixels: Int) async -> NSImage? {
-        var failure = ""
-        for attempt in 0..<Tuning.thumbnailAttempts {
-            if attempt > 0 { try? await Task.sleep(for: .seconds(Tuning.artworkRetryDelay * Double(attempt))) }
-            do {
-                let (data, response) = try await Net.session.data(from: url)
-                let status = (response as? HTTPURLResponse)?.statusCode ?? 0 // none for a file: the snapshots' covers
-                if status == 200 || url.isFileURL, let image = decode(data, pixels: pixels) { return image }
-                failure = "HTTP \(status), \(data.count) bytes"
-            } catch {
-                failure = error.localizedDescription
-            }
+        guard let data = await ImageData.data(for: url, label: "thumbnail", attempts: Tuning.thumbnailAttempts) else { return nil }
+        // Decoded off the main thread: a list scrolled fast asks for dozens at once.
+        let decoded = await Task.detached(priority: .userInitiated) { decode(data, pixels: pixels) }.value
+        guard let decoded else {
+            EventLog.write("error\tthumbnail: not a picture, \(data.count) bytes (\(url.host ?? "?"))")
+            return nil
         }
-        EventLog.write("error\tthumbnail: \(failure) (\(url.host ?? "?"))")
-        return nil
+        return NSImage(cgImage: decoded, size: NSSize(width: decoded.width, height: decoded.height))
     }
 
-    private static func decode(_ data: Data, pixels: Int) -> NSImage? {
+    private nonisolated static func decode(_ data: Data, pixels: Int) -> CGImage? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
@@ -77,7 +71,6 @@ enum Thumbnails {
             // The longer side: a wide video frame still fills the square sharply.
             kCGImageSourceThumbnailMaxPixelSize: Int((Double(pixels) * 16 / 9).rounded(.up)),
         ]
-        guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
-        return NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
+        return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
     }
 }

@@ -149,6 +149,7 @@ captures show what the user would see; the event log has `buffering` and
 | `~/Library/Application Support/B-Side/events.log` | Track changes, play and pause, ads, errors, crashes, and a heartbeat per minute |
 | `~/Library/Application Support/B-Side/processes.tsv` | The processes that belong to the app, refreshed once a minute while it runs (every 5 s while Settings > Diagnostics is open) |
 | Preferences, `com.anhile.bside` | Settings, the Vibe tiles, the last session |
+| `~/Library/Caches/B-Side/Pictures` | Covers as they came from Google's image hosts, up to 150 MB, kept by the hosts' own cache headers. Safe to delete |
 | WebKit's data store | The Google session: cookies and site data, as in a browser |
 
 The event log is the first place to look when something fails. Each line is a
