@@ -30,6 +30,10 @@ enum Tuning {
     /// The widget is redrawn this long after the last change, so a burst of
     /// reports is one redraw.
     static let widgetDelay: Double = 1.0
+    /// How often the app writes its heartbeat and its list of processes.
+    static let heartbeatSeconds: TimeInterval = 60
+    /// The first list of processes, once WebKit's helpers are running.
+    static let firstProcessListWait: TimeInterval = 10
     /// The artwork sent to the widget, square, in pixels.
     static let widgetArtworkPixels = 320
     static let widgetArtworkQuality: Double = 0.85

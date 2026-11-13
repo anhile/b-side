@@ -33,6 +33,13 @@ struct DiagnosticsSettings: View {
         .formStyle(.grouped)
         .background(ThinScrollers())
         .onAppear { log = EventLog.tail(lines: 40) }
+        // Live only while this pane is open.
+        .task {
+            while !Task.isCancelled {
+                player.refreshProcesses()
+                try? await Task.sleep(for: .seconds(5))
+            }
+        }
     }
 
     /// `2026-09-30T12:51:57+04:00<TAB>D<TAB>track<TAB>…` becomes `12:51:57  track  …`.

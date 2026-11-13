@@ -147,7 +147,7 @@ captures show what the user would see; the event log has `buffering` and
 | Path | Content |
 |---|---|
 | `~/Library/Application Support/B-Side/events.log` | Track changes, play and pause, ads, errors, crashes, and a heartbeat per minute |
-| `~/Library/Application Support/B-Side/processes.tsv` | The processes that belong to the app, refreshed every 5 s while it runs |
+| `~/Library/Application Support/B-Side/processes.tsv` | The processes that belong to the app, refreshed once a minute while it runs (every 5 s while Settings > Diagnostics is open) |
 | Preferences, `com.anhile.bside` | Settings, the Vibe tiles, the last session |
 | WebKit's data store | The Google session: cookies and site data, as in a browser |
 

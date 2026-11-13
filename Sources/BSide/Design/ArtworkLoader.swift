@@ -7,11 +7,16 @@ import ImageIO
 /// the tint), retries once when it fails, and keeps the last few images.
 /// A failure is logged and answered with nil, so the caller shows its
 /// placeholder instead of the previous track's picture.
-@MainActor
+///
+/// The caches are the main actor's; the download and the pixel work (the
+/// blur, the scans for bars and covers) are not, so a track change does not
+/// stall the interface while a wide frame is being made into a square.
 enum ArtworkLoader {
-    private static var images: [URL: CGImage] = [:]
-    private static var order: [URL] = []
-    private static var loading: [URL: Task<CGImage?, Never>] = [:]
+    @MainActor private static var images: [URL: CGImage] = [:]
+    @MainActor private static var order: [URL] = []
+    @MainActor private static var loading: [URL: Task<CGImage?, Never>] = [:]
+    /// One context for every blur: making one costs more than the blur.
+    private static let context = CIContext()
     /// The current, previous and next few tracks.
     private static let keep = 8
     /// Room for a 16:9 video frame as wide as the square.
@@ -31,10 +36,12 @@ enum ArtworkLoader {
     /// Rows where the bar runs into the picture.
     private static let barBleed = 2
 
+    @MainActor
     static func image(for url: URL) async -> CGImage? {
         if let image = images[url] { return image }
         if let running = loading[url] { return await running.value }
-        let task = Task { await download(url) }
+        let scale = NSScreen.screens.map(\.backingScaleFactor).max() ?? 2
+        let task = Task { await download(url, scale: scale) }
         loading[url] = task
         let image = await task.value
         loading[url] = nil
@@ -49,9 +56,8 @@ enum ArtworkLoader {
     /// Decoded near the size it is shown, the large artwork on a Retina
     /// screen, not at the size it comes (often 1200 or more): a fraction of
     /// the memory for each kept picture.
-    private static func decode(_ data: Data) -> CGImage? {
+    private static func decode(_ data: Data, scale: CGFloat) -> CGImage? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
-        let scale = NSScreen.screens.map(\.backingScaleFactor).max() ?? 2
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
@@ -77,7 +83,7 @@ enum ArtworkLoader {
         filter.radius = Float(width * backdropBlur / grow)
         let fill = CGAffineTransform(translationX: -(width * grow - width) / 2, y: 0).scaledBy(x: grow, y: grow)
         guard let blurred = filter.outputImage?.transformed(by: fill),
-              let backdrop = CIContext().createCGImage(blurred, from: square),
+              let backdrop = context.createCGImage(blurred, from: square),
               let context = CGContext(data: nil, width: image.width, height: image.width, bitsPerComponent: 8,
                                       bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
                                       bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return image }
@@ -138,14 +144,14 @@ enum ArtworkLoader {
         return image.cropping(to: CGRect(x: 0, y: cut, width: width, height: height - cut * 2)) ?? image
     }
 
-    private static func download(_ url: URL) async -> CGImage? {
+    private static func download(_ url: URL, scale: CGFloat) async -> CGImage? {
         var failure = ""
         for attempt in 0..<2 {
             if attempt > 0 { try? await Task.sleep(for: .seconds(Tuning.artworkRetryDelay)) }
             do {
                 let (data, response) = try await Net.session.data(from: url)
                 let status = (response as? HTTPURLResponse)?.statusCode ?? 0 // none for a file: the snapshots' covers
-                if status == 200 || url.isFileURL, let image = decode(data) {
+                if status == 200 || url.isFileURL, let image = decode(data, scale: scale) {
                     return image
                 }
                 failure = "HTTP \(status), \(data.count) bytes"

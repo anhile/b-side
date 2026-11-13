@@ -162,7 +162,6 @@ final class PlayerController: NSObject, ObservableObject {
     private var pauseTimer: Timer?
     private var processTimer: Timer?
     private var playbackActivity: NSObjectProtocol?
-    private var sampleCount = 0
     private var lastHeartbeatPosition: Double = -1
 
     // MARK: - Setup
@@ -292,10 +291,20 @@ final class PlayerController: NSObject, ObservableObject {
         MainWindow.onShow = { [weak self] in self?.wake() }
         applyNowPlayingSetting()
 
-        sampleProcesses()
-        processTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.sampleProcesses() }
+        // Once a minute, not every few seconds: the list of processes is
+        // only read live by Diagnostics (which asks for it itself), and the
+        // wake-ups of an idle app are what costs its battery.
+        heartbeat(logging: false)
+        // WebKit's helpers start a few seconds after launch; the list that
+        // scripts/measure.sh reads should have them soon.
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(Tuning.firstProcessListWait))
+            self?.heartbeat(logging: false)
         }
+        processTimer = Timer.scheduledTimer(withTimeInterval: Tuning.heartbeatSeconds, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.heartbeat() }
+        }
+        processTimer?.tolerance = Tuning.heartbeatSeconds / 6
 
         Task { [self] in
             // The rules must be in place before the first request goes out.
@@ -1772,20 +1781,32 @@ final class PlayerController: NSObject, ObservableObject {
         phase = .asleep
     }
 
-    private func sampleProcesses() {
+    /// The processes now, for Diagnostics, which asks while it is open.
+    func refreshProcesses() {
         let rows = ProcessReporter.snapshot()
         ProcessReporter.write(rows)
         processes = rows
+    }
 
-        // Once a minute, record where playback is. A position that stops
-        // advancing while "playing" is a silent stop.
-        sampleCount += 1
-        if sampleCount % 12 == 0 {
-            saveSession() // where a track is, should the app be killed
+    /// Every minute: the list of processes for scripts/measure.sh, where
+    /// playback is, should the app be killed, and a line in the log. A
+    /// position that stops advancing while "playing" is a silent stop. The
+    /// processes are listed off the main thread, and `processes` is not
+    /// published, so nothing is redrawn.
+    private func heartbeat(logging: Bool = true) {
+        if logging { saveSession() }
+        Task { [weak self] in
+            let rows = await Task.detached(priority: .utility) {
+                let rows = ProcessReporter.snapshot()
+                ProcessReporter.write(rows)
+                return rows
+            }.value
+            guard logging, let self else { return }
             let stalled = state.isPlaying && state.position == lastHeartbeatPosition
+            let megabytes = rows.reduce(0) { $0 + $1.megabytes }
             EventLog.write("\(stalled ? "STALLED" : "heartbeat")\t\(state.isPlaying ? "playing" : "paused")\t"
-                + "\(Int(state.position))s\t\(state.videoID)\t\(Int(totalMegabytes)) MB"
-                + "\t" + processes.map { "\($0.name) \(Int($0.megabytes))" }.joined(separator: ", "))
+                + "\(Int(state.position))s\t\(state.videoID)\t\(Int(megabytes)) MB"
+                + "\t" + rows.map { "\($0.name) \(Int($0.megabytes))" }.joined(separator: ", "))
             lastHeartbeatPosition = state.position
         }
     }
