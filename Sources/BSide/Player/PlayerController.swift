@@ -1,35 +1,52 @@
 import AppKit
-import Combine
+import Observation
 import Network
 import WebKit
 
 /// Owns the hidden WKWebView, its host window, and everything around playback.
-@MainActor
-final class PlayerController: NSObject, ObservableObject {
+@MainActor @Observable
+final class PlayerController: NSObject {
     // MARK: - What plays
 
-    @Published private(set) var state = PlayerState() {
-        didSet { if state != oldValue { WidgetFeed.note(self) } }
+    /// What the page reports. Its position moves with every report (every
+    /// 5 s), and nothing drawn reads it from here (the clock has it), so a
+    /// report that changes only the position is stored without telling the
+    /// views: they would all be drawn again for nothing.
+    private(set) var state: PlayerState {
+        get {
+            _$observationRegistrar.access(self, keyPath: \.state)
+            return storedState
+        }
+        set {
+            let old = storedState
+            if newValue.matchesIgnoringPosition(old) {
+                storedState = newValue
+            } else {
+                withMutation(keyPath: \.state) { storedState = newValue }
+                WidgetFeed.note(self)
+            }
+        }
     }
+    @ObservationIgnored private var storedState = PlayerState()
     /// Where playback is between the page's reports; see PlaybackClock.
-    @Published private(set) var clock = PlaybackClock()
-    @Published private(set) var source: PlaySource? {
+    private(set) var clock = PlaybackClock()
+    private(set) var source: PlaySource? {
         didSet { if source != oldValue { WidgetFeed.note(self) } }
     }
     /// A track or list was asked for and the page has not answered yet.
-    @Published private(set) var isLoading = false
+    private(set) var isLoading = false
     /// The music has waited for data for a while (Tuning.bufferingNoticeSeconds).
-    @Published private(set) var showsBuffering = false
+    private(set) var showsBuffering = false
     /// The Mac has no network: a wait says it waits for the connection.
-    @Published private(set) var isOffline = false
+    private(set) var isOffline = false
     /// Reports from the page are ignored after a sign-out until the page
     /// starts again, so a late one does not bring the old track back.
     private var ignoresReports = false
     /// What plays after the current track, in order; a track's `index` is
     /// its place in the page's queue.
-    @Published private(set) var upNext: [Track] = []
+    private(set) var upNext: [Track] = []
     /// 0 to 100. Kept between launches.
-    @Published var volume: Double = Settings.defaults.double(forKey: Keys.volume) {
+    var volume: Double = Settings.defaults.double(forKey: Keys.volume) {
         didSet {
             guard volume != oldValue else { return }
             Settings.defaults.set(volume, forKey: Keys.volume)
@@ -37,7 +54,7 @@ final class PlayerController: NSObject, ObservableObject {
         }
     }
     /// Kept across launches, as YouTube Music keeps it.
-    @Published var repeatMode = RepeatMode(rawValue: Settings.defaults.string(forKey: Keys.repeatMode) ?? "") ?? .off {
+    var repeatMode = RepeatMode(rawValue: Settings.defaults.string(forKey: Keys.repeatMode) ?? "") ?? .off {
         didSet {
             guard repeatMode != oldValue else { return }
             Settings.defaults.set(repeatMode.rawValue, forKey: Keys.repeatMode)
@@ -46,58 +63,58 @@ final class PlayerController: NSObject, ObservableObject {
         }
     }
     /// Likes set and taken back here, by video ID, since the app started.
-    @Published private(set) var likeChanges: [String: Bool] = [:]
+    private(set) var likeChanges: [String: Bool] = [:]
 
     var hasTrack: Bool { !state.videoID.isEmpty }
 
     // MARK: - The page and the account
 
-    @Published private(set) var phase = PlayerPhase.starting {
+    private(set) var phase = PlayerPhase.starting {
         didSet { if phase != .starting { startWaitTask?.cancel() } }
     }
-    @Published private(set) var startWait = StartWait.short
-    @Published private(set) var account = Account.unknown
+    private(set) var startWait = StartWait.short
+    private(set) var account = Account.unknown
     /// Chose to use B-Side without signing in. Cleared by signing in.
-    @Published private(set) var isGuest = Settings.bool(Keys.guest) {
+    private(set) var isGuest = Settings.bool(Keys.guest) {
         didSet { Settings.defaults.set(isGuest, forKey: Keys.guest) }
     }
     /// The last thing that went wrong while loading or playing, for the user.
-    @Published private(set) var problem: String?
+    private(set) var problem: String?
     /// A short word that something was done, such as "Added to Road trip";
     /// gone after a moment.
-    @Published private(set) var notice: String?
+    private(set) var notice: String?
 
     // MARK: - The library: vibes, playlists, a playlist's tracks
 
     /// The Vibe tiles, in the user's order. Saved on every change.
-    @Published private(set) var moods: [Mood] = Mood.load() {
+    private(set) var moods: [Mood] = Mood.load() {
         didSet { if moods != oldValue { Mood.save(moods) } }
     }
-    @Published private(set) var playlists: [Playlist] = []
-    @Published private(set) var playlistsState = Loadable.idle
+    private(set) var playlists: [Playlist] = []
+    private(set) var playlistsState = Loadable.idle
     /// The user's playlists that hold a track, by video ID: the checkmarks
     /// in Add to Playlist. Asked again each time the menu opens.
-    @Published private(set) var playlistsHolding: [String: Set<String>] = [:]
+    private(set) var playlistsHolding: [String: Set<String>] = [:]
     /// The playlist whose tracks the Playlists page shows, if any.
-    @Published private(set) var openPlaylist: Playlist?
-    @Published private(set) var tracks: [Track] = []
-    @Published private(set) var tracksState = Loadable.idle
+    private(set) var openPlaylist: Playlist?
+    private(set) var tracks: [Track] = []
+    private(set) var tracksState = Loadable.idle
 
     // MARK: - Explore and lyrics
 
     /// The Explore page's search: what came back, and what was asked.
-    @Published private(set) var searchResults: [MusicItem] = []
-    @Published private(set) var searchState = Loadable.idle
+    private(set) var searchResults: [MusicItem] = []
+    private(set) var searchState = Loadable.idle
     /// The last search, so the page shows it again when it is built again.
     var lastSearch: (query: String, kind: SearchKind)? { searchAsked }
     /// The current track's lyrics, fetched when the lyrics are opened. Only
     /// the last track's are kept.
-    @Published private(set) var lyrics: Lyrics?
-    @Published private(set) var lyricsState = Loadable.idle
+    private(set) var lyrics: Lyrics?
+    private(set) var lyricsState = Loadable.idle
 
     // MARK: - Diagnostics
 
-    @Published private(set) var processes: [ProcessInfoRow] = []
+    private(set) var processes: [ProcessInfoRow] = []
     /// Snapshots only: rows to show instead of the live ones.
     var processesForSnapshot: [ProcessInfoRow] = [] {
         didSet { processes = processesForSnapshot }
@@ -1190,9 +1207,9 @@ final class PlayerController: NSObject, ObservableObject {
     // MARK: - Artist and album pages
 
     /// Loaded pages stay for the session, so going back shows them at once.
-    @Published private(set) var artistPages: [String: ArtistPage] = [:]
-    @Published private(set) var collectionPages: [String: CollectionPage] = [:]
-    @Published private(set) var exploreFailures: Set<String> = []
+    private(set) var artistPages: [String: ArtistPage] = [:]
+    private(set) var collectionPages: [String: CollectionPage] = [:]
+    private(set) var exploreFailures: Set<String> = []
     private var exploreAsked: Set<String> = []
 
     func loadArtist(_ id: String) {

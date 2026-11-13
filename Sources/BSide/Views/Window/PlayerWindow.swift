@@ -3,7 +3,7 @@ import SwiftUI
 /// The main window: page dots, three pages side by side, and the strip with
 /// what is playing under the first two.
 struct PlayerWindow: View {
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @EnvironmentObject private var navigation: Navigation
 
     /// The hidden title bar still counts as a safe area at the top. The
@@ -90,11 +90,11 @@ struct PlayerWindow: View {
                 }
                 .sheet(item: $navigation.newPlaylist) { request in
                     PlaylistNameSheet(request: request)
-                        .environmentObject(player)
+                        .environment(player)
                 }
                 .sheet(item: $navigation.renamingPlaylist) { playlist in
                     PlaylistNameSheet(renaming: playlist)
-                        .environmentObject(player)
+                        .environment(player)
                 }
         }
         .background {

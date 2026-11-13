@@ -17,7 +17,7 @@ struct TrackMenu<Extra: View>: View {
     var showsLike = true
     @ViewBuilder var extra: Extra
 
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @EnvironmentObject private var navigation: Navigation
 
     var body: some View {

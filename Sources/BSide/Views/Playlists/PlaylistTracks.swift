@@ -6,7 +6,7 @@ import SwiftUI
 struct PlaylistTracks: View {
     let playlist: Playlist
 
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @Environment(\.footerRoom) private var footerRoom
 
     /// The page's bar above names the playlist and holds Back and Play.

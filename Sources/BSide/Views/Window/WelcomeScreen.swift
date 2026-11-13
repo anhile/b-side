@@ -8,7 +8,7 @@ import SwiftUI
 /// Laid out as signing in and "Nothing playing" (StageLayout), so the
 /// record stays put when either follows.
 struct WelcomeScreen: View {
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var returning: Bool { Settings.bool(Keys.wasSignedIn) }
 

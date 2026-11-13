@@ -6,7 +6,7 @@ import SwiftUI
 /// query. A song plays on click; an album, a playlist or an artist opens its
 /// page over the search, and Back in the bar returns.
 struct ExplorePage: View {
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @EnvironmentObject private var navigation: Navigation
     @Environment(\.footerRoom) private var footerRoom
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -272,7 +272,7 @@ struct ExploreScroll<Content: View>: View {
 /// A page that is still loading or failed to.
 struct PageState: View {
     let id: String
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @Environment(\.exploreBarHeight) private var barHeight
     @Environment(\.footerRoom) private var footerRoom
 

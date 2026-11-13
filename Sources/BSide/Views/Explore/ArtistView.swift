@@ -5,7 +5,7 @@ import SwiftUI
 /// singles, playlists and related artists, each scrolling sideways.
 struct ArtistView: View {
     let id: String
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
 
     var body: some View {
         if let page = player.artistPages[id] {

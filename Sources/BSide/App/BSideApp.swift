@@ -3,7 +3,7 @@ import SwiftUI
 @main
 struct BSideApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @StateObject private var player = PlayerController()
+    @State private var player = PlayerController()
     @StateObject private var navigation = Navigation()
     /// Changing the size builds the window again, at the new size.
     @AppStorage(Keys.uiScale, store: Settings.defaults) private var uiScale = 0.0
@@ -15,7 +15,7 @@ struct BSideApp: App {
     var body: some Scene {
         Window("B-Side", id: "main") {
             PlayerWindow()
-                .environmentObject(player)
+                .environment(player)
                 .environmentObject(navigation)
                 .id(uiScale)
         }

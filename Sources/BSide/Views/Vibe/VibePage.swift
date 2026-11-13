@@ -2,7 +2,7 @@ import SwiftUI
 
 /// One job: start music for how I feel right now, in one click.
 struct VibePage: View {
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @Environment(\.footerRoom) private var footerRoom
 
     /// The tile being edited, or a new one.

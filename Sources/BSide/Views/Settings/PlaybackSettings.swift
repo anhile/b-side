@@ -4,7 +4,7 @@ import SwiftUI
 /// Everything about the music: what plays, how it is controlled and
 /// shown, the memory it takes, and where new vibes are read.
 struct PlaybackSettings: View {
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @AppStorage(Keys.forceAudioOnly) private var audioOnly = true
     @AppStorage(Keys.nativeNowPlaying) private var nativeNowPlaying = true
     @AppStorage(Keys.reloadWhenPaused) private var reloadWhenPaused = false

@@ -2,7 +2,7 @@ import ServiceManagement
 import SwiftUI
 
 struct DiagnosticsSettings: View {
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @State private var log: [String] = []
 
     var body: some View {

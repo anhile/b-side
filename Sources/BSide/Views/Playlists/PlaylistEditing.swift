@@ -12,7 +12,7 @@ struct NewPlaylistRequest: Identifiable {
 struct AddToPlaylistMenu: View {
     let videoID: String
 
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @EnvironmentObject private var navigation: Navigation
 
     var body: some View {
@@ -48,7 +48,7 @@ struct AddToPlaylistMenu: View {
 struct PlaylistNameSheet: View {
     private let request: NewPlaylistRequest?
     private let renaming: Playlist?
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @Environment(\.dismiss) private var dismiss
     @State private var title: String
 

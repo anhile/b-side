@@ -3,7 +3,7 @@ import SwiftUI
 /// One job: pick one of my playlists, private ones included. A row opens
 /// the playlist's tracks; its play button plays it straight away.
 struct PlaylistsPage: View {
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @EnvironmentObject private var navigation: Navigation
     @Environment(\.footerRoom) private var footerRoom
     @Environment(\.pageShown) private var pageShown

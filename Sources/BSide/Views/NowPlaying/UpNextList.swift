@@ -7,7 +7,7 @@ import SwiftUI
 /// The page sends the next thirty; the list fills again as the queue moves
 /// on.
 struct UpNextList: View {
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @EnvironmentObject private var navigation: Navigation
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The row being dragged to another place.

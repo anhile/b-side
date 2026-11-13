@@ -6,7 +6,7 @@ import SwiftUI
 /// its name slides up under the track: a vibe in its own colour, a
 /// playlist, an album or a track's radio in the accent.
 struct NowPlayingStrip: View {
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @EnvironmentObject private var navigation: Navigation
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion

@@ -4,7 +4,7 @@ import SwiftUI
 /// Who is signed in, first on General: one row for every state, a picture
 /// (the record, the avatar), what it is, and the one thing to do.
 struct AccountSection: View {
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @State private var confirmingSignOut = false
 
     var body: some View {

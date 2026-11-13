@@ -10,7 +10,7 @@ struct ItemRowButton: View {
     var playFromHere: (() -> Void)?
     var number: Int?
 
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @EnvironmentObject private var navigation: Navigation
 
     var body: some View {

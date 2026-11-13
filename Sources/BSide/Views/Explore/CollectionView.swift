@@ -6,7 +6,7 @@ import SwiftUI
 /// plays the album or playlist from there.
 struct CollectionView: View {
     let id: String
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @EnvironmentObject private var navigation: Navigation
 
     var body: some View {

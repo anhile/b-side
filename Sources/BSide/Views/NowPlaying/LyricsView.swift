@@ -11,7 +11,7 @@ import SwiftUI
 /// Nothing runs between lines: one wait until the next line starts, begun
 /// again whenever the player reports (play, pause, seek, every 5 s).
 struct LyricsView: View {
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var current: Int?
     @State private var height: CGFloat = 0

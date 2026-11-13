@@ -23,7 +23,7 @@ struct NewVibeSheet: View {
     /// Opens the old editor: a playlist or a track's radio.
     let pickSource: () -> Void
 
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @Environment(\.dismiss) private var dismiss
     @State private var work: Task<Void, Never>?
     /// The songs are being found again after a change in the preview.

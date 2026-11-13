@@ -8,7 +8,7 @@ import SwiftUI
 /// It moves on every few seconds, not while the pointer is on the stage;
 /// the dots under the stage go to any one.
 struct SignInScreen: View {
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var slide = SignInSlide.music
     @State private var hovering = false

@@ -75,7 +75,7 @@ final class SettingsWindow: NSObject, NSToolbarDelegate {
     /// the window back to the screen, SwiftUI grows it again, and AppKit
     /// throws (crash, 2026-10-04). The window is sized here instead.
     private static func pane(_ tab: SettingsView.Tab, player: PlayerController) -> NSHostingController<AnyView> {
-        let hosting = NSHostingController(rootView: AnyView(SettingsView(tab: tab).environmentObject(player)))
+        let hosting = NSHostingController(rootView: AnyView(SettingsView(tab: tab).environment(player)))
         // Measured once, before the window has it: the pane's ideal size.
         hosting.sizingOptions = .preferredContentSize
         hosting.view.layoutSubtreeIfNeeded()

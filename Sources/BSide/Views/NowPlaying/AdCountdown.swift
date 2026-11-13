@@ -6,7 +6,7 @@ import SwiftUI
 /// so the others say which ad it is and how long it still runs.
 struct AdCountdown: View {
     let font: Font
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in

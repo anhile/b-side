@@ -3,7 +3,7 @@ import SwiftUI
 
 /// One job: see what plays and control it.
 struct NowPlayingPage: View {
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
     @EnvironmentObject private var navigation: Navigation
 
     /// Set while the user drags the slider, so reports do not fight the drag.
@@ -325,7 +325,7 @@ struct NowPlayingPage: View {
                 Button { navigation.showsQueue.toggle() } label: {
                     Label(showsQueue ? "Hide Up Next" : "Show Up Next", systemImage: "list.bullet")
                 }
-                Picker(selection: $player.repeatMode) {
+                Picker(selection: Binding(get: { player.repeatMode }, set: { player.repeatMode = $0 })) {
                     ForEach(RepeatMode.allCases) { Text($0.title).tag($0) }
                 } label: {
                     Label("Repeat", systemImage: player.repeatMode.symbol)
@@ -391,7 +391,7 @@ struct NowPlayingPage: View {
                 TransportButton(symbol: volumeSymbol, label: player.volume > 0 ? "Mute" : "Unmute") {
                     player.toggleMute()
                 }
-                VerticalSlider(value: $player.volume, range: 0...100)
+                VerticalSlider(value: Binding(get: { player.volume }, set: { player.volume = $0 }), range: 0...100)
                     .frame(width: Theme.Size.volumeGlyph, height: Theme.Size.volumeSlider)
                     .accessibilityLabel("Volume")
                     .accessibilityValue("\(Int(player.volume)) percent")

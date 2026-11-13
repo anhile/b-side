@@ -17,6 +17,24 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     private var openMain: (() -> Void)?
     private var watches: Set<AnyCancellable> = []
 
+    private var shownLine: String?
+
+    /// Observation tells of a change before it is made, so the line is read
+    /// again on the next turn, and watched again.
+    private func watchTrack(of player: PlayerController) {
+        let line = withObservationTracking {
+            Self.trackLine(player.state)
+        } onChange: { [weak self, weak player] in
+            Task { @MainActor in
+                guard let self, let player else { return }
+                self.watchTrack(of: player)
+            }
+        }
+        guard line != shownLine else { return }
+        shownLine = line
+        show(track: line)
+    }
+
     func install(player: PlayerController, openMain: @escaping () -> Void) {
         self.player = player
         self.openMain = openMain
@@ -34,14 +52,9 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         item.menu = menu
         menu.delegate = self
         self.item = item
-        // The track's name next to the record: again when the track changes
-        // (the state is published before it is set, hence from the value),
+        // The track's name next to the record: again when the track changes,
         // and when the setting does.
-        player.$state
-            .map(Self.trackLine)
-            .removeDuplicates()
-            .sink { [weak self] in self?.show(track: $0) }
-            .store(in: &watches)
+        watchTrack(of: player)
         NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
@@ -89,7 +102,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         menu.removeAllItems()
 
         let head = NSMenuItem()
-        let view = NSHostingView(rootView: StatusMenuHead().environmentObject(player))
+        let view = NSHostingView(rootView: StatusMenuHead().environment(player))
         view.frame.size = view.fittingSize
         head.view = view
         menu.addItem(head)
@@ -148,7 +161,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
 /// The menu's first item: what plays and the transport. System label
 /// colours, because a menu is system UI.
 private struct StatusMenuHead: View {
-    @EnvironmentObject private var player: PlayerController
+    @Environment(PlayerController.self) private var player
 
     var body: some View {
         VStack(spacing: Theme.Space.xs) {

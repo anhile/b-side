@@ -30,6 +30,14 @@ struct PlayerState: Equatable {
 
     var isLiked: Bool { like == "LIKE" }
 
+    /// The same but for where the track is: what the views show does not
+    /// change with it.
+    func matchesIgnoringPosition(_ other: PlayerState) -> Bool {
+        var same = self
+        same.position = other.position
+        return same == other
+    }
+
     /// Seconds until the ad ends, nil when the page could not tell.
     func adRemaining(at date: Date) -> Double? {
         guard isAd, adLeft >= 0 else { return nil }

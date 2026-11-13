@@ -220,7 +220,7 @@ enum Snapshots {
             for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
                 // A sheet sits on the window's own background, which a borderless
                 // window's content view does not draw.
-                let hosting = NSHostingController(rootView: sheet.environmentObject(player)
+                let hosting = NSHostingController(rootView: sheet.environment(player)
                     .background(Color(nsColor: .windowBackgroundColor)))
                 let window = NSWindow(contentViewController: hosting)
                 window.styleMask = [.borderless]
@@ -462,7 +462,7 @@ enum Snapshots {
                 window.appearance = NSAppearance(named: appearance)
                 window.isReleasedWhenClosed = false
                 let hosting = NSHostingView(rootView: PlayerWindow()
-                    .environmentObject(player)
+                    .environment(player)
                     .environmentObject(navigation))
                 hosting.sizingOptions = []
                 hosting.frame = NSRect(origin: .zero, size: Theme.Size.window)
@@ -509,7 +509,7 @@ enum Snapshots {
         window.appearance = NSAppearance(named: appearance)
         window.isReleasedWhenClosed = false
         let hosting = NSHostingView(rootView: PlayerWindow()
-            .environmentObject(player)
+            .environment(player)
             .environmentObject(navigation)
             .environment(\.previewReduceTransparency, reduceTransparency)
             .environment(\.previewArtworkHover, artworkHover)
